@@ -87,7 +87,46 @@ def get_current_user():
     if not session.get('user_id'):
         return jsonify({'logged_in': False})
     user = User.query.get(session['user_id'])
+    if not user:
+        session.clear()
+        return jsonify({'logged_in': False})
     return jsonify({'logged_in': True, 'user': _user_dict(user)})
+
+# مسار تحديث بيانات المريض وكلمة المرور
+@app.route('/api/patient/update-profile', methods=['POST'])
+def update_patient_profile():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'المستخدم غير موجود'}), 404
+
+    data = request.json
+    if data.get('name'):
+        user.name = data['name']
+    if data.get('age'):
+        user.age = int(data['age'])
+    if data.get('weight'):
+        user.weight = float(data['weight'])
+    if data.get('height'):
+        user.height = float(data['height'])
+    if data.get('emergencyPhone'):
+        user.emergency_phone = data['emergencyPhone']
+    
+    # إعادة حساب BMI
+    if user.height > 0:
+        h_meters = user.height / 100.0
+        user.bmi = round(user.weight / (h_meters * h_meters), 1)
+
+    # تحديث كلمة المرور إذا تم إدخالها
+    new_password = data.get('newPassword', '').strip()
+    if new_password:
+        user.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
+
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'تم تحديث البيانات بنجاح', 'user': _user_dict(user)})
 
 @app.route('/api/logs', methods=['GET', 'POST'])
 def handle_logs():
@@ -120,6 +159,8 @@ def create_patient():
     if session.get('role') != 'doctor':
         return jsonify({'error': 'غير مصرح'}), 403
     data = request.json
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({'success': False, 'message': 'اسم المستخدم مستخدم مسبقاً'}), 400
     w = float(data.get('weight', 70))
     h = float(data.get('height', 170)) / 100.0
     bmi = round(w / (h * h), 1) if h > 0 else 24.2
@@ -139,7 +180,7 @@ def create_patient():
     )
     db.session.add(new_patient)
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'patient_id': new_patient.id})
 
 @app.route('/api/doctor/update-notes', methods=['POST'])
 def update_doctor_notes():
@@ -214,6 +255,34 @@ def init_db():
 
         patients_data = [
             {'username': 'patient', 'password': '123', 'name': 'أحمد علي', 'age': 42, 'gender': 'ذكر', 'weight': 75.0, 'height': 175.0, 'bmi': 24.5, 'blood': 'O+', 'emergency_phone': '07701112233', 'diabetes_type': 'النوع الثاني', 'doctor_notes': 'الالتزام بالمشي 30 دقيقة يومياً وتقليل النشويات.', 'conditions': 'ضغط الدم', 'logs': [(115, 'صائم', '4 وحدات'), (140, 'بعد الأكل', '-'), (122, 'عشوائي', '-')]},
+            {'username': 'patient2', 'password': '123', 'name': 'سارة فاضل', 'age': 31, 'gender': 'أنثى', 'weight': 64.0, 'height': 162.0, 'bmi': 24.4, 'blood': 'A+', 'emergency_phone': '07809998877', 'diabetes_type': 'سكري الحمل', 'doctor_notes': 'فحص السكر بعد كل وجبة بساعة وتسجيل الجدول الغذائي.', 'conditions': 'حمل', 'logs': [(95, 'صائم', '-'), (132, 'بعد الأكل', '-')]},
+            {'username': 'patient3', 'password': '123', 'name': 'حسين جاسم', 'age': 58, 'gender': 'ذكر', 'weight': 88.0, 'height': 170.0, 'bmi': 30.4, 'blood': 'B+', 'emergency_phone': '07714445566', 'diabetes_type': 'النوع الثاني', 'doctor_notes': 'الاستمرار على علاج الضغط وفحص القدمين يومياً.', 'conditions': 'اعتلال أعصاب، ضغط', 'logs': [(185, 'صائم', 'ميتفورمين'), (210, 'بعد الأكل', '-'), (165, 'عشوائي', '-')]},
+            {'username': 'patient4', 'password': '123', 'name': 'مريم كمال', 'age': 24, 'gender': 'أنثى', 'weight': 55.0, 'height': 165.0, 'bmi': 20.2, 'blood': 'O-', 'emergency_phone': '07503332211', 'diabetes_type': 'النوع الأول', 'doctor_notes': 'تعديل جرعة الأنسولين السريع حسب حساب الكربوهيدرات.', 'conditions': 'لا يوجد', 'logs': [(105, 'صائم', '6 وحدات سريع'), (148, 'بعد الأكل', '4 وحدات')]},
+            {'username': 'patient5', 'password': '123', 'name': 'حيدر عبد الله', 'age': 50, 'gender': 'ذكر', 'weight': 82.0, 'height': 173.0, 'bmi': 27.4, 'blood': 'AB+', 'emergency_phone': '07726667788', 'diabetes_type': 'النوع الثاني', 'doctor_notes': 'تقليل الدهون المشبعة والمتابعة الدورية لوظائف القلب.', 'conditions': 'أمراض القلب', 'logs': [(130, 'صائم', '-'), (160, 'بعد الأكل', 'منظم سكر')]}
+        ]
+
+        for item in patients_data:
+            if not User.query.filter_by(username=item['username']).first():
+                p = User(
+                    username=item['username'], password_hash=generate_password_hash(item['password'], method='pbkdf2:sha256'),
+                    role='patient', name=item['name'], age=item['age'], gender=item['gender'], weight=item['weight'],
+                    height=item['height'], bmi=item['bmi'], blood=item['blood'], emergency_phone=item['emergency_phone'],
+                    diabetes_type=item['diabetes_type'], doctor_notes=item['doctor_notes'], conditions=item['conditions']
+                )
+                db.session.add(p)
+                db.session.commit()
+                for val, timing, meds in item['logs']:
+                    db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
+                db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='مرحباً دكتور، قمت بتحديث قراءاتي اليوم.'))
+                db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='أهلاً بك، القراءات جيدة استمر على نفس النظام.'))
+                db.session.commit()
+
+init_db()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+[(115, 'صائم', '4 وحدات'), (140, 'بعد الأكل', '-'), (122, 'عشوائي', '-')]},
             {'username': 'patient2', 'password': '123', 'name': 'سارة فاضل', 'age': 31, 'gender': 'أنثى', 'weight': 64.0, 'height': 162.0, 'bmi': 24.4, 'blood': 'A+', 'emergency_phone': '07809998877', 'diabetes_type': 'سكري الحمل', 'doctor_notes': 'فحص السكر بعد كل وجبة بساعة وتسجيل الجدول الغذائي.', 'conditions': 'حمل', 'logs': [(95, 'صائم', '-'), (132, 'بعد الأكل', '-')]},
             {'username': 'patient3', 'password': '123', 'name': 'حسين جاسم', 'age': 58, 'gender': 'ذكر', 'weight': 88.0, 'height': 170.0, 'bmi': 30.4, 'blood': 'B+', 'emergency_phone': '07714445566', 'diabetes_type': 'النوع الثاني', 'doctor_notes': 'الاستمرار على علاج الضغط وفحص القدمين يومياً.', 'conditions': 'اعتلال أعصاب، ضغط', 'logs': [(185, 'صائم', 'ميتفورمين'), (210, 'بعد الأكل', '-'), (165, 'عشوائي', '-')]},
             {'username': 'patient4', 'password': '123', 'name': 'مريم كمال', 'age': 24, 'gender': 'أنثى', 'weight': 55.0, 'height': 165.0, 'bmi': 20.2, 'blood': 'O-', 'emergency_phone': '07503332211', 'diabetes_type': 'النوع الأول', 'doctor_notes': 'تعديل جرعة الأنسولين السريع حسب حساب الكربوهيدرات.', 'conditions': 'لا يوجد', 'logs': [(105, 'صائم', '6 وحدات سريع'), (148, 'بعد الأكل', '4 وحدات')]},
