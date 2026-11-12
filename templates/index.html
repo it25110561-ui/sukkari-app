@@ -59,7 +59,12 @@
                 </div>
                 <div>
                     <label class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">كلمة المرور</label>
-                    <input type="password" id="loginPassword" required placeholder="أدخل الرمز" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <div class="relative">
+                        <input type="password" id="loginPassword" required placeholder="أدخل الرمز" class="w-full p-3 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', 'loginEyeIcon')" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i id="loginEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition">تسجيل الدخول</button>
             </form>
@@ -89,18 +94,19 @@
             </div>
             
             <!-- قائمة المريض -->
-            <nav class="patient-only hidden md:flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                <button onclick="switchTab('dashboard', this)" class="p-nav-btn px-3.5 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-xs font-bold transition flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-emerald-600"></i> القراءات</button>
-                <button onclick="switchTab('mealAi', this)" class="p-nav-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5"><i class="fa-solid fa-camera text-amber-500"></i> تحليل الوجبات</button>
-                <button onclick="switchTab('aiAssistant', this)" class="p-nav-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5"><i class="fa-solid fa-robot text-purple-500"></i> المساعد الذكي</button>
-                <button onclick="switchTab('chatDoctor', this)" class="p-nav-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5"><i class="fa-solid fa-user-md text-blue-500"></i> محادثة الطبيب</button>
+            <nav class="patient-only flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto max-w-[60vw] md:max-w-none">
+                <button onclick="switchTab('dashboard', this)" class="p-nav-btn px-3 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-chart-line text-emerald-600"></i> القراءات</button>
+                <button onclick="switchTab('mealAi', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-camera text-amber-500"></i> تحليل الوجبات</button>
+                <button onclick="switchTab('aiAssistant', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-robot text-purple-500"></i> المساعد الذكي</button>
+                <button onclick="switchTab('chatDoctor', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-md text-blue-500"></i> محادثة الطبيب</button>
+                <button onclick="switchTab('profileSettings', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-gear text-slate-500"></i> ملفي وكلمة السر</button>
             </nav>
             
             <!-- قائمة الطبيب -->
-            <nav class="doctor-only hidden md:flex items-center gap-2">
-                <button onclick="switchDocTab('docDashboard', this)" class="d-nav-btn px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-users-medical"></i> ملفات المرضى</button>
-                <button onclick="switchDocTab('docChat', this)" class="d-nav-btn px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5"><i class="fa-solid fa-comments text-blue-500"></i> رسائل المرضى</button>
-                <button onclick="openAddModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> مريض جديد</button>
+            <nav class="doctor-only flex items-center gap-1.5 overflow-x-auto">
+                <button onclick="switchDocTab('docDashboard', this)" class="d-nav-btn px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-users-medical"></i> ملفات المرضى</button>
+                <button onclick="switchDocTab('docChat', this)" class="d-nav-btn px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-comments text-blue-500"></i> رسائل المرضى</button>
+                <button onclick="openAddModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-plus"></i> مريض جديد</button>
             </nav>
 
             <!-- أزرار التحكم (الوضع الليلي + تسجيل الخروج) -->
@@ -128,6 +134,126 @@
                 </div>
                 <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div class="text-xs text-slate-400 font-bold mb-1">معدل السكر</div>
+                    <div class="text-3xl font-black text-slate-900 dark:text-white" id="pAvg">-</div>
+                    <span class="text-[10px] text-slate-400 font-bold">المتوسط العام</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-bold mb-1">التراكمي التقديري</div>
+                    <div class="text-3xl font-black text-emerald-600" id="pA1c">-</div>
+                    <span class="text-[10px] text-slate-400 font-bold">eA1c</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-bold mb-1">مؤشر كتلة الجسم</div>
+                    <div class="text-3xl font-black text-blue-600" id="pBmi">-</div>
+                    <span class="text-[10px] text-slate-400 font-bold">BMI</span>
+                </div>
+            </div>
+
+            <!-- شريط الطوارئ SOS -->
+            <div class="bg-gradient-to-l from-red-600 to-rose-700 rounded-2xl p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl animate-pulse">
+                        <i class="fa-solid fa-truck-medical"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-lg">نظام الاستغاثة والطوارئ السريع (SOS)</h3>
+                        <p class="text-xs text-red-100">رقم طوارئ العائلة المعتمد: <strong id="pSos" class="underline">07700000000</strong></p>
+                    </div>
+                </div>
+                <button onclick="triggerSOS()" class="w-full sm:w-auto px-6 py-3 bg-white text-red-600 rounded-xl font-black text-xs hover:bg-red-50 transition shadow">
+                    <i class="fa-solid fa-phone-volume ml-1"></i> إرسال إنذار عاجل للعائلة
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-emerald-600"></i> تسجيل قراءة جديدة
+                    </h3>
+                    <form onsubmit="addLog(event)" class="space-y-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">مستوى السكر</label>
+                            <input type="number" id="logVal" required min="20" max="600" placeholder="مثلاً: 115" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">توقيت الفحص</label>
+                            <select id="logTime" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                                <option value="صائم">صائم (صباحاً)</option>
+                                <option value="بعد الأكل">بعد الأكل بساعتين</option>
+                                <option value="عشوائي">عشوائي / قبل النوم</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">الجرعة / العلاج (اختياري)</label>
+                            <input type="text" id="logMeds" placeholder="مثلاً: 4 وحدات أنسولين" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl text-xs font-bold transition shadow">حفظ القراءة</button>
+                    </form>
+                </div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+                    <h3 class="font-bold mb-4 text-sm text-slate-700 dark:text-slate-200">المخطط البياني لمستويات السكر</h3>
+                    <div class="flex-1 min-h-[240px]"><canvas id="pChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- سجل قياسات السكر السابقة الخاص بالمريض -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> سجل قياسات السكر السابقة الخاص بك
+                </h3>
+                <div class="overflow-x-auto max-h-72">
+                    <table class="w-full text-right border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                                <th class="p-3">التاريخ والوقت</th>
+                                <th class="p-3">القراءة (mg/dL)</th>
+                                <th class="p-3">التوقيت</th>
+                                <th class="p-3">العلاج / الجرعة</th>
+                                <th class="p-3">التقييم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientHistoryTable" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. محلل الوجبات بالصور (Meal AI) -->
+        <div id="mealAiTab" class="tab-content">
+            <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <h2 class="text-xl font-black">تحليل الوجبات بالذكاء الاصطناعي</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">التقط أو ارفع صورة وجبتك لحساب الكربوهيدرات والجرعة المناسبة</p>
+                </div>
+                
+                <input type="file" id="mealImageInput" accept="image/*" class="hidden" onchange="previewMealImage(event)">
+                <div id="imagePreviewBox" onclick="document.getElementById('mealImageInput').click()" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl h-52 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition bg-cover bg-center mb-4">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2" id="uploadIcon"></i>
+                    <span id="uploadText" class="text-xs font-bold">انقر لاختيار صورة الوجبة</span>
+                </div>
+                
+                <button onclick="processMealImage()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">تحليل الصورة وحساب الجرعة</button>
+                
+                <div id="mealAiLoader" class="hidden text-center mt-6">
+                    <div class="inline-block w-8 h-8 border-4 border-slate-200 rounded-full loader mb-2"></div>
+                    <p class="text-xs font-bold text-amber-600">جاري معالجة الصورة وتحليل المكونات...</p>
+                </div>
+
+                <div id="mealAiResult" class="hidden mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl text-xs"></div>
+            </div>
+        </div>
+
+        <!-- 3. المساعد الذكي (AI Assistant) -->
+        <div id="aiAssistantTab" class="tab-content">
+            <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[70vh] overflow-hidden">
+                <div class="p-4 bg-purple-600 text-white font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-robot"></i> المساعد الطبي الذكي (AI)
+                </div>
+                <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
+                    <div class="flex justify--1">معدل السكر</div>
                     <div class="text-3xl font-black text-slate-900 dark:text-white" id="pAvg">-</div>
                     <span class="text-[10px] text-slate-400 font-bold">المتوسط العام</span>
                 </div>
