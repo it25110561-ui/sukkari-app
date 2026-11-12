@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -12,6 +13,7 @@ app.secret_key = 'sukari_secret_key_iraq_2026'
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'diabetes_db.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'timeout': 15}}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -78,9 +80,12 @@ def index():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.json
-    user = User.query.filter_by(username=data.get('username')).first()
-    if user and check_password_hash(user.password_hash, data.get('password')):
+    data = request.json or {}
+    username = str(data.get('username', '')).strip().lower()
+    password = str(data.get('password', '')).strip()
+    
+    user = User.query.filter_by(username=username).first()
+    if user and check_password_hash(user.password_hash, password):
         session['user_id'] = user.id
         session['role'] = user.role
         return jsonify({'success': True, 'user': _user_dict(user)})
@@ -101,7 +106,6 @@ def get_current_user():
         return jsonify({'logged_in': False})
     return jsonify({'logged_in': True, 'user': _user_dict(user)})
 
-# مسار تحديث بيانات المريض وكلمة المرور
 @app.route('/api/patient/update-profile', methods=['POST'])
 def update_patient_profile():
     user_id = session.get('user_id')
@@ -112,7 +116,7 @@ def update_patient_profile():
     if not user:
         return jsonify({'success': False, 'message': 'الحساب ما موجود'}), 404
 
-    data = request.json
+    data = request.json or {}
     if data.get('name'):
         user.name = data['name']
     if data.get('age'):
@@ -128,7 +132,7 @@ def update_patient_profile():
         h_meters = user.height / 100.0
         user.bmi = round(user.weight / (h_meters * h_meters), 1)
 
-    new_password = data.get('newPassword', '').strip()
+    new_password = str(data.get('newPassword', '')).strip()
     if new_password:
         user.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
 
@@ -166,14 +170,15 @@ def create_patient():
     if session.get('role') != 'doctor':
         return jsonify({'error': 'غير مصرح'}), 403
     data = request.json
-    if User.query.filter_by(username=data['username']).first():
+    clean_username = str(data.get('username', '')).strip().lower()
+    if User.query.filter_by(username=clean_username).first():
         return jsonify({'success': False, 'message': 'هذا اليوزر مستخدم كبل، اختار غيره'}), 400
     w = float(data.get('weight', 70))
     h = float(data.get('height', 170)) / 100.0
     bmi = round(w / (h * h), 1) if h > 0 else 24.2
     new_patient = User(
-        username=data['username'],
-        password_hash=generate_password_hash(data['password'], method='pbkdf2:sha256'),
+        username=clean_username,
+        password_hash=generate_password_hash(str(data['password']).strip(), method='pbkdf2:sha256'),
         role='patient',
         name=data['name'],
         age=int(data.get('age', 40)),
@@ -252,18 +257,26 @@ def analyze_meal():
         'tips': 'نصيحة: ابدي بالزلاطة والخضروات كبل التمن حتى ما يصعد السكر عندك بسرعة ورا الأكل.'
     })
 
-# ---------------- تهيئة قاعدة البيانات (5 مرضى + طبيب) ----------------
+# ---------------- تهيئة قاعدة البيانات بشكل آمن مع تعدد العمليات ----------------
 def init_db():
     with app.app_context():
-        db.create_all()
-        if not User.query.filter_by(username='doctor').first():
-            doc = User(
-                username='doctor',
-                password_hash=generate_password_hash('123', method='pbkdf2:sha256'),
-                role='doctor',
-                name='د. خالد السامرائي'
-            )
-            db.session.add(doc)
+        try:
+            db.create_all()
+        except Exception:
+            pass
+
+        try:
+            if not User.query.filter_by(username='doctor').first():
+                doc = User(
+                    username='doctor',
+                    password_hash=generate_password_hash('123', method='pbkdf2:sha256'),
+                    role='doctor',
+                    name='د. خالد السامرائي'
+                )
+                db.session.add(doc)
+                db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
 
         patients_data = [
             {
@@ -278,7 +291,7 @@ def init_db():
                 'blood': 'O+',
                 'emergency_phone': '07701112233',
                 'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'التزم بالمشي نص ساعة يومياً وقلل الخبز والتمن.',
+                'doctor_notes': 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.',
                 'conditions': 'ضغط الدم',
                 'logs': [(115, 'على الريك', '4 وحدات'), (140, 'ورا الأكل', '-'), (122, 'عشوائي', '-')]
             },
@@ -349,30 +362,33 @@ def init_db():
         ]
 
         for item in patients_data:
-            if not User.query.filter_by(username=item['username']).first():
-                p = User(
-                    username=item['username'],
-                    password_hash=generate_password_hash(item['password'], method='pbkdf2:sha256'),
-                    role='patient',
-                    name=item['name'],
-                    age=item['age'],
-                    gender=item['gender'],
-                    weight=item['weight'],
-                    height=item['height'],
-                    bmi=item['bmi'],
-                    blood=item['blood'],
-                    emergency_phone=item['emergency_phone'],
-                    diabetes_type=item['diabetes_type'],
-                    doctor_notes=item['doctor_notes'],
-                    conditions=item['conditions']
-                )
-                db.session.add(p)
-                db.session.commit()
-                for val, timing, meds in item['logs']:
-                    db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
-                db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='هلو دكتور، سجلت قياساتي مال اليوم.'))
-                db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='هلا بيك عيني، قياساتك كلش زينة استمر هيج.'))
-                db.session.commit()
+            try:
+                if not User.query.filter_by(username=item['username']).first():
+                    p = User(
+                        username=item['username'],
+                        password_hash=generate_password_hash(item['password'], method='pbkdf2:sha256'),
+                        role='patient',
+                        name=item['name'],
+                        age=item['age'],
+                        gender=item['gender'],
+                        weight=item['weight'],
+                        height=item['height'],
+                        bmi=item['bmi'],
+                        blood=item['blood'],
+                        emergency_phone=item['emergency_phone'],
+                        diabetes_type=item['diabetes_type'],
+                        doctor_notes=item['doctor_notes'],
+                        conditions=item['conditions']
+                    )
+                    db.session.add(p)
+                    db.session.commit()
+                    for val, timing, meds in item['logs']:
+                        db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
+                    db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='هلو دكتور، سجلت قياساتي مال اليوم.'))
+                    db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='هلا بيك عيني، قياساتك كلش زينة استمر هيج.'))
+                    db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
 
 init_db()
 
