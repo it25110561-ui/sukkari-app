@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سُكّري الذكي - منصتك لمتابعة السكر</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        body.is-doctor .patient-only { display: none !important; }
+        body.is-patient .doctor-only { display: none !important; }
+        .tab-content, .doc-tab-content { display: none; }
+        .tab-content.active, .doc-tab-content.active { display: block; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #printableReport, #printableReport * { visibility: visible; }
+            #printableReport { 
+                position: absolute; left: 0; top: 0; width: 100%; 
+                background: #ffffff !important; color: #000000 !important; 
+                padding: 20px; border: none !important;
+            }
+            .no-print { display: none !important; }
+        }
+        .loader { border-top-color: #059669; animation: spinner 1s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- شاشة تسجيل الدخول (بدون form لمنع تحديث الصفحة نهائياً) -->
+    <div id="authScreen" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-8 shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
+            <div class="w-16 h-16 bg-emerald-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-600/30">
+                <i class="fa-solid fa-heart-pulse text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-black mb-1 text-slate-900 dark:text-white">سُكّري الذكي</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">منصتك الذكية لمتابعة السكر والتواصل ويه دكتورك</p>
+            
+            <div class="space-y-4 text-right">
+                <div>
+                    <label class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">اسم المستخدم (اليوزر)</label>
+                    <input type="text" id="loginUsername" onkeydown="if(event.key==='Enter') handleLogin()" placeholder="اكتب اليوزر مالتك هنا" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">الرمز السري (الباسورد)</label>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" onkeydown="if(event.key==='Enter') handleLogin()" placeholder="اكتب الرمز السري" class="w-full p-3 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', 'loginEyeIcon')" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i id="loginEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- صندوق حالة تسجيل الدخول -->
+                <div id="loginStatusBox" class="hidden p-3 rounded-xl text-xs font-bold text-center border"></div>
+
+                <button type="button" id="btnLoginSubmit" onclick="handleLogin()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition cursor-pointer">فوت للحساب</button>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-center gap-3">
+                <button type="button" onclick="qLogin('patient')" class="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs rounded-xl font-bold hover:bg-emerald-100 active:scale-95 transition cursor-pointer">جرب كمريض</button>
+                <button type="button" onclick="qLogin('doctor')" class="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs rounded-xl font-bold hover:bg-blue-100 active:scale-95 transition cursor-pointer">جرب كطبيب</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- الشريط العلوي (Header) -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-heart-pulse text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-black text-lg text-slate-900 dark:text-white">سُكّري</span>
+                        <span id="roleBadge" class="text-[11px] px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full font-bold"></span>
+                    </div>
+                    <p id="navUserName" class="text-[11px] text-slate-500 dark:text-slate-400"></p>
+                </div>
+            </div>
+            
+            <nav class="patient-only flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto max-w-[60vw] md:max-w-none">
+                <button type="button" onclick="switchTab('dashboard', this)" class="p-nav-btn px-3 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-chart-line text-emerald-600"></i> قياساتي</button>
+                <button type="button" onclick="switchTab('mealAi', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-camera text-amber-500"></i> فحص الأكل</button>
+                <button type="button" onclick="switchTab('aiAssistant', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-robot text-purple-500"></i> أحجي ويه الذكاء</button>
+                <button type="button" onclick="switchTab('chatDoctor', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-md text-blue-500"></i> راسل الدكتور</button>
+                <button type="button" onclick="switchTab('profileSettings', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-gear text-slate-500"></i> بياناتي والرمز</button>
+            </nav>
+            
+            <nav class="doctor-only flex items-center gap-1.5 overflow-x-auto">
+                <button type="button" onclick="switchDocTab('docDashboard', this)" class="d-nav-btn px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-users-medical"></i> ملفات المراجعين</button>
+                <button type="button" onclick="switchDocTab('docChat', this)" class="d-nav-btn px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-comments text-blue-500"></i> رسائل المراجعين</button>
+                <button type="button" onclick="openAddModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-plus"></i> ضيف مراجع جديد</button>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="toggleTheme()" title="تبديل الوضع الليلي والنهاري" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
+                    <i id="themeIcon" class="fa-solid fa-moon"></i>
+                </button>
+                <button type="button" onclick="handleLogout()" title="اطلع من الحساب" class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 hover:bg-red-100 flex items-center justify-center transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= واجهة المريض ================= -->
+    <main id="patientViews" class="patient-only max-w-7xl mx-auto px-4 py-6 w-full flex-1">
+        
+        <div id="dashboardTab" class="tab-content active space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-bold mb-1">آخر قياس للسكر</div>
+                    <div class="text-3xl font-black text-slate-900 dark:text-white" id="pLatest">-</div>
+                    <span class="text-[10px] text-emerald-600 font-bold">ملجم/ديسيلتر</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-bold mb-1">معدل السكر مالتك</div>
+                    <div class="text-3xl font-black text-slate-900 dark:text-white" id="pAvg">-</div>
+                    <span class="text-[10px] text-slate-400 font-bold">المتوسط العام</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-bold mb-1">التراكمي التقديري</div>
+                    <div class="text-3xl font-black text-emerald-600" id="pA1c">-</div>
+                    <span class="text-[10px] text-slate-400 font-bold">eA1c</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div class="text-xs text-slate-400 font-bold mb-1">مؤشر كتلة الجسم</div>
+                    <div class="text-3xl font-black text-blue-600" id="pBmi">-</div>
+                    <span class="text-[10px] text-slate-400 font-bold">BMI</span>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-l from-red-600 to-rose-700 rounded-2xl p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl animate-pulse">
+                        <i class="fa-solid fa-truck-medical"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-lg">زر الطوارئ السريع (SOS)</h3>
+                        <p class="text-xs text-red-100">رقم الطوارئ مال الأهل المسجل: <strong id="pSos" class="underline">07700000000</strong></p>
+                    </div>
+                </div>
+                <button type="button" onclick="triggerSOS()" class="w-full sm:w-auto px-6 py-3 bg-white text-red-600 rounded-xl font-black text-xs hover:bg-red-50 transition shadow">
+                    <i class="fa-solid fa-phone-volume ml-1"></i> دز إنذار طوارئ للأهل هسه!
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-emerald-600"></i> سجّل قياس جديد
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">شكد طلع السكر؟</label>
+                            <input type="number" id="logVal" min="20" max="600" placeholder="مثلاً: 115" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">شوكت قسته؟</label>
+                            <select id="logTime" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                                <option value="على الريك">على الريك (صائم)</option>
+                                <option value="ورا الأكل">ورا الأكل بساعتين</option>
+                                <option value="عشوائي">عشوائي / كبل النوم</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">العلاج أو الجرعة (إذا ماخذ)</label>
+                            <input type="text" id="logMeds" placeholder="مثلاً: 4 وحدات أنسولين" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                        </div>
+                        <button type="button" onclick="addLog()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl text-xs font-bold transition shadow">احفظ القياس</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+                    <h3 class="font-bold mb-4 text-sm text-slate-700 dark:text-slate-200">المخطط البياني لمستوى السكر مالتك</h3>
+                    <div class="flex-1 min-h-[240px]"><canvas id="pChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> سجل قياساتك السابقة كلها
+                </h3>
+                <div class="overflow-x-auto max-h-72">
+                    <table class="w-full text-right border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                                <th class="p-3">التاريخ والوقت</th>
+                                <th class="p-3">القياس (mg/dL)</th>
+                                <th class="p-3">الوقت</th>
+                                <th class="p-3">العلاج / الجرعة</th>
+                                <th class="p-3">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientHistoryTable" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="mealAiTab" class="tab-content">
+            <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <h2 class="text-xl font-black">افحص وجبتك بالذكاء الاصطناعي</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">طك صورة للأكل أو اختارها من الاستوديو حتى نحسبلك الكارب والجرعة المناسبة</p>
+                </div>
+                
+                <input type="file" id="mealImageInput" accept="image/*" class="hidden" onchange="previewMealImage(event)">
+                <div id="imagePreviewBox" onclick="document.getElementById('mealImageInput').click()" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl h-52 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition bg-cover bg-center mb-4">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2" id="uploadIcon"></i>
+                    <span id="uploadText" class="text-xs font-bold">دوس هنا حتى تختار صورة الأكل</span>
+                </div>
+                
+                <button type="button" onclick="processMealImage()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">افحص الصورة واحسب الجرعة</button>
+                
+                <div id="mealAiLoader" class="hidden text-center mt-6">
+                    <div class="inline-block w-8 h-8 border-4 border-slate-200 rounded-full loader mb-2"></div>
+                    <p class="text-xs font-bold text-amber-600">لحظة.. دا نفحص الصورة ونحسب مكونات الأكل...</p>
+                </div>
+
+                <div id="mealAiResult" class="hidden mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl text-xs"></div>
+            </div>
+        </div>
+
+        <div id="aiAssistantTab" class="tab-content">
+            <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[70vh] overflow-hidden">
+                <div class="p-4 bg-purple-600 text-white font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-robot"></i> المساعد الطبي الذكي (أحجي وياه)
+                </div>
+                <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
+                    <div class="flex justify-start">
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm">
+                            هلا بيك عيني! أني مساعدك الذكي، أحجي وياي واسألني عن أعراض الهبوط، الأكل، أو الرياضة وراح أجاوبك فوراً.
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+                    <input type="text" id="aiInput" onkeydown="if(event.key==='Enter') askAiAssistant()" placeholder="أحجي أو اكتب سؤالك هنا..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
+                    <button type="button" onclick="askAiAssistant()" class="px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition">دز</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chatDoctorTab" class="tab-content">
+            <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[70vh] overflow-hidden">
+                <div class="p-4 bg-blue-600 text-white font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-user-md"></i> حجي مباشر ويه الدكتور المشرف
+                </div>
+                <div id="patientDocChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50"></div>
+                <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+                    <input type="text" id="pChatInput" onkeydown="if(event.key==='Enter') sendMsgAsPatient()" placeholder="اكتب رسالتك للدكتور هنا..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
+                    <button type="button" onclick="sendMsgAsPatient()" class="px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition">دز</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="profileSettingsTab" class="tab-content">
+            <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                    <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-user-pen"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-black">عدّل بياناتك والرمز السري</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">تكدر هنا تغيّر وزنك، طولك، رقم الطوارئ أو الرمز السري مالتك</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-xs">
+                    <div>
+                        <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">الاسم الكامل</label>
+                        <input type="text" id="profName" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">العمر (سنة)</label>
+                            <input type="number" id="profAge" min="1" max="120" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">الوزن (كغم)</label>
+                            <input type="number" step="0.1" id="profWeight" min="10" max="300" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">الطول (سم)</label>
+                            <input type="number" step="0.1" id="profHeight" min="50" max="250" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">رقم الطوارئ مال الأهل (SOS)</label>
+                        <input type="text" id="profPhone" class="w-full p-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 outline-none">
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">الرمز السري الجديد (عوفه فارغ إذا ما تريد تغيّره)</label>
+                        <div class="relative">
+                            <input type="password" id="profNewPass" placeholder="اكتب الرمز السري الجديد هنا" class="w-full p-3 pl-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none">
+                            <button type="button" onclick="togglePasswordVisibility('profNewPass', 'profEyeIcon')" title="إظهار / إخفاء الرمز السري" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition">
+                                <i id="profEyeIcon" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="updatePatientProfile()" id="btnUpdateProfile" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> احفظ التعديلات
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= واجهة الطبيب ================= -->
+    <main id="doctorViews" class="doctor-only max-w-7xl mx-auto px-4 py-6 w-full flex-1 flex flex-col">
+        
+        <div id="docDashboardTab" class="doc-tab-content active flex-1">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+                    <div class="p-4 bg-blue-900 text-white font-bold text-sm flex items-center justify-between">
+                        <span><i class="fa-solid fa-users ml-1"></i> قائمة المراجعين المسجلين</span>
+                        <span id="patientCountBadge" class="bg-blue-700 text-xs px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="docPatientList" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[75vh]"></div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex flex-col justify-between space-y-5">
+                    <div>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 mb-5">
+                            <div>
+                                <h2 id="dName" class="text-2xl font-black text-slate-900 dark:text-white">اختار مراجع من القائمة</h2>
+                                <p id="dMeta" class="text-xs text-slate-500 dark:text-slate-400 mt-1">-</p>
+                            </div>
+                            <button type="button" onclick="openDocReport()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-2">
+                                <i class="fa-solid fa-file-medical"></i> طلّع التقرير الشامل والباركود
+                            </button>
+                        </div>
+
+                        <div class="h-52 mb-5 relative">
+                            <canvas id="dChart"></canvas>
+                            <div id="dChartEmptyMsg" class="hidden absolute inset-0 flex items-center justify-center bg-slate-50/80 dark:bg-slate-800/80 rounded-2xl text-xs font-bold text-slate-500">
+                                ماكو قياسات مسجلة لهذا المراجع حتى نعرضها بالمخطط
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 p-4 rounded-2xl mb-5 text-xs">
+                            <strong class="text-blue-900 dark:text-blue-300 flex items-center gap-1.5 mb-1">
+                                <i class="fa-solid fa-brain"></i> تقييم الذكاء الاصطناعي لحالة المراجع:
+                            </strong>
+                            <p id="dAiNotes" class="text-slate-700 dark:text-slate-300 leading-relaxed">-</p>
+                        </div>
+
+                        <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-4">
+                            <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-check text-blue-600"></i> سجل قياسات السكر مال هذا المراجع:
+                            </h4>
+                            <div class="overflow-x-auto max-h-44">
+                                <table class="w-full text-right border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                                            <th class="p-2">التاريخ والوقت</th>
+                                            <th class="p-2">القياس (mg/dL)</th>
+                                            <th class="p-2">الوقت</th>
+                                            <th class="p-2">العلاج / الجرعة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="docPatientLogsTable" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <label class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 block">اكتب ملاحظاتك وخطة العلاج للمراجع:</label>
+                        <textarea id="dNotesInput" rows="2" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs mb-2 outline-none"></textarea>
+                        <button type="button" onclick="saveNotes()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition">احفظ الملاحظات بملف المراجع</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="docChatTab" class="doc-tab-content flex-1">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[72vh]">
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+                    <div class="p-4 bg-blue-900 text-white font-bold text-sm">اختار المراجع حتى تحجي وياه</div>
+                    <div id="docChatPatientList" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+                </div>
+                <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 font-bold text-sm" id="docChatHeader">محادثة ويه: -</div>
+                    <div id="docChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50 dark:bg-slate-950/50"></div>
+                    <div class="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-2">
+                        <input type="text" id="dChatInput" onkeydown="if(event.key==='Enter') sendMsgAsDoctor()" placeholder="اكتب ردك وتوجيهاتك للمراجع..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
+                        <button type="button" onclick="sendMsgAsDoctor()" class="px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition">دز</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= نافذة التقرير الطبي الشامل ================= -->
+    <div id="reportModal" class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white text-black w-full max-w-3xl rounded-3xl p-8 shadow-2xl relative my-8">
+            <div class="no-print flex justify-between items-center border-b pb-4 mb-6">
+                <span class="font-bold text-sm text-slate-700">معاينة التقرير الطبي كبل الطباعة</span>
+                <div class="flex gap-2">
+                    <button type="button" onclick="triggerPrint()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-print"></i> اطبع / احفظ PDF
+                    </button>
+                    <button type="button" onclick="document.getElementById('reportModal').classList.add('hidden')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl">سد النافذة</button>
+                </div>
+            </div>
+            
+            <div id="printableReport" class="text-right space-y-5">
+                <div class="flex justify-between items-center border-b-2 border-black pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-black">التقرير الطبي الشامل لمتابعة السكري</h2>
+                        <p class="text-xs font-bold text-slate-700 mt-1">العيادة التخصصية للغدد الصماء والسكري - منصة سُكّري الذكي</p>
+                    </div>
+                    <div id="qrcode" class="p-3 border border-black rounded bg-white"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 rounded-xl border border-black text-xs">
+                    <div><span class="text-slate-600 block">اسم المراجع:</span><strong class="text-sm" id="rName"></strong></div>
+                    <div><span class="text-slate-600 block">العمر / الجنس / فصيلة الدم:</span><strong id="rAgeGenderBlood"></strong></div>
+                    <div><span class="text-slate-600 block">رقم الطوارئ مال الأهل:</span><strong id="rPhone"></strong></div>
+                    <div><span class="text-slate-600 block">الوزن والطول:</span><strong id="rWeightHeight"></strong></div>
+                    <div><span class="text-slate-600 block">مؤشر كتلة الجسم (BMI):</span><strong id="rBmi"></strong></div>
+                    <div><span class="text-slate-600 block">نوع السكري:</span><strong id="rType"></strong></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 border border-black p-4 rounded-xl text-center">
+                    <div><span class="text-slate-600 block text-xs">معدل قياسات السكر</span><strong class="text-xl" id="rAvg"></strong></div>
+                    <div><span class="text-slate-600 block text-xs">السكر التراكمي التقديري (eA1c)</span><strong class="text-xl" id="rA1c"></strong></div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-xs mb-2">آخر قياسات السكر المسجلة:</h4>
+                    <table class="w-full border-collapse border border-black text-xs text-right">
+                        <thead>
+                            <tr class="bg-slate-100">
+                                <th class="border border-black p-2">التاريخ والوقت</th>
+                                <th class="border border-black p-2">القياس (mg/dL)</th>
+                                <th class="border border-black p-2">الوقت</th>
+                                <th class="border border-black p-2">العلاج / الجرعة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rLogsTable"></tbody>
+                    </table>
+                </div>
+
+                <div class="border border-black p-4 rounded-xl text-xs min-h-[80px]">
+                    <h4 class="font-bold border-b border-black pb-1 mb-2">خطة العلاج وتوجيهات الدكتور:</h4>
+                    <p id="rNotes" class="leading-relaxed font-semibold"></p>
+                </div>
+
+                <div class="pt-6 flex justify-between items-end text-xs">
+                    <div>تاريخ التقرير: <strong id="rDate"></strong></div>
+                    <div class="text-center border-t border-black pt-2 px-8">
+                        <strong>توقيع وختم الدكتور المشرف</strong><br>
+                        <span id="rDocName">د. خالد السامرائي</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ================= نافذة إضافة مريض جديد ================= -->
+    <div id="addModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <h3 class="font-black text-lg border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">افتح ملف لمراجع جديد</h3>
+            <div class="space-y-3 text-xs">
+                <input type="text" id="nName" placeholder="اسم المراجع الثلاثي" class="w-full p-2.5 border dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                <div class="grid grid-cols-3 gap-2">
+                    <input type="number" id="nAge" placeholder="العمر" value="40" class="p-2.5 border dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <input type="number" id="nWeight" placeholder="الوزن (كغم)" value="70" class="p-2.5 border dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                    <input type="number" id="nHeight" placeholder="الطول (سم)" value="170" class="p-2.5 border dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="nDiabetesType" class="p-2.5 border dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                        <option value="النوع الثاني">النوع الثاني</option>
+                        <option value="النوع الأول">النوع الأول</option>
+                        <option value="سكري الحمل">سكري الحمل</option>
+                    </select>
+                    <input type="text" id="nPhone" placeholder="رقم طوارئ الأهل" class="p-2.5 border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30 rounded-xl">
+                </div>
+                <div class="grid grid-cols-2 gap-2 border-t dark:border-slate-800 pt-3">
+                    <input type="text" id="nUser" placeholder="اليوزر للدخول" class="p-2.5 border dark:border-slate-700 bg-blue-50/50 dark:bg-blue-950/30 rounded-xl">
+                    <input type="text" id="nPass" placeholder="الرمز السري" class="p-2.5 border dark:border-slate-700 bg-blue-50/50 dark:bg-blue-950/30 rounded-xl">
+                </div>
+                <div class="flex gap-2 pt-3">
+                    <button type="button" onclick="addPatient()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition">سجّل الحساب</button>
+                    <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="flex-1 bg-slate-200 dark:bg-slate-800 py-3 rounded-xl font-bold transition">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = { user: null, patients: [], selDocPatId: null, selChatPatId: null };
+        let pc = null, dc = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            initSession();
+        });
+
+        function showLoginStatus(msg, type) {
+            const box = document.getElementById('loginStatusBox');
+            box.classList.remove('hidden', 'bg-blue-50', 'text-blue-700', 'border-blue-200', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+            if (type === 'loading') {
+                box.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+            } else if (type === 'error') {
+                box.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+            } else {
+                box.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+            }
+            box.innerText = msg;
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash text-emerald-600';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'fa-solid fa-moon';
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'fa-solid fa-sun';
+            }
+            if (state.user) {
+                state.user.role === 'doctor' ? selectDocPat(state.selDocPatId) : loadPatientData();
+            }
+        }
+
+        async function initSession() {
+            try {
+                const r = await fetch('/api/me');
+                const d = await r.json();
+                if(d.logged_in){
+                    state.user = d.user;
+                    document.getElementById('authScreen').classList.add('hidden');
+                    applyUI();
+                }
+            } catch(e) {}
+        }
+
+        async function performLogin(username, password) {
+            const btn = document.getElementById('btnLoginSubmit');
+            const origText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = 'لحظة دا يفوت...';
+            showLoginStatus('⏳ جاري الاتصال بالسيرفر وتسجيل الدخول...', 'loading');
+
+            try {
+                const r = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: username, password: password})
+                });
+                const text = await r.text();
+                let d;
+                try {
+                    d = JSON.parse(text);
+                } catch (parseErr) {
+                    showLoginStatus('❌ خطأ بالسيرفر (' + r.status + '): تأكد من تحديث ملف app.py', 'error');
+                    return;
+                }
+                if (d.success) {
+                    showLoginStatus('✅ تم الدخول بنجاح! جاري فتح حسابك...', 'success');
+                    state.user = d.user;
+                    setTimeout(() => {
+                        document.getElementById('authScreen').classList.add('hidden');
+                        applyUI();
+                    }, 300);
+                } else {
+                    showLoginStatus('❌ ' + (d.message || 'فشل تسجيل الدخول'), 'error');
+                }
+            } catch (err) {
+                showLoginStatus('⚠️ ماكو اتصال بالسيرفر: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = origText;
+            }
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('loginUsername').value;
+            const p = document.getElementById('loginPassword').value;
+            if (!u || !p) {
+                showLoginStatus('⚠️ اكتب اليوزر والرمز السري بالبداية', 'error');
+                return;
+            }
+            await performLogin(u, p);
+        }
+        
+        async function qLogin(r) { 
+            document.getElementById('loginUsername').value = r; 
+            document.getElementById('loginPassword').value = '123';
+            await performLogin(r, '123');
+        }
+        
+        async function handleLogout() { await fetch('/api/logout',{method:'POST'}); location.reload(); }
+
+        function applyUI() {
+            document.getElementById('navUserName').innerText = state.user.name;
+            document.getElementById('roleBadge').innerText = state.user.role === 'doctor' ? 'دكتور مشرف' : 'مراجع';
+            if(state.user.role === 'doctor'){
+                document.body.classList.add('is-doctor'); document.body.classList.remove('is-patient');
+                loadDoctorData();
+            } else {
+                document.body.classList.add('is-patient'); document.body.classList.remove('is-doctor');
+                populatePatientProfileForm();
+                loadPatientData();
+                loadPatientChat();
+            }
+        }
+
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+            document.getElementById(id+'Tab').classList.add('active');
+            document.querySelectorAll('.p-nav-btn').forEach(b => {
+                b.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+                b.classList.add('text-slate-600', 'dark:text-slate-300');
+            });
+            if(btn) {
+                btn.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm');
+                btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+            }
+        }
+
+        function switchDocTab(id, btn) {
+            document.querySelectorAll('.doc-tab-content').forEach(e => e.classList.remove('active'));
+            document.getElementById(id+'Tab').classList.add('active');
+            document.querySelectorAll('.d-nav-btn').forEach(b => {
+                b.className = 'd-nav-btn px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap';
+            });
+            if(btn) {
+                btn.className = 'd-nav-btn px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap';
+            }
+        }
+
+        function populatePatientProfileForm() {
+            const u = state.user;
+            if (!u) return;
+            document.getElementById('profName').value = u.name || '';
+            document.getElementById('profAge').value = u.age || '';
+            document.getElementById('profWeight').value = u.weight || '';
+            document.getElementById('profHeight').value = u.height || '';
+            document.getElementById('profPhone').value = u.emergencyPhone || '';
+            document.getElementById('profNewPass').value = '';
+        }
+
+        async function updatePatientProfile() {
+            const btn = document.getElementById('btnUpdateProfile');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> لحظة دا نحفظ...';
+
+            const payload = {
+                name: document.getElementById('profName').value,
+                age: document.getElementById('profAge').value,
+                weight: document.getElementById('profWeight').value,
+                height: document.getElementById('profHeight').value,
+                emergencyPhone: document.getElementById('profPhone').value,
+                newPassword: document.getElementById('profNewPass').value
+            };
+
+            try {
+                const r = await fetch('/api/patient/update-profile', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const d = await r.json();
+                if (d.success) {
+                    state.user = d.user;
+                    document.getElementById('navUserName').innerText = state.user.name;
+                    document.getElementById('profNewPass').value = '';
+                    loadPatientData();
+                    alert('✅ عاشت ايدك! تم تحديث بياناتك والرمز السري بنجاح.');
+                } else {
+                    alert('❌ صار خطأ: ' + (d.message || 'ما كدرنا نحدث البيانات'));
+                }
+            } catch (err) {
+                alert('❌ أكو مشكلة بالاتصال بالسيرفر.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function loadPatientData() {
+            const r = await fetch('/api/logs'); const logs = await r.json();
+            const u = state.user;
+            
+            document.getElementById('pLatest').innerText = logs.length ? logs[0].val : '-';
+            const avg = logs.length ? Math.round(logs.reduce((s,l)=>s+l.val,0)/logs.length) : 0;
+            document.getElementById('pAvg').innerText = avg || '-';
+            document.getElementById('pA1c').innerText = avg ? ((avg+46.7)/28.7).toFixed(1)+'%' : '-';
+            document.getElementById('pBmi').innerText = u.bmi || '-';
+            document.getElementById('pSos').innerText = u.emergencyPhone;
+
+            const historyBody = document.getElementById('patientHistoryTable');
+            if (logs.length === 0) {
+                historyBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">ماكو أي قياس مسجل لحد هسه.. بلّش سجّل أول قياس إلك!</td></tr>';
+            } else {
+                historyBody.innerHTML = logs.map(l => {
+                    let badge = '<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">طبيعي وزين</span>';
+                    if (l.val < 70) badge = '<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold text-[10px]">هبوط!</span>';
+                    else if (l.val > 180) badge = '<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px]">صاعد!</span>';
+                    return `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                            <td class="p-3 text-slate-500">${l.date}</td>
+                            <td class="p-3 font-black text-slate-800 dark:text-white">${l.val}</td>
+                            <td class="p-3">${l.timing}</td>
+                            <td class="p-3 text-slate-500">${l.meds}</td>
+                            <td class="p-3">${badge}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+
+            if(pc) pc.destroy();
+            const reversedLogs = [...logs].reverse();
+            pc = new Chart(document.getElementById('pChart'), {
+                type:'line',
+                data:{
+                    labels: reversedLogs.map(l=>l.date.split(' ')[1] || l.date),
+                    datasets:[{label:'مستوى السكر', data: reversedLogs.map(l=>l.val), borderColor:'#059669', tension:0.35, fill:true, backgroundColor:'rgba(5,150,105,0.12)'}]
+                },
+                options:{
+                    responsive:true, maintainAspectRatio:false,
+                    scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } },
+                    plugins: { legend: { labels: { color: textColor } } }
+                }
+            });
+        }
+
+        async function addLog() {
+            const valInput = document.getElementById('logVal');
+            const timeInput = document.getElementById('logTime');
+            const medsInput = document.getElementById('logMeds');
+            if (!valInput.value) { alert('اكتب رقم القياس بالبداية'); return; }
+            
+            await fetch('/api/logs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({val:valInput.value, timing:timeInput.value, meds:medsInput.value || '-'})});
+            
+            valInput.value = ''; 
+            medsInput.value = ''; 
+            loadPatientData();
+        }
+
+        function triggerSOS() {
+            alert(`🚨 دزينا نداء استغاثة عاجل ويه موقعك لرقم الطوارئ مال الأهل: ${state.user.emergencyPhone}`);
+        }
+
+        function previewMealImage(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const box = document.getElementById('imagePreviewBox');
+                    box.style.backgroundImage = `url('${evt.target.result}')`;
+                    document.getElementById('uploadIcon').classList.add('hidden');
+                    document.getElementById('uploadText').innerText = 'اختارينا الصورة - دوس هنا إذا تريد تغيّرها';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        async function processMealImage() {
+            const input = document.getElementById('mealImageInput');
+            if(!input.files[0]) { alert('عيني اختار صورة للأكل بالبداية!'); return; }
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+            
+            document.getElementById('mealAiResult').classList.add('hidden');
+            document.getElementById('mealAiLoader').classList.remove('hidden');
+            
+            try {
+                const r = await fetch('/api/ai/meal-analyze', {method:'POST', body:formData});
+                const d = await r.json();
+                document.getElementById('mealAiLoader').classList.add('hidden');
+                if(d.success) {
+                    document.getElementById('mealAiResult').innerHTML = `
+                        <ul class="space-y-2.5">
+                            <li><i class="fa-solid fa-utensils text-amber-600 ml-1"></i> <strong>شنو الأكل:</strong> ${d.meal_name}</li>
+                            <li><i class="fa-solid fa-wheat-awn text-amber-600 ml-1"></i> <strong>الكربوهيدرات:</strong> ${d.carbs}</li>
+                            <li><i class="fa-solid fa-fire text-amber-600 ml-1"></i> <strong>السعرات الحرارية:</strong> ${d.calories}</li>
+                            <li class="pt-2 border-t border-amber-200 dark:border-amber-800 text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-syringe ml-1"></i> <strong>الجرعة المقترحة:</strong> ${d.insulin_dose}</li>
+                            <li class="text-slate-600 dark:text-slate-400 text-[11px]"><i class="fa-solid fa-lightbulb text-amber-500 ml-1"></i> ${d.tips}</li>
+                        </ul>`;
+                    document.getElementById('mealAiResult').classList.remove('hidden');
+                }
+            } catch(e) {
+                document.getElementById('mealAiLoader').classList.add('hidden');
+                alert('صار خلل أثناء فحص الصورة، حاول مرة ثانية.');
+            }
+        }
+
+        async function askAiAssistant() {
+            const input = document.getElementById('aiInput');
+            const box = document.getElementById('aiChatBox');
+            const q = input.value.trim();
+            if (!q) return;
+            input.value = '';
+            
+            box.innerHTML += `<div class="flex justify-end"><div class="bg-purple-600 text-white p-3.5 rounded-2xl rounded-tl-none text-xs max-w-[80%] shadow-sm">${q}</div></div>`;
+            box.scrollTop = box.scrollHeight;
+            
+            const r = await fetch('/api/ai/assistant', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({question:q})});
+            const d = await r.json();
+            
+            box.innerHTML += `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm leading-relaxed">${d.answer}</div></div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function loadDoctorData() {
+            const r = await fetch('/api/doctor/patients'); state.patients = await r.json();
+            document.getElementById('patientCountBadge').innerText = state.patients.length;
+            renderDocSidebar(); renderDocChatSidebar();
+            if(state.patients.length && !state.selDocPatId) selectDocPat(state.patients[0].id);
+            else if(state.selDocPatId) selectDocPat(state.selDocPatId);
+            if(state.patients.length && !state.selChatPatId) selectChatPat(state.patients[0].id);
+        }
+
+        function renderDocSidebar() {
+            document.getElementById('docPatientList').innerHTML = state.patients.map(p => 
+                `<div onclick="selectDocPat(${p.id})" class="p-3.5 border rounded-2xl cursor-pointer transition ${state.selDocPatId==p.id ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-700':'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'}">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-xs">${p.name}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-bold">BMI: ${p.bmi}</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">${p.diabetesType} | طوارئ: ${p.emergencyPhone}</div>
+                </div>`
+            ).join('');
+        }
+
+        function selectDocPat(id) {
+            state.selDocPatId = id; renderDocSidebar();
+            const p = state.patients.find(x=>x.id==id);
+            if(!p) return;
+            
+            document.getElementById('dName').innerText = p.name;
+            document.getElementById('dMeta').innerText = `العمر: ${p.age} سنة | الجنس: ${p.gender} | الوزن: ${p.weight} كغم | الطول: ${p.height} سم | فصيلة الدم: ${p.blood}`;
+            document.getElementById('dNotesInput').value = p.doctorNotes;
+            
+            const logs = p.logs || [];
+            const avg = logs.length ? Math.round(logs.reduce((s,l)=>s+l.val,0)/logs.length) : 0;
+            
+            if (logs.length === 0) {
+                document.getElementById('dAiNotes').innerText = 'هذا المراجع بعده ما مسجل أي قياس لحد هسه.';
+            } else {
+                document.getElementById('dAiNotes').innerText = avg > 150 
+                    ? `معدل قياسات المراجع عالي (${avg} mg/dL). الأفضل نراجع جرعات العلاج ونقلل النشويات.` 
+                    : `معدل قياسات المراجع مستقر وزين (${avg} mg/dL). خليه يستمر على نفس الخطة.`;
+            }
+
+            const docLogsBody = document.getElementById('docPatientLogsTable');
+            if (logs.length === 0) {
+                docLogsBody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-slate-400">ماكو قياسات مسجلة لهذا المراجع</td></tr>';
+            } else {
+                docLogsBody.innerHTML = logs.map(l => `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="p-2 text-slate-500">${l.date}</td>
+                        <td class="p-2 font-bold ${l.val > 180 ? 'text-red-600' : (l.val < 70 ? 'text-amber-600' : 'text-emerald-600')}">${l.val}</td>
+                        <td class="p-2">${l.timing}</td>
+                        <td class="p-2 text-slate-500">${l.meds}</td>
+                    </tr>
+                `).join('');
+            }
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const emptyMsg = document.getElementById('dChartEmptyMsg');
+
+            if(dc) {
+                dc.destroy();
+                dc = null;
+            }
+
+            if (logs.length === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            const reversedLogs = [...logs].reverse();
+            dc = new Chart(document.getElementById('dChart'), {
+                type:'line',
+                data:{
+                    labels: reversedLogs.map(l=>l.date.split(' ')[1] || l.date),
+                    datasets:[{
+                        label: `سجل قياسات: ${p.name}`, 
+                        data: reversedLogs.map(l=>l.val), 
+                        borderColor:'#2563eb', 
+                        backgroundColor:'rgba(37,99,235,0.12)', 
+                        fill:true, 
+                        tension:0.35
+                    }]
+                },
+                options:{
+                    responsive:true, maintainAspectRatio:false,
+                    scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } },
+                    plugins: { legend: { labels: { color: textColor } } }
+                }
+            });
+        }
+
+        async function saveNotes() {
+            const notesVal = document.getElementById('dNotesInput').value;
+            await fetch('/api/doctor/update-notes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({patient_id:state.selDocPatId, notes:notesVal})});
+            alert('✅ عاشت ايدك دكتور، انحفظت الملاحظات بملف المراجع.');
+            loadDoctorData();
+        }
+
+        function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
+        
+        async function addPatient() {
+            const payload = {
+                name: document.getElementById('nName').value,
+                age: document.getElementById('nAge').value,
+                weight: document.getElementById('nWeight').value,
+                height: document.getElementById('nHeight').value,
+                diabetesType: document.getElementById('nDiabetesType').value,
+                emergencyPhone: document.getElementById('nPhone').value,
+                username: document.getElementById('nUser').value,
+                password: document.getElementById('nPass').value
+            };
+            if (!payload.name || !payload.username || !payload.password) {
+                alert('املأ الاسم واليوزر والرمز السري بالبداية');
+                return;
+            }
+            
+            const r = await fetch('/api/doctor/create-patient', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+            const d = await r.json();
+            if (!d.success) {
+                alert(d.message || 'صار خطأ أثناء إضافة المراجع');
+                return;
+            }
+            document.getElementById('addModal').classList.add('hidden');
+            document.getElementById('nName').value = '';
+            document.getElementById('nPhone').value = '';
+            document.getElementById('nUser').value = '';
+            document.getElementById('nPass').value = '';
+
+            state.selDocPatId = d.patient_id;
+            await loadDoctorData();
+        }
+
+        function renderDocChatSidebar() {
+            document.getElementById('docChatPatientList').innerHTML = state.patients.map(p => 
+                `<div onclick="selectChatPat(${p.id})" class="p-3 border rounded-2xl cursor-pointer transition flex items-center gap-3 ${state.selChatPatId==p.id ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-700':'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100'}">
+                    <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user"></i></div>
+                    <div>
+                        <div class="font-bold text-xs">${p.name}</div>
+                        <div class="text-[10px] text-slate-400">${p.diabetesType}</div>
+                    </div>
+                </div>`
+            ).join('');
+        }
+
+        function selectChatPat(id) {
+            state.selChatPatId = id; renderDocChatSidebar();
+            const p = state.patients.find(x=>x.id==id);
+            document.getElementById('docChatHeader').innerText = `محادثة ويه المراجع: ${p.name}`;
+            loadDoctorChat();
+        }
+
+        async function loadDoctorChat() {
+            if(!state.selChatPatId) return;
+            const r = await fetch(`/api/chat/${state.selChatPatId}`); const msgs = await r.json();
+            const box = document.getElementById('docChatBox');
+            box.innerHTML = msgs.map(m => m.sender=='doctor' 
+                ? `<div class="flex justify-end"><div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
+                : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
+            ).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendMsgAsDoctor() {
+            const inp = document.getElementById('dChatInput');
+            if (!inp.value.trim()) return;
+            await fetch(`/api/chat/${state.selChatPatId}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:inp.value})});
+            inp.value = ''; loadDoctorChat();
+        }
+
+        async function loadPatientChat() {
+            const r = await fetch(`/api/chat/${state.user.id}`); const msgs = await r.json();
+            const box = document.getElementById('patientDocChatBox');
+            box.innerHTML = msgs.map(m => m.sender=='patient' 
+                ? `<div class="flex justify-end"><div class="bg-emerald-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
+                : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
+            ).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendMsgAsPatient() {
+            const inp = document.getElementById('pChatInput');
+            if (!inp.value.trim()) return;
+            await fetch(`/api/chat/${state.user.id}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:inp.value})});
+            inp.value = ''; loadPatientChat();
+        }
+
+        function openDocReport() {
+            const p = state.patients.find(x => x.id == state.selDocPatId);
+            if(!p) { alert('اختار مراجع بالبداية دكتور'); return; }
+            
+            document.getElementById('rName').innerText = p.name;
+            document.getElementById('rAgeGenderBlood').innerText = `${p.age} سنة | ${p.gender} | ${p.blood}`;
+            document.getElementById('rPhone').innerText = p.emergencyPhone;
+            document.getElementById('rWeightHeight').innerText = `${p.weight} كغم / ${p.height} سم`;
+            document.getElementById('rBmi').innerText = p.bmi;
+            document.getElementById('rType').innerText = p.diabetesType;
+            
+            const avg = p.logs?.length ? Math.round(p.logs.reduce((s,l)=>s+l.val,0)/p.logs.length) : 0;
+            document.getElementById('rAvg').innerText = avg ? `${avg} mg/dL` : '-';
+            document.getElementById('rA1c').innerText = avg ? ((avg+46.7)/28.7).toFixed(1)+'%' : '-';
+            document.getElementById('rNotes').innerText = p.doctorNotes || 'ماكو ملاحظات مسجلة.';
+            document.getElementById('rDate').innerText = new Date().toLocaleDateString('ar-IQ');
+            document.getElementById('rDocName').innerText = state.user.name;
+
+            const tbody = document.getElementById('rLogsTable');
+            tbody.innerHTML = (p.logs || []).slice(0, 8).map(l => `
+                <tr>
+                    <td class="border border-black p-1.5">${l.date}</td>
+                    <td class="border border-black p-1.5 font-bold">${l.val}</td>
+                    <td class="border border-black p-1.5">${l.timing}</td>
+                    <td class="border border-black p-1.5">${l.meds}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="border border-black p-2 text-center">ماكو قياسات مسجلة</td></tr>';
+
+            document.getElementById('reportModal').classList.remove('hidden');
+
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            const qrData = `Patient ID: ${p.id} | SOS: ${p.emergencyPhone} | Avg: ${avg} mg/dL | eA1c: ${document.getElementById('rA1c').innerText}`;
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: 120,
+                height: 120,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+        }
+
+        function triggerPrint() {
+            setTimeout(() => { window.print(); }, 250);
+        }
+    </script>
+</body>
+</html>
