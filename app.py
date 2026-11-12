@@ -236,7 +236,7 @@ def init_db():
                 db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='أهلاً بك، القراءات جيدة استمر على نفس النظام.'))
                 db.session.commit()
 
-import os
+init_db()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
