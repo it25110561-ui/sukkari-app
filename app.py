@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -13,11 +13,12 @@ app.secret_key = 'sukari_secret_key_iraq_2026'
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'diabetes_db.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'timeout': 15}}
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'timeout': 30}}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
+_db_ready = False
 
 # ---------------- نماذج قاعدة البيانات (Models) ----------------
 class User(db.Model):
@@ -73,6 +74,141 @@ def _user_dict(user):
         'conditions': user.conditions.split(',') if user.conditions else []
     }
 
+# ---------------- تهيئة قاعدة البيانات بأمان ----------------
+def init_db():
+    for _ in range(3):
+        try:
+            db.create_all()
+            if not User.query.filter_by(username='doctor').first():
+                doc = User(
+                    username='doctor',
+                    password_hash=generate_password_hash('123', method='pbkdf2:sha256'),
+                    role='doctor',
+                    name='د. خالد السامرائي'
+                )
+                db.session.add(doc)
+                db.session.commit()
+
+            patients_data = [
+                {
+                    'username': 'patient',
+                    'password': '123',
+                    'name': 'أحمد علي',
+                    'age': 42,
+                    'gender': 'ذكر',
+                    'weight': 75.0,
+                    'height': 175.0,
+                    'bmi': 24.5,
+                    'blood': 'O+',
+                    'emergency_phone': '07701112233',
+                    'diabetes_type': 'النوع الثاني',
+                    'doctor_notes': 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.',
+                    'conditions': 'ضغط الدم',
+                    'logs': [(115, 'على الريك', '4 وحدات'), (140, 'ورا الأكل', '-'), (122, 'عشوائي', '-')]
+                },
+                {
+                    'username': 'patient2',
+                    'password': '123',
+                    'name': 'سارة فاضل',
+                    'age': 31,
+                    'gender': 'أنثى',
+                    'weight': 64.0,
+                    'height': 162.0,
+                    'bmi': 24.4,
+                    'blood': 'A+',
+                    'emergency_phone': '07809998877',
+                    'diabetes_type': 'سكري الحمل',
+                    'doctor_notes': 'قيسي السكر ورا كل وجبة بساعة وسجليها بالجدول.',
+                    'conditions': 'حمل',
+                    'logs': [(95, 'على الريك', '-'), (132, 'ورا الأكل', '-')]
+                },
+                {
+                    'username': 'patient3',
+                    'password': '123',
+                    'name': 'حسين جاسم',
+                    'age': 58,
+                    'gender': 'ذكر',
+                    'weight': 88.0,
+                    'height': 170.0,
+                    'bmi': 30.4,
+                    'blood': 'B+',
+                    'emergency_phone': '07714445566',
+                    'diabetes_type': 'النوع الثاني',
+                    'doctor_notes': 'استمر على علاج الضغط وافحص رجليك يومياً.',
+                    'conditions': 'اعتلال أعصاب، ضغط',
+                    'logs': [(185, 'على الريك', 'منظم سكر'), (210, 'ورا الأكل', '-'), (165, 'عشوائي', '-')]
+                },
+                {
+                    'username': 'patient4',
+                    'password': '123',
+                    'name': 'مريم كمال',
+                    'age': 24,
+                    'gender': 'أنثى',
+                    'weight': 55.0,
+                    'height': 165.0,
+                    'bmi': 20.2,
+                    'blood': 'O-',
+                    'emergency_phone': '07503332211',
+                    'diabetes_type': 'النوع الأول',
+                    'doctor_notes': 'عدلي جرعة الأنسولين السريع حسب كمية الكارب بالأكل.',
+                    'conditions': 'لا يوجد',
+                    'logs': [(105, 'على الريك', '6 وحدات سريع'), (148, 'ورا الأكل', '4 وحدات')]
+                },
+                {
+                    'username': 'patient5',
+                    'password': '123',
+                    'name': 'حيدر عبد الله',
+                    'age': 50,
+                    'gender': 'ذكر',
+                    'weight': 82.0,
+                    'height': 173.0,
+                    'bmi': 27.4,
+                    'blood': 'AB+',
+                    'emergency_phone': '07726667788',
+                    'diabetes_type': 'النوع الثاني',
+                    'doctor_notes': 'قلل الدهون والأكل الدسم وتابع فحوصات القلب.',
+                    'conditions': 'أمراض القلب',
+                    'logs': [(130, 'على الريك', '-'), (160, 'ورا الأكل', 'منظم سكر')]
+                }
+            ]
+
+            for item in patients_data:
+                if not User.query.filter_by(username=item['username']).first():
+                    p = User(
+                        username=item['username'],
+                        password_hash=generate_password_hash(item['password'], method='pbkdf2:sha256'),
+                        role='patient',
+                        name=item['name'],
+                        age=item['age'],
+                        gender=item['gender'],
+                        weight=item['weight'],
+                        height=item['height'],
+                        bmi=item['bmi'],
+                        blood=item['blood'],
+                        emergency_phone=item['emergency_phone'],
+                        diabetes_type=item['diabetes_type'],
+                        doctor_notes=item['doctor_notes'],
+                        conditions=item['conditions']
+                    )
+                    db.session.add(p)
+                    db.session.commit()
+                    for val, timing, meds in item['logs']:
+                        db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
+                    db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='هلو دكتور، سجلت قياساتي مال اليوم.'))
+                    db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='هلا بيك عيني، قياساتك كلش زينة استمر هيج.'))
+                    db.session.commit()
+            return
+        except (IntegrityError, OperationalError):
+            db.session.rollback()
+            time.sleep(0.5)
+
+@app.before_request
+def ensure_db_initialized():
+    global _db_ready
+    if not _db_ready:
+        init_db()
+        _db_ready = True
+
 # ---------------- مسارات النظام (Routes) ----------------
 @app.route('/')
 def index():
@@ -80,7 +216,7 @@ def index():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     username = str(data.get('username', '')).strip().lower()
     password = str(data.get('password', '')).strip()
     
@@ -116,7 +252,7 @@ def update_patient_profile():
     if not user:
         return jsonify({'success': False, 'message': 'الحساب ما موجود'}), 404
 
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     if data.get('name'):
         user.name = data['name']
     if data.get('age'):
@@ -145,7 +281,7 @@ def handle_logs():
     if not user_id:
         return jsonify({'error': 'غير مصرح'}), 401
     if request.method == 'POST':
-        data = request.json
+        data = request.get_json(silent=True) or {}
         db.session.add(GlucoseLog(user_id=user_id, val=int(data['val']), timing=data['timing'], meds=data.get('meds', '-')))
         db.session.commit()
         return jsonify({'success': True})
@@ -169,7 +305,7 @@ def get_doctor_patients():
 def create_patient():
     if session.get('role') != 'doctor':
         return jsonify({'error': 'غير مصرح'}), 403
-    data = request.json
+    data = request.get_json(silent=True) or {}
     clean_username = str(data.get('username', '')).strip().lower()
     if User.query.filter_by(username=clean_username).first():
         return jsonify({'success': False, 'message': 'هذا اليوزر مستخدم كبل، اختار غيره'}), 400
@@ -198,9 +334,10 @@ def create_patient():
 def update_doctor_notes():
     if session.get('role') != 'doctor':
         return jsonify({'error': 'غير مصرح'}), 403
-    patient = User.query.get(request.json['patient_id'])
+    data = request.get_json(silent=True) or {}
+    patient = User.query.get(data.get('patient_id'))
     if patient:
-        patient.doctor_notes = request.json['notes']
+        patient.doctor_notes = data.get('notes', '')
         db.session.commit()
         return jsonify({'success': True})
     return jsonify({'error': 'المراجع ما موجود'}), 404
@@ -213,7 +350,8 @@ def handle_chat(patient_id):
         return jsonify({'error': 'غير مصرح'}), 403
     
     if request.method == 'POST':
-        db.session.add(ChatMessage(patient_id=patient_id, sender=role, text=request.json['text']))
+        data = request.get_json(silent=True) or {}
+        db.session.add(ChatMessage(patient_id=patient_id, sender=role, text=data.get('text', '')))
         db.session.commit()
         return jsonify({'success': True})
     
@@ -222,7 +360,8 @@ def handle_chat(patient_id):
 
 @app.route('/api/ai/assistant', methods=['POST'])
 def ai_assistant():
-    q = request.json.get('question', '').lower()
+    data = request.get_json(silent=True) or {}
+    q = data.get('question', '').lower()
     ans = "هلا بيك عيني! أني مساعدك الطبي الذكي. أحجي وياي واسألني عن أعراض الهبوط، شلون تنظم أكلك، أو الرياضة المناسبة إلك."
     if any(x in q for x in ['هبوط', 'انخفاض', 'دوخة', 'رجفة', 'نازل']):
         ans = "⚠️ دير بالك إذا حسيت بهبوط (دوخة، رجفة، تعرق): اشرب فوراً نص كلاص عصير محلى أو اكل 3 تمرات، وانتظر ربع ساعة وارجع قيس السكر. وإذا بقى نازل دوس على زر الطوارئ SOS فوراً!"
@@ -257,142 +396,9 @@ def analyze_meal():
         'tips': 'نصيحة: ابدي بالزلاطة والخضروات كبل التمن حتى ما يصعد السكر عندك بسرعة ورا الأكل.'
     })
 
-# ---------------- تهيئة قاعدة البيانات بشكل آمن مع تعدد العمليات ----------------
-def init_db():
-    with app.app_context():
-        try:
-            db.create_all()
-        except Exception:
-            pass
-
-        try:
-            if not User.query.filter_by(username='doctor').first():
-                doc = User(
-                    username='doctor',
-                    password_hash=generate_password_hash('123', method='pbkdf2:sha256'),
-                    role='doctor',
-                    name='د. خالد السامرائي'
-                )
-                db.session.add(doc)
-                db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-
-        patients_data = [
-            {
-                'username': 'patient',
-                'password': '123',
-                'name': 'أحمد علي',
-                'age': 42,
-                'gender': 'ذكر',
-                'weight': 75.0,
-                'height': 175.0,
-                'bmi': 24.5,
-                'blood': 'O+',
-                'emergency_phone': '07701112233',
-                'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.',
-                'conditions': 'ضغط الدم',
-                'logs': [(115, 'على الريك', '4 وحدات'), (140, 'ورا الأكل', '-'), (122, 'عشوائي', '-')]
-            },
-            {
-                'username': 'patient2',
-                'password': '123',
-                'name': 'سارة فاضل',
-                'age': 31,
-                'gender': 'أنثى',
-                'weight': 64.0,
-                'height': 162.0,
-                'bmi': 24.4,
-                'blood': 'A+',
-                'emergency_phone': '07809998877',
-                'diabetes_type': 'سكري الحمل',
-                'doctor_notes': 'قيسي السكر ورا كل وجبة بساعة وسجليها بالجدول.',
-                'conditions': 'حمل',
-                'logs': [(95, 'على الريك', '-'), (132, 'ورا الأكل', '-')]
-            },
-            {
-                'username': 'patient3',
-                'password': '123',
-                'name': 'حسين جاسم',
-                'age': 58,
-                'gender': 'ذكر',
-                'weight': 88.0,
-                'height': 170.0,
-                'bmi': 30.4,
-                'blood': 'B+',
-                'emergency_phone': '07714445566',
-                'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'استمر على علاج الضغط وافحص رجليك يومياً.',
-                'conditions': 'اعتلال أعصاب، ضغط',
-                'logs': [(185, 'على الريك', 'منظم سكر'), (210, 'ورا الأكل', '-'), (165, 'عشوائي', '-')]
-            },
-            {
-                'username': 'patient4',
-                'password': '123',
-                'name': 'مريم كمال',
-                'age': 24,
-                'gender': 'أنثى',
-                'weight': 55.0,
-                'height': 165.0,
-                'bmi': 20.2,
-                'blood': 'O-',
-                'emergency_phone': '07503332211',
-                'diabetes_type': 'النوع الأول',
-                'doctor_notes': 'عدلي جرعة الأنسولين السريع حسب كمية الكارب بالأكل.',
-                'conditions': 'لا يوجد',
-                'logs': [(105, 'على الريك', '6 وحدات سريع'), (148, 'ورا الأكل', '4 وحدات')]
-            },
-            {
-                'username': 'patient5',
-                'password': '123',
-                'name': 'حيدر عبد الله',
-                'age': 50,
-                'gender': 'ذكر',
-                'weight': 82.0,
-                'height': 173.0,
-                'bmi': 27.4,
-                'blood': 'AB+',
-                'emergency_phone': '07726667788',
-                'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'قلل الدهون والأكل الدسم وتابع فحوصات القلب.',
-                'conditions': 'أمراض القلب',
-                'logs': [(130, 'على الريك', '-'), (160, 'ورا الأكل', 'منظم سكر')]
-            }
-        ]
-
-        for item in patients_data:
-            try:
-                if not User.query.filter_by(username=item['username']).first():
-                    p = User(
-                        username=item['username'],
-                        password_hash=generate_password_hash(item['password'], method='pbkdf2:sha256'),
-                        role='patient',
-                        name=item['name'],
-                        age=item['age'],
-                        gender=item['gender'],
-                        weight=item['weight'],
-                        height=item['height'],
-                        bmi=item['bmi'],
-                        blood=item['blood'],
-                        emergency_phone=item['emergency_phone'],
-                        diabetes_type=item['diabetes_type'],
-                        doctor_notes=item['doctor_notes'],
-                        conditions=item['conditions']
-                    )
-                    db.session.add(p)
-                    db.session.commit()
-                    for val, timing, meds in item['logs']:
-                        db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
-                    db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='هلو دكتور، سجلت قياساتي مال اليوم.'))
-                    db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='هلا بيك عيني، قياساتك كلش زينة استمر هيج.'))
-                    db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-
-init_db()
-
 if __name__ == '__main__':
+    with app.app_context():
+        init_db()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-        
+                
