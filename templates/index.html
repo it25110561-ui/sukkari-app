@@ -26,7 +26,6 @@
         .tab-content, .doc-tab-content { display: none; }
         .tab-content.active, .doc-tab-content.active { display: block; }
         
-        /* إعدادات الطباعة الرسمية بالأبيض والأسود */
         @media print {
             body * { visibility: hidden; }
             #printableReport, #printableReport * { visibility: visible; }
@@ -66,12 +65,12 @@
                         </button>
                     </div>
                 </div>
-                <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition">فوت للحساب</button>
+                <button type="submit" id="btnLoginSubmit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition">فوت للحساب</button>
             </form>
             
             <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-center gap-3">
-                <button onclick="qLogin('patient')" class="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs rounded-xl font-bold hover:bg-emerald-100 transition">جرب كمريض</button>
-                <button onclick="qLogin('doctor')" class="px-4 py-2 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs rounded-xl font-bold hover:bg-blue-100 transition">جرب كطبيب</button>
+                <button type="button" onclick="qLogin('patient')" class="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs rounded-xl font-bold hover:bg-emerald-100 transition">جرب كمريض</button>
+                <button type="button" onclick="qLogin('doctor')" class="px-4 py-2 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs rounded-xl font-bold hover:bg-blue-100 transition">جرب كطبيب</button>
             </div>
         </div>
     </div>
@@ -79,7 +78,6 @@
     <!-- الشريط العلوي (Header) -->
     <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <!-- الشعار -->
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
                     <i class="fa-solid fa-heart-pulse text-xl"></i>
@@ -93,7 +91,6 @@
                 </div>
             </div>
             
-            <!-- قائمة المريض -->
             <nav class="patient-only flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto max-w-[60vw] md:max-w-none">
                 <button onclick="switchTab('dashboard', this)" class="p-nav-btn px-3 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-chart-line text-emerald-600"></i> قياساتي</button>
                 <button onclick="switchTab('mealAi', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-camera text-amber-500"></i> فحص الأكل</button>
@@ -102,14 +99,12 @@
                 <button onclick="switchTab('profileSettings', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-gear text-slate-500"></i> بياناتي والرمز</button>
             </nav>
             
-            <!-- قائمة الطبيب -->
             <nav class="doctor-only flex items-center gap-1.5 overflow-x-auto">
                 <button onclick="switchDocTab('docDashboard', this)" class="d-nav-btn px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-users-medical"></i> ملفات المراجعين</button>
                 <button onclick="switchDocTab('docChat', this)" class="d-nav-btn px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-comments text-blue-500"></i> رسائل المراجعين</button>
                 <button onclick="openAddModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-plus"></i> ضيف مراجع جديد</button>
             </nav>
 
-            <!-- أزرار التحكم (الوضع الليلي + تسجيل الخروج) -->
             <div class="flex items-center gap-2">
                 <button onclick="toggleTheme()" title="تبديل الوضع الليلي والنهاري" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
                     <i id="themeIcon" class="fa-solid fa-moon"></i>
@@ -121,10 +116,9 @@
         </div>
     </header>
 
-    <!-- ================= واجهة المريض (PATIENT VIEWS) ================= -->
+    <!-- ================= واجهة المريض ================= -->
     <main id="patientViews" class="patient-only max-w-7xl mx-auto px-4 py-6 w-full flex-1">
         
-        <!-- 1. لوحة القراءات -->
         <div id="dashboardTab" class="tab-content active space-y-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -149,7 +143,6 @@
                 </div>
             </div>
 
-            <!-- شريط الطوارئ SOS -->
             <div class="bg-gradient-to-l from-red-600 to-rose-700 rounded-2xl p-5 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl animate-pulse">
@@ -196,7 +189,6 @@
                 </div>
             </div>
 
-            <!-- سجل قياسات السكر السابقة الخاص بالمريض -->
             <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> سجل قياساتك السابقة كلها
@@ -218,7 +210,6 @@
             </div>
         </div>
 
-        <!-- 2. محلل الوجبات بالصور (Meal AI) -->
         <div id="mealAiTab" class="tab-content">
             <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div class="text-center mb-6">
@@ -246,10 +237,14 @@
             </div>
         </div>
 
-        <!-- 3. المساعد الذكي (AI Assistant) -->
         <div id="aiAssistantTab" class="tab-content">
             <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[70vh] overflow-hidden">
                 <div class="p-4 bg-purple-600 text-white font-bold text-sm flex items-center gap-2">
                     <i class="fa-solid fa-robot"></i> المساعد الطبي الذكي (أحجي وياه)
                 </div>
-                <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 d
+                <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
+                    <div class="flex justify-start">
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm">
+                            هلا بيك عيني! أني مساعدك الذكي، أحجي وياي واسألني عن أعراض الهبوط، الأكل، أو الرياضة وراح أجاوبك فوراً.
+                        </div>
+                        
