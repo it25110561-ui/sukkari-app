@@ -51,7 +51,7 @@
             <h1 class="text-3xl font-black mb-1 text-slate-900 dark:text-white">سُكّري الذكي</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">منصتك الذكية لمتابعة السكر والتواصل ويه دكتورك</p>
             
-            <form onsubmit="handleLogin(event)" class="space-y-4 text-right">
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-right">
                 <div>
                     <label class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1 block">اسم المستخدم (اليوزر)</label>
                     <input type="text" id="loginUsername" required placeholder="اكتب اليوزر مالتك هنا" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
@@ -65,12 +65,16 @@
                         </button>
                     </div>
                 </div>
-                <button type="submit" id="btnLoginSubmit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition">فوت للحساب</button>
+
+                <!-- صندوق حالة تسجيل الدخول يظهر مباشرة على الشاشة -->
+                <div id="loginStatusBox" class="hidden p-3 rounded-xl text-xs font-bold text-center border"></div>
+
+                <button type="submit" id="btnLoginSubmit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition cursor-pointer">فوت للحساب</button>
             </form>
             
             <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-center gap-3">
-                <button type="button" onclick="qLogin('patient')" class="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs rounded-xl font-bold hover:bg-emerald-100 transition">جرب كمريض</button>
-                <button type="button" onclick="qLogin('doctor')" class="px-4 py-2 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs rounded-xl font-bold hover:bg-blue-100 transition">جرب كطبيب</button>
+                <button type="button" onclick="qLogin('patient')" class="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs rounded-xl font-bold hover:bg-emerald-100 active:scale-95 transition cursor-pointer">جرب كمريض</button>
+                <button type="button" onclick="qLogin('doctor')" class="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 text-xs rounded-xl font-bold hover:bg-blue-100 active:scale-95 transition cursor-pointer">جرب كطبيب</button>
             </div>
         </div>
     </div>
@@ -244,7 +248,4 @@
                 </div>
                 <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
                     <div class="flex justify-start">
-                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm">
-                            هلا بيك عيني! أني مساعدك الذكي، أحجي وياي واسألني عن أعراض الهبوط، الأكل، أو الرياضة وراح أجاوبك فوراً.
-                        </div>
-                        
+                        <div class="b
