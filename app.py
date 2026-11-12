@@ -32,7 +32,7 @@ class User(db.Model):
     blood = db.Column(db.String(10), default='O+')
     emergency_phone = db.Column(db.String(30), default='07700000000')
     diabetes_type = db.Column(db.String(50), default='النوع الثاني')
-    doctor_notes = db.Column(db.Text, default='يرجى الالتزام بالخطة العلاجية والمتابعة المستمرة.')
+    doctor_notes = db.Column(db.Text, default='يرجى الالتزام بالعلاج والمتابعة المستمرة.')
     conditions = db.Column(db.String(255), default='')
 
     logs = db.relationship('GlucoseLog', backref='patient', lazy=True, cascade="all, delete-orphan")
@@ -84,7 +84,7 @@ def login():
         session['user_id'] = user.id
         session['role'] = user.role
         return jsonify({'success': True, 'user': _user_dict(user)})
-    return jsonify({'success': False, 'message': 'اسم المستخدم أو كلمة المرور غير صحيحة'}), 401
+    return jsonify({'success': False, 'message': 'اليوزر أو الرمز السري غلط، تأكد منهم وحاول مرة ثانية'}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
@@ -106,11 +106,11 @@ def get_current_user():
 def update_patient_profile():
     user_id = session.get('user_id')
     if not user_id:
-        return jsonify({'success': False, 'message': 'غير مصرح'}), 401
+        return jsonify({'success': False, 'message': 'ما مسموحلك تفوت هنا'}), 401
     
     user = User.query.get(user_id)
     if not user:
-        return jsonify({'success': False, 'message': 'المستخدم غير موجود'}), 404
+        return jsonify({'success': False, 'message': 'الحساب ما موجود'}), 404
 
     data = request.json
     if data.get('name'):
@@ -133,7 +133,7 @@ def update_patient_profile():
         user.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
 
     db.session.commit()
-    return jsonify({'success': True, 'message': 'تم تحديث البيانات بنجاح', 'user': _user_dict(user)})
+    return jsonify({'success': True, 'message': 'تم تحديث بياناتك بنجاح', 'user': _user_dict(user)})
 
 @app.route('/api/logs', methods=['GET', 'POST'])
 def handle_logs():
@@ -167,7 +167,7 @@ def create_patient():
         return jsonify({'error': 'غير مصرح'}), 403
     data = request.json
     if User.query.filter_by(username=data['username']).first():
-        return jsonify({'success': False, 'message': 'اسم المستخدم مستخدم مسبقاً'}), 400
+        return jsonify({'success': False, 'message': 'هذا اليوزر مستخدم كبل، اختار غيره'}), 400
     w = float(data.get('weight', 70))
     h = float(data.get('height', 170)) / 100.0
     bmi = round(w / (h * h), 1) if h > 0 else 24.2
@@ -198,7 +198,7 @@ def update_doctor_notes():
         patient.doctor_notes = request.json['notes']
         db.session.commit()
         return jsonify({'success': True})
-    return jsonify({'error': 'غير موجود'}), 404
+    return jsonify({'error': 'المراجع ما موجود'}), 404
 
 @app.route('/api/chat/<int:patient_id>', methods=['GET', 'POST'])
 def handle_chat(patient_id):
@@ -218,25 +218,25 @@ def handle_chat(patient_id):
 @app.route('/api/ai/assistant', methods=['POST'])
 def ai_assistant():
     q = request.json.get('question', '').lower()
-    ans = "أهلاً بك! أنا المساعد الطبي الذكي. يمكنك سؤالي عن أعراض الهبوط، تنظيم الوجبات، أو التمارين الرياضية المناسبة لحالتك."
-    if any(x in q for x in ['هبوط', 'انخفاض', 'دوخة', 'رجفة']):
-        ans = "⚠️ في حال الشعور بأعراض الهبوط: تناول فوراً 15 غراماً من السكر السريع (نصف كوب عصير محلى أو 3 تمرات)، وانتظر 15 دقيقة ثم أعد الفحص. إذا استمر الانخفاض اضغط على زر SOS."
+    ans = "هلا بيك عيني! أني مساعدك الطبي الذكي. أحجي وياي واسألني عن أعراض الهبوط، شلون تنظم أكلك، أو الرياضة المناسبة إلك."
+    if any(x in q for x in ['هبوط', 'انخفاض', 'دوخة', 'رجفة', 'نازل']):
+        ans = "⚠️ دير بالك إذا حسيت بهبوط (دوخة، رجفة، تعرق): اشرب فوراً نص كلاص عصير محلى أو اكل 3 تمرات، وانتظر ربع ساعة وارجع قيس السكر. وإذا بقى نازل دوس على زر الطوارئ SOS فوراً!"
     elif any(x in q for x in ['رياضة', 'تمرين', 'مشي']):
-        ans = "🏃‍♂️ المشي السريع لمدة 30 دقيقة يومياً يحسن حساسية الأنسولين. تجنب الرياضة إذا كان السكر أقل من 100 أو أعلى من 250 ملجم/ديسيلتر."
+        ans = "🏃‍♂️ المشي السريع نص ساعة باليوم كلش زين وينظم السكر. بس دير بالك تتمرن إذا السكر أقل من 100 أو أكثر من 250."
     elif any(x in q for x in ['صيام', 'رمضان']):
-        ans = "🌙 الصيام يتطلب تعديل أوقات وجرعات الدواء مع طبيبك لتجنب الهبوط نهاراً أو الارتفاع الحاد بعد الإفطار."
+        ans = "🌙 الصيام يحتاج ترتيب لأوقات وجرعات العلاج ويه دكتورك حتى لا يصير عندك هبوط بالنهار أو صعود قوي ورا الفطور."
     elif any(x in q for x in ['تراكمي']):
-        ans = "📊 الفحص التراكمي (HbA1c) يعكس معدل السكر لآخر 3 أشهر. النسبة المثالية لمعظم مرضى السكري هي أقل من 7%."
+        ans = "📊 الفحص التراكمي ينطيك معدل السكر لآخر 3 أشهر. النسبة الزينة والمثالية أغلب الأحيان تكون جوه الـ 7%."
     time.sleep(0.8)
     return jsonify({'answer': ans})
 
 @app.route('/api/ai/meal-analyze', methods=['POST'])
 def analyze_meal():
     if 'image' not in request.files:
-        return jsonify({'error': 'لا توجد صورة'}), 400
+        return jsonify({'error': 'ماكو صورة مرفوعة'}), 400
     file = request.files['image']
     if file.filename == '':
-        return jsonify({'error': 'لم يتم اختيار ملف'}), 400
+        return jsonify({'error': 'ما اختاريت أي ملف'}), 400
     
     filename = secure_filename(file.filename)
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -245,11 +245,11 @@ def analyze_meal():
     
     return jsonify({
         'success': True,
-        'meal_name': 'وجبة رئيسية متكاملة (أرز، بروتين، خضروات)',
+        'meal_name': 'وجبة غداء رئيسية (تمن، بروتين، زلاطة)',
         'carbs': '55 - 65 غرام كربوهيدرات',
         'calories': '430 سعرة حرارية',
         'insulin_dose': '4 وحدات أنسولين سريع (حسب معامل الكارب 1:15)',
-        'tips': 'ابدأ بتناول السلطة والخضروات أولاً لإبطاء ارتفاع السكر بعد الوجبة.'
+        'tips': 'نصيحة: ابدي بالزلاطة والخضروات كبل التمن حتى ما يصعد السكر عندك بسرعة ورا الأكل.'
     })
 
 # ---------------- تهيئة قاعدة البيانات (5 مرضى + طبيب) ----------------
@@ -278,9 +278,9 @@ def init_db():
                 'blood': 'O+',
                 'emergency_phone': '07701112233',
                 'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'الالتزام بالمشي 30 دقيقة يومياً وتقليل النشويات.',
+                'doctor_notes': 'التزم بالمشي نص ساعة يومياً وقلل الخبز والتمن.',
                 'conditions': 'ضغط الدم',
-                'logs': [(115, 'صائم', '4 وحدات'), (140, 'بعد الأكل', '-'), (122, 'عشوائي', '-')]
+                'logs': [(115, 'على الريك', '4 وحدات'), (140, 'ورا الأكل', '-'), (122, 'عشوائي', '-')]
             },
             {
                 'username': 'patient2',
@@ -294,9 +294,9 @@ def init_db():
                 'blood': 'A+',
                 'emergency_phone': '07809998877',
                 'diabetes_type': 'سكري الحمل',
-                'doctor_notes': 'فحص السكر بعد كل وجبة بساعة وتسجيل الجدول الغذائي.',
+                'doctor_notes': 'قيسي السكر ورا كل وجبة بساعة وسجليها بالجدول.',
                 'conditions': 'حمل',
-                'logs': [(95, 'صائم', '-'), (132, 'بعد الأكل', '-')]
+                'logs': [(95, 'على الريك', '-'), (132, 'ورا الأكل', '-')]
             },
             {
                 'username': 'patient3',
@@ -310,9 +310,9 @@ def init_db():
                 'blood': 'B+',
                 'emergency_phone': '07714445566',
                 'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'الاستمرار على علاج الضغط وفحص القدمين يومياً.',
+                'doctor_notes': 'استمر على علاج الضغط وافحص رجليك يومياً.',
                 'conditions': 'اعتلال أعصاب، ضغط',
-                'logs': [(185, 'صائم', 'ميتفورمين'), (210, 'بعد الأكل', '-'), (165, 'عشوائي', '-')]
+                'logs': [(185, 'على الريك', 'منظم سكر'), (210, 'ورا الأكل', '-'), (165, 'عشوائي', '-')]
             },
             {
                 'username': 'patient4',
@@ -326,9 +326,9 @@ def init_db():
                 'blood': 'O-',
                 'emergency_phone': '07503332211',
                 'diabetes_type': 'النوع الأول',
-                'doctor_notes': 'تعديل جرعة الأنسولين السريع حسب حساب الكربوهيدرات.',
+                'doctor_notes': 'عدلي جرعة الأنسولين السريع حسب كمية الكارب بالأكل.',
                 'conditions': 'لا يوجد',
-                'logs': [(105, 'صائم', '6 وحدات سريع'), (148, 'بعد الأكل', '4 وحدات')]
+                'logs': [(105, 'على الريك', '6 وحدات سريع'), (148, 'ورا الأكل', '4 وحدات')]
             },
             {
                 'username': 'patient5',
@@ -342,9 +342,9 @@ def init_db():
                 'blood': 'AB+',
                 'emergency_phone': '07726667788',
                 'diabetes_type': 'النوع الثاني',
-                'doctor_notes': 'تقليل الدهون المشبعة والمتابعة الدورية لوظائف القلب.',
+                'doctor_notes': 'قلل الدهون والأكل الدسم وتابع فحوصات القلب.',
                 'conditions': 'أمراض القلب',
-                'logs': [(130, 'صائم', '-'), (160, 'بعد الأكل', 'منظم سكر')]
+                'logs': [(130, 'على الريك', '-'), (160, 'ورا الأكل', 'منظم سكر')]
             }
         ]
 
@@ -370,8 +370,8 @@ def init_db():
                 db.session.commit()
                 for val, timing, meds in item['logs']:
                     db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
-                db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='مرحباً دكتور، قمت بتحديث قراءاتي اليوم.'))
-                db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='أهلاً بك، القراءات جيدة استمر على نفس النظام.'))
+                db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='هلو دكتور، سجلت قياساتي مال اليوم.'))
+                db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='هلا بيك عيني، قياساتك كلش زينة استمر هيج.'))
                 db.session.commit()
 
 init_db()
@@ -379,4 +379,4 @@ init_db()
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-                                                         
+        
