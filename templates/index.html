@@ -17,7 +17,7 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Cairo', sans-serif; }
@@ -229,7 +229,7 @@
         </div>
     </div>
 
-    <!-- شريط الحالة العلوي (بدون زر تبديل المظهر) -->
+    <!-- شريط الحالة العلوي -->
     <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 sticky top-0 z-40 transition-colors">
         <div class="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between text-xs">
             <div class="flex items-center gap-2.5">
@@ -261,7 +261,6 @@
 
     <aside id="patientSideDrawer" class="patient-only fixed top-0 left-0 bottom-0 z-50 w-[56%] sm:w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between p-4 -translate-x-full transition-transform duration-300 ease-out">
         <div class="space-y-4 overflow-y-auto">
-            <!-- رأس القائمة الجانبية -->
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -277,7 +276,6 @@
                 </button>
             </div>
 
-            <!-- عناصر القائمة الجانبية -->
             <div class="space-y-2.5">
                 <button type="button" id="drawerProfileBtn" onclick="openTabFromDrawer('profileSettings')" class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 hover:bg-emerald-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3 text-right transition group">
                     <div class="w-9 h-9 rounded-xl bg-slate-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
@@ -299,7 +297,6 @@
                     </div>
                 </button>
 
-                <!-- زر تبديل المظهر الليلي / النهاري -->
                 <button type="button" onclick="toggleTheme()" class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 hover:bg-amber-50/70 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3 text-right transition group">
                     <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
                         <i id="drawerThemeIcon" class="fa-solid fa-moon text-sm"></i>
@@ -312,7 +309,6 @@
             </div>
         </div>
 
-        <!-- زر تسجيل الخروج أسفل القائمة الجانبية -->
         <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
             <button type="button" onclick="handleLogout()" class="w-full py-3 px-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-red-600/20 transition active:scale-95">
                 <i class="fa-solid fa-right-from-bracket"></i>
@@ -324,9 +320,8 @@
     <!-- ================= واجهة المريض ================= -->
     <main id="patientViews" class="patient-only max-w-5xl mx-auto px-4 pt-6 pb-28 w-full flex-1">
         
-        <!-- 1. خانة قياساتي (صافية للقياسات فقط وبدون رسم بياني) -->
+        <!-- 1. خانة قياساتي -->
         <div id="dashboardTab" class="tab-content active space-y-6">
-            <!-- بطاقات ملخص السكر الثلاث -->
             <div class="grid grid-cols-3 gap-3 sm:gap-4">
                 <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center sm:text-right">
                     <div class="text-[11px] sm:text-xs text-slate-400 font-bold mb-1">آخر قياس للسكر</div>
@@ -345,7 +340,6 @@
                 </div>
             </div>
 
-            <!-- صندوق تسجيل قياس جديد بعرض كامل -->
             <div id="quickLogCard" class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
                     <i class="fa-solid fa-plus-circle text-emerald-600"></i> سجّل قياس جديد
@@ -373,7 +367,6 @@
                 </button>
             </div>
 
-            <!-- جدول سجل القياسات السابقة -->
             <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> سجل قياساتك السابقة كلها
@@ -443,14 +436,13 @@
             </div>
         </div>
 
-        <!-- 4. خانة راسل الدكتور (تضم ملاحظات وخطة العلاج بالأعلى + المحادثة) -->
+        <!-- 4. خانة راسل الدكتور -->
         <div id="chatDoctorTab" class="tab-content">
             <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[72vh] overflow-hidden">
                 <div class="p-4 bg-blue-600 text-white font-bold text-sm flex items-center justify-between">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-user-md"></i> حجي مباشر ويه الدكتور المشرف</span>
                 </div>
 
-                <!-- صندوق ملاحظات وخطة العلاج من الدكتور -->
                 <div class="p-3.5 bg-blue-50/90 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800/60 text-xs">
                     <div class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5 mb-1">
                         <i class="fa-solid fa-file-prescription"></i> ملاحظات وخطة العلاج من الدكتور:
@@ -466,7 +458,7 @@
             </div>
         </div>
 
-        <!-- 5. خانة بياناتي الصحية (تضم BMI + الوزن والطول والعمر والطوارئ + تقرير الباركود) -->
+        <!-- 5. خانة بياناتي الصحية -->
         <div id="profileSettingsTab" class="tab-content">
             <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -484,7 +476,6 @@
                     </button>
                 </div>
 
-                <!-- بطاقة مؤشر كتلة الجسم BMI داخل بياناتي الصحية -->
                 <div class="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 flex items-center justify-between">
                     <div>
                         <div class="text-xs font-bold text-blue-900 dark:text-blue-300">مؤشر كتلة الجسم (BMI)</div>
@@ -636,7 +627,7 @@
     <!-- ================= شريط macOS Dock العائم أسفل الشاشة ================= -->
     <div id="macosDock" class="fixed bottom-3.5 left-1/2 -translate-x-1/2 z-40 max-w-[96vw]">
         
-        <!-- Dock المريض: الأزرار الأربعة + زر الطوارئ SOS بالأسفل -->
+        <!-- Dock المريض -->
         <nav id="patientDock" class="patient-only macos-dock-container px-3.5 py-2.5 pb-3 rounded-[26px] flex items-end gap-2.5 sm:gap-3.5">
             <button type="button" onclick="switchTab('dashboard', this)" data-title="قياساتي" class="dock-item p-nav-btn is-open">
                 <span class="dock-tooltip">قياساتي</span>
@@ -673,7 +664,6 @@
 
             <div class="dock-divider"></div>
 
-            <!-- زر الطوارئ SOS بالأسفل -->
             <button type="button" onclick="triggerSOS()" data-title="نداء طوارئ SOS" class="dock-item">
                 <span class="dock-tooltip">نداء طوارئ SOS</span>
                 <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 text-white flex items-center justify-center text-lg sm:text-xl">
@@ -762,7 +752,7 @@
                         <h2 class="text-base font-black text-black">التقرير الطبي المختصر - سُكّري</h2>
                         <p class="text-[10px] font-bold text-slate-600">بطاقة المتابعة الذكية والباركود الطبي</p>
                     </div>
-                    <div id="qrcode" class="p-1.5 border border-black rounded bg-white shrink-0"></div>
+                    <div id="qrcode" class="p-1.5 border border-black rounded bg-white shrink-0 flex items-center justify-center w-[104px] h-[104px]"></div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2 p-2.5 rounded-xl border border-black bg-slate-50/70">
@@ -1632,6 +1622,48 @@
             inp.value = ''; loadPatientChat();
         }
 
+        /* ---------------- رسم الباركود بدقة ودعم كامل للعربية ---------------- */
+        function renderQrCanvas(container, text, size = 90) {
+            container.innerHTML = '';
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            if (typeof qrcode !== 'undefined') {
+                try {
+                    qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+                    const qr = qrcode(0, 'M');
+                    qr.addData(text, 'Byte');
+                    qr.make();
+
+                    const count = qr.getModuleCount();
+                    const tile = size / count;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.fillStyle = '#000000';
+                    for (let r = 0; r < count; r++) {
+                        for (let c = 0; c < count; c++) {
+                            if (qr.isDark(r, c)) {
+                                ctx.fillRect(Math.floor(c * tile), Math.floor(r * tile), Math.ceil(tile), Math.ceil(tile));
+                            }
+                        }
+                    }
+                    container.appendChild(canvas);
+                    return;
+                } catch (e) {}
+            }
+
+            // بديل احتياطي في حال تعذر تحميل المكتبة الخارجية
+            const img = document.createElement('img');
+            img.crossOrigin = 'anonymous';
+            img.width = size;
+            img.height = size;
+            img.alt = 'QR Code';
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+            container.appendChild(img);
+        }
+
         /* ---------------- بناء وعرض التقرير المصغر ---------------- */
         function renderCompactReportModal(patientObj, logsArr, docNameStr) {
             const p = patientObj;
@@ -1676,16 +1708,8 @@
             document.getElementById('reportModal').classList.remove('hidden');
 
             const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
             const qrData = `ID:${p.id} | Name:${p.name} | SOS:${p.emergencyPhone} | Avg:${avg} | eA1c:${a1c}`;
-            new QRCode(qrContainer, {
-                text: qrData,
-                width: 88,
-                height: 88,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
-            });
+            renderQrCanvas(qrContainer, qrData, 90);
         }
 
         function openDocReport() {
@@ -1704,25 +1728,20 @@
             const meta = state.currentReportMeta;
             if (!meta) return;
 
-            const qrCanvas = document.querySelector('#qrcode canvas');
-            const qrImg = document.querySelector('#qrcode img');
-            const qrSource = qrCanvas || qrImg;
+            const qrSource = document.querySelector('#qrcode canvas') || document.querySelector('#qrcode img');
 
             const canvas = document.createElement('canvas');
             canvas.width = 760;
             canvas.height = 460;
             const ctx = canvas.getContext('2d');
 
-            // خلفية البطاقة
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // إطار خارجي
             ctx.strokeStyle = '#0f172a';
             ctx.lineWidth = 4;
             ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
 
-            // شريط العنوان العلوي
             ctx.fillStyle = '#059669';
             ctx.fillRect(12, 12, canvas.width - 24, 68);
 
@@ -1735,10 +1754,9 @@
             ctx.font = 'bold 15px Cairo, sans-serif';
             ctx.fillText(meta.date, 34, 52);
 
-            // رسم الباركود QR على اليسار
-            ctx.fillStyle = '#f8fafc';
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(34, 102, 190, 190);
-            ctx.strokeStyle = '#cbd5e1';
+            ctx.strokeStyle = '#0f172a';
             ctx.lineWidth = 2;
             ctx.strokeRect(34, 102, 190, 190);
 
@@ -1751,7 +1769,6 @@
             ctx.font = 'bold 13px Cairo, sans-serif';
             ctx.fillText('امسح الباركود للطوارئ والمتابعة', 129, 314);
 
-            // بيانات المراجع على اليمين
             ctx.textAlign = 'right';
             ctx.fillStyle = '#0f172a';
             ctx.font = 'bold 21px Cairo, sans-serif';
@@ -1762,7 +1779,6 @@
             ctx.fillText(`نوع السكري: ${meta.type}`, canvas.width - 34, 166);
             ctx.fillText(`رقم الطوارئ (SOS): ${meta.phone}`, canvas.width - 34, 196);
 
-            // مربعات المؤشرات الثلاث
             const boxes = [
                 { label: 'معدل السكر', val: meta.avg, x: 565 },
                 { label: 'التراكمي eA1c', val: meta.a1c, x: 405 },
@@ -1785,7 +1801,6 @@
                 ctx.fillText(b.val, b.x + 74, 278);
             });
 
-            // صندوق خطة العلاج بالأسفل
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(34, 336, canvas.width - 68, 92);
             ctx.strokeStyle = '#cbd5e1';
@@ -1802,7 +1817,6 @@
             const shortNotes = meta.notes.length > 78 ? meta.notes.slice(0, 78) + '...' : meta.notes;
             ctx.fillText(shortNotes, canvas.width - 48, 394);
 
-            // تنزيل الملف تلقائياً
             const link = document.createElement('a');
             link.download = `تقرير-الباركود-${meta.name.replace(/\s+/g, '_')}.png`;
             link.href = canvas.toDataURL('image/png');
