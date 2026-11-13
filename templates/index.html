@@ -816,7 +816,8 @@
             const formData = new FormData();
             formData.append('image', input.files[0]);
             
-            document.getElementById('mealAiResult').classList.add('hidden');
+            const resultBox = document.getElementById('mealAiResult');
+            resultBox.classList.add('hidden');
             document.getElementById('mealAiLoader').classList.remove('hidden');
             
             try {
@@ -824,15 +825,18 @@
                 const d = await r.json();
                 document.getElementById('mealAiLoader').classList.add('hidden');
                 if(d.success) {
-                    document.getElementById('mealAiResult').innerHTML = `
+                    resultBox.innerHTML = `
                         <ul class="space-y-2.5">
                             <li><i class="fa-solid fa-utensils text-amber-600 ml-1"></i> <strong>شنو الأكل:</strong> ${d.meal_name}</li>
                             <li><i class="fa-solid fa-wheat-awn text-amber-600 ml-1"></i> <strong>الكربوهيدرات:</strong> ${d.carbs}</li>
                             <li><i class="fa-solid fa-fire text-amber-600 ml-1"></i> <strong>السعرات الحرارية:</strong> ${d.calories}</li>
-                            <li class="pt-2 border-t border-amber-200 dark:border-amber-800 text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-syringe ml-1"></i> <strong>الجرعة المقترحة:</strong> ${d.insulin_dose}</li>
+                            <li class="pt-2 border-t border-amber-200 dark:border-amber-800 text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-syringe ml-1"></i> <strong>التوصية والجرعة:</strong> ${d.insulin_dose}</li>
                             <li class="text-slate-600 dark:text-slate-400 text-[11px]"><i class="fa-solid fa-lightbulb text-amber-500 ml-1"></i> ${d.tips}</li>
                         </ul>`;
-                    document.getElementById('mealAiResult').classList.remove('hidden');
+                    resultBox.classList.remove('hidden');
+                } else {
+                    resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center"><i class="fa-solid fa-circle-exclamation ml-1"></i> ${d.message || 'تعذر تحليل الصورة'}</p>`;
+                    resultBox.classList.remove('hidden');
                 }
             } catch(e) {
                 document.getElementById('mealAiLoader').classList.add('hidden');
