@@ -30,8 +30,9 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
 _db_ready = False
+_cached_working_model = None
 
-def _call_gemini_with_timeout(fn, timeout_sec=15):
+def _call_gemini_with_timeout(fn, timeout_sec=10):
     executor = ThreadPoolExecutor(max_workers=1)
     future = executor.submit(fn)
     try:
@@ -39,11 +40,30 @@ def _call_gemini_with_timeout(fn, timeout_sec=15):
     finally:
         executor.shutdown(wait=False)
 
-def _generate_with_best_model(client, contents, config, timeout_sec=15):
-    models_to_try = ['gemini-3.8-flash']
+def _generate_with_best_model(client, contents, config, timeout_sec=10):
+    global _cached_working_model
     errors = []
 
-    for model_name in models_to_try:
+    # 1. إذا كان هناك نموذج ناجح محفوظ مسبقاً، نستخدمه فوراً
+    if _cached_working_model:
+        try:
+            response = _call_gemini_with_timeout(
+                lambda m=_cached_working_model: client.models.generate_content(
+                    model=m,
+                    contents=contents,
+                    config=config
+                ),
+                timeout_sec=timeout_sec
+            )
+            if response and response.text:
+                return response.text.strip(), None
+        except Exception as e:
+            errors.append(f"{_cached_working_model}: {e}")
+            _cached_working_model = None
+
+    # 2. تجربة النموذج الأساسي
+    primary_models = ['gemini-3.8-flash']
+    for model_name in primary_models:
         try:
             response = _call_gemini_with_timeout(
                 lambda m=model_name: client.models.generate_content(
@@ -54,38 +74,53 @@ def _generate_with_best_model(client, contents, config, timeout_sec=15):
                 timeout_sec=timeout_sec
             )
             if response and response.text:
+                _cached_working_model = model_name
                 return response.text.strip(), None
         except FuturesTimeoutError:
-            errors.append(f"{model_name}: انتهت مهلة الاتصال (Timeout)")
+            errors.append(f"{model_name}: Timeout")
         except Exception as e:
             errors.append(f"{model_name}: {e}")
 
-    # في حال عدم توفر النموذج، نبحث تلقائياً عن أحدث نموذج flash متاح لمفتاحك
+    # 3. جلب النماذج المتاحة لمفتاحك وتجربة أسرع نموذجين فقط (بحد أقصى 2)
     try:
-        available_models = _call_gemini_with_timeout(lambda: list(client.models.list()), timeout_sec=8)
+        available_models = _call_gemini_with_timeout(lambda: list(client.models.list()), timeout_sec=5)
+        discovered = []
         for m in available_models:
             m_name = getattr(m, 'name', '')
             if m_name.startswith('models/'):
                 m_name = m_name.replace('models/', '', 1)
-            if 'gemini' in m_name.lower() and 'flash' in m_name.lower() and m_name not in models_to_try:
-                if not any(x in m_name.lower() for x in ['embedding', 'imagen', 'veo', 'aqa', 'tts', 'audio', 'lite']):
-                    try:
-                        response = _call_gemini_with_timeout(
-                            lambda mod=m_name: client.models.generate_content(
-                                model=mod,
-                                contents=contents,
-                                config=config
-                            ),
-                            timeout_sec=timeout_sec
-                        )
-                        if response and response.text:
-                            return response.text.strip(), None
-                    except Exception as e:
-                        errors.append(f"{m_name}: {e}")
+            low = m_name.lower()
+            if 'gemini' in low and 'flash' in low and m_name not in primary_models:
+                if not any(x in low for x in ['embedding', 'imagen', 'veo', 'aqa', 'tts', 'audio', 'lite', 'image', 'thinking']):
+                    discovered.append(m_name)
+
+        # ترتيب الأحدث أولاً (3.x ثم latest ثم 2.0)
+        discovered.sort(key=lambda x: (
+            0 if '3.' in x else (1 if 'latest' in x else (2 if '2.0' in x else 3)),
+            x
+        ))
+
+        for mod_name in discovered[:2]:
+            try:
+                response = _call_gemini_with_timeout(
+                    lambda mod=mod_name: client.models.generate_content(
+                        model=mod,
+                        contents=contents,
+                        config=config
+                    ),
+                    timeout_sec=timeout_sec
+                )
+                if response and response.text:
+                    _cached_working_model = mod_name
+                    return response.text.strip(), None
+            except FuturesTimeoutError:
+                errors.append(f"{mod_name}: Timeout")
+            except Exception as e:
+                errors.append(f"{mod_name}: {e}")
     except Exception as list_err:
         errors.append(f"list_models: {list_err}")
 
-    return None, (errors[0] if errors else "غير معروف")
+    return None, (" | ".join(errors[:2]) if errors else "غير معروف")
 
 # ---------------- إعدادات جمناي (Gemini AI) ----------------
 DIABETES_SYSTEM_PROMPT = (
@@ -486,7 +521,7 @@ def ai_assistant():
                 system_instruction=DIABETES_SYSTEM_PROMPT,
                 temperature=0.3,
             ),
-            timeout_sec=15
+            timeout_sec=10
         )
         if answer_text:
             return jsonify({'answer': answer_text})
@@ -565,7 +600,7 @@ def analyze_meal():
                 response_schema=meal_schema,
                 temperature=0.2,
             ),
-            timeout_sec=18
+            timeout_sec=11
         )
         if raw_json:
             result = json.loads(raw_json)
