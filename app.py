@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import time
 
+GENAI_IMPORT_ERROR = ""
 try:
     from google import genai
     from google.genai import types
@@ -384,7 +385,7 @@ def ai_assistant():
         return jsonify({'answer': 'عذراً، هذه الخدمة مخصصة فقط لحسابات المرضى المسجلين.'}), 403
 
     if not HAS_GENAI:
-        return jsonify({'answer': '⚠️ مكتبة google-genai غير مثبتة بالسيرفر حالياً.'})
+        return jsonify({'answer': f'⚠️ مكتبة google-genai غير مثبتة بالسيرفر: {GENAI_IMPORT_ERROR}'})
 
     data = request.get_json(silent=True) or {}
     question = str(data.get('question', '')).strip()
@@ -400,25 +401,31 @@ def ai_assistant():
         if latest_log:
             patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
 
-    api_key = os.environ.get('GEMINI_API_KEY', '').strip()
+    api_key = os.environ.get('GEMINI_API_KEY', '').strip().strip('"').strip("'")
     if not api_key:
         return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي (Gemini) غير مفعلة حالياً. يرجى إضافة مفتاح GEMINI_API_KEY في إعدادات السيرفر (Variables).'})
 
-    try:
-        client = genai.Client(api_key=api_key)
-        prompt_text = patient_context + "\n\nسؤال المريض: " + question
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt_text,
-            config=types.GenerateContentConfig(
-                system_instruction=DIABETES_SYSTEM_PROMPT,
-                temperature=0.3,
+    client = genai.Client(api_key=api_key)
+    prompt_text = patient_context + "\n\nسؤال المريض: " + question
+    last_error = ""
+
+    for model_name in ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest']:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt_text,
+                config=types.GenerateContentConfig(
+                    system_instruction=DIABETES_SYSTEM_PROMPT,
+                    temperature=0.3,
+                )
             )
-        )
-        ans = response.text.strip() if response.text else "ما كدرت أكون إجابة واضحة، حاول تعيد صياغة سؤالك عن السكري."
-        return jsonify({'answer': ans})
-    except Exception:
-        return jsonify({'answer': '⚠️ صار خلل أثناء الاتصال بمساعد جمناي، حاول مرة ثانية بعد لحظات.'})
+            if response and response.text:
+                return jsonify({'answer': response.text.strip()})
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب التقني: {last_error}'})
 
 @app.route('/api/ai/meal-analyze', methods=['POST'])
 def analyze_meal():
@@ -447,3 +454,4 @@ if __name__ == '__main__':
         init_db()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+    
