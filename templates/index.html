@@ -227,10 +227,10 @@
                 <input type="file" id="mealImageInput" accept="image/*" class="hidden" onchange="previewMealImage(event)">
                 <div id="imagePreviewBox" onclick="document.getElementById('mealImageInput').click()" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl h-52 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition bg-cover bg-center mb-4">
                     <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2" id="uploadIcon"></i>
-                    <span id="uploadText" class="text-xs font-bold">دوس هنا حتى تختار صورة الأكل</span>
+                    <span id="uploadText" class="text-xs font-bold px-3 py-1 rounded-lg bg-slate-900/60 text-white">دوس هنا حتى تختار صورة الأكل</span>
                 </div>
                 
-                <button type="button" onclick="processMealImage()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">افحص الصورة واحسب الجرعة</button>
+                <button type="button" id="btnAnalyzeMeal" onclick="processMealImage()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">افحص الصورة واحسب الجرعة</button>
                 
                 <div id="mealAiLoader" class="hidden text-center mt-6">
                     <div class="inline-block w-8 h-8 border-4 border-slate-200 rounded-full loader mb-2"></div>
@@ -255,7 +255,7 @@
                 </div>
                 <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
                     <input type="text" id="aiInput" onkeydown="if(event.key==='Enter') askAiAssistant()" placeholder="أحجي أو اكتب سؤالك هنا..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
-                    <button type="button" onclick="askAiAssistant()" class="px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition">دز</button>
+                    <button type="button" id="btnAskAi" onclick="askAiAssistant()" class="px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition">دز</button>
                 </div>
             </div>
         </div>
@@ -809,21 +809,74 @@
                 reader.readAsDataURL(file);
             }
         }
+
+        function compressImageFile(file, maxWidth = 800, quality = 0.8) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxWidth) {
+                            h = Math.round((h * maxWidth) / w);
+                            w = maxWidth;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob((blob) => {
+                            resolve(blob || file);
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = event.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
         
         async function processMealImage() {
             const input = document.getElementById('mealImageInput');
             if(!input.files[0]) { alert('عيني اختار صورة للأكل بالبداية!'); return; }
-            const formData = new FormData();
-            formData.append('image', input.files[0]);
             
+            const btn = document.getElementById('btnAnalyzeMeal');
             const resultBox = document.getElementById('mealAiResult');
+            const loader = document.getElementById('mealAiLoader');
+
+            btn.disabled = true;
             resultBox.classList.add('hidden');
-            document.getElementById('mealAiLoader').classList.remove('hidden');
+            loader.classList.remove('hidden');
+
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 25000);
             
             try {
-                const r = await fetch('/api/ai/meal-analyze', {method:'POST', body:formData});
-                const d = await r.json();
-                document.getElementById('mealAiLoader').classList.add('hidden');
+                const compressedBlob = await compressImageFile(input.files[0], 800, 0.8);
+                const formData = new FormData();
+                formData.append('image', compressedBlob, 'meal.jpg');
+
+                const r = await fetch('/api/ai/meal-analyze', {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                const text = await r.text();
+                loader.classList.add('hidden');
+
+                let d;
+                try {
+                    d = JSON.parse(text);
+                } catch (e) {
+                    resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center"><i class="fa-solid fa-circle-exclamation ml-1"></i> خطأ بالسيرفر (${r.status}): تعذر قراءة رد الفحص.</p>`;
+                    resultBox.classList.remove('hidden');
+                    return;
+                }
+
                 if(d.success) {
                     resultBox.innerHTML = `
                         <ul class="space-y-2.5">
@@ -839,26 +892,65 @@
                     resultBox.classList.remove('hidden');
                 }
             } catch(e) {
-                document.getElementById('mealAiLoader').classList.add('hidden');
-                alert('صار خلل أثناء فحص الصورة، حاول مرة ثانية.');
+                clearTimeout(timer);
+                loader.classList.add('hidden');
+                const errMsg = e.name === 'AbortError'
+                    ? 'السيرفر تأخر بتحليل الصورة (انتهت المهلة). حاول مرة ثانية.'
+                    : `صار خلل أثناء فحص الصورة: ${e.message}`;
+                resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center"><i class="fa-solid fa-circle-exclamation ml-1"></i> ${errMsg}</p>`;
+                resultBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
             }
         }
 
         async function askAiAssistant() {
             const input = document.getElementById('aiInput');
             const box = document.getElementById('aiChatBox');
+            const btn = document.getElementById('btnAskAi');
             const q = input.value.trim();
             if (!q) return;
             input.value = '';
+            btn.disabled = true;
             
             box.innerHTML += `<div class="flex justify-end"><div class="bg-purple-600 text-white p-3.5 rounded-2xl rounded-tl-none text-xs max-w-[80%] shadow-sm">${q}</div></div>`;
+            const loadingId = 'aiLoading_' + Date.now();
+            box.innerHTML += `<div id="${loadingId}" class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm text-purple-600 dark:text-purple-400 font-bold"><i class="fa-solid fa-spinner fa-spin ml-1"></i> لحظة.. دا أفكر بإجابتك...</div></div>`;
             box.scrollTop = box.scrollHeight;
             
-            const r = await fetch('/api/ai/assistant', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({question:q})});
-            const d = await r.json();
-            
-            box.innerHTML += `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm leading-relaxed">${d.answer}</div></div>`;
-            box.scrollTop = box.scrollHeight;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 25000);
+
+            try {
+                const r = await fetch('/api/ai/assistant', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({question: q}),
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                const text = await r.text();
+                let d;
+                try {
+                    d = JSON.parse(text);
+                } catch (e) {
+                    d = { answer: `⚠️ خطأ بالسيرفر (${r.status}): تعذر قراءة الرد.` };
+                }
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+                box.innerHTML += `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm leading-relaxed">${d.answer || 'ما وصل رد من المساعد.'}</div></div>`;
+            } catch (err) {
+                clearTimeout(timer);
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+                const errMsg = err.name === 'AbortError'
+                    ? '⚠️ السيرفر تأخر بالرد (انتهت المهلة). تأكد من الإنترنت أو مفتاح Gemini وحاول مرة ثانية.'
+                    : `⚠️ صار خلل بالاتصال بالسيرفر: ${err.message}`;
+                box.innerHTML += `<div class="flex justify-start"><div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm">${errMsg}</div></div>`;
+            } finally {
+                btn.disabled = false;
+                box.scrollTop = box.scrollHeight;
+            }
         }
 
         async function loadDoctorData() {
