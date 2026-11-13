@@ -31,7 +31,7 @@ db = SQLAlchemy(app)
 _db_ready = False
 
 # ---------------- إعدادات الذكاء الاصطناعي (OpenRouter - DeepSeek) ----------------
-OPENROUTER_BASE_URL = "[https://openrouter.ai/api/v1](https://openrouter.ai/api/v1)"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEEPSEEK_MODEL = "deepseek/deepseek-chat"
 VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "google/gemini-2.0-flash-001")
 
@@ -76,7 +76,7 @@ def _get_openrouter_client():
         api_key=api_key,
         timeout=25.0,
         default_headers={
-            "HTTP-Referer": "[https://sukkari-app.up.railway.app](https://sukkari-app.up.railway.app)",
+            "HTTP-Referer": "https://sukkari-app.up.railway.app",
             "X-Title": "Sukkari Smart Diabetes Platform"
         }
     )
@@ -315,7 +315,6 @@ def update_patient_profile():
         return jsonify({'success': False, 'message': 'الحساب ما موجود'}), 404
 
     data = request.get_json(silent=True) or {}
-    # يسمح للمريض بتعديل الوزن والطول والعمر ورقم الطوارئ فقط، ولا يسمح بتغيير الرمز السري
     if data.get('age'):
         user.age = int(data['age'])
     if data.get('weight'):
@@ -464,7 +463,6 @@ def ai_assistant():
     if not client:
         return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة مفتاح OPENROUTER_API_KEY في إعدادات السيرفر (Variables).'})
 
-    # الاحتفاظ بذاكرة آخر 5 محادثات في الجلسة
     history = session.get('ai_history', [])
     messages = [
         {"role": "system", "content": DIABETES_SYSTEM_PROMPT + "\n\n" + patient_context}
