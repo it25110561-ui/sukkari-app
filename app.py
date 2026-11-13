@@ -405,53 +405,45 @@ def ai_assistant():
     if not api_key:
         return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي (Gemini) غير مفعلة حالياً. يرجى إضافة مفتاح GEMINI_API_KEY في إعدادات السيرفر (Variables).'})
 
-    client = genai.Client(api_key=api_key)
     prompt_text = patient_context + "\n\nسؤال المريض: " + question
-    last_error = ""
+    errors = []
 
-    for model_name in ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest']:
+    for api_ver in ['v1beta', None]:
         try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt_text,
-                config=types.GenerateContentConfig(
-                    system_instruction=DIABETES_SYSTEM_PROMPT,
-                    temperature=0.3,
-                )
-            )
-            if response and response.text:
-                return jsonify({'answer': response.text.strip()})
-        except Exception as e:
-            last_error = str(e)
-            continue
+            if api_ver:
+                client = genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version=api_ver))
+            else:
+                client = genai.Client(api_key=api_key)
 
-    return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب التقني: {last_error}'})
+            candidate_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+            try:
+                for m in client.models.list():
+                    m_name = getattr(m, 'name', '')
+                    if m_name.startswith('models/'):
+                        m_name = m_name.replace('models/', '', 1)
+                    if 'gemini' in m_name.lower() and not any(x in m_name.lower() for x in ['embedding', 'imagen', 'veo', 'aqa', 'tts', 'audio']):
+                        if m_name not in candidate_models:
+                            if 'flash' in m_name.lower():
+                                candidate_models.insert(0, m_name)
+                            else:
+                                candidate_models.append(m_name)
+            except Exception as list_err:
+                errors.append(f"list({api_ver}): {list_err}")
 
-@app.route('/api/ai/meal-analyze', methods=['POST'])
-def analyze_meal():
-    if 'image' not in request.files:
-        return jsonify({'error': 'ماكو صورة مرفوعة'}), 400
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'ما اختاريت أي ملف'}), 400
-    
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
-    time.sleep(1.2)
-    
-    return jsonify({
-        'success': True,
-        'meal_name': 'وجبة غداء رئيسية (تمن، بروتين، زلاطة)',
-        'carbs': '55 - 65 غرام كربوهيدرات',
-        'calories': '430 سعرة حرارية',
-        'insulin_dose': '4 وحدات أنسولين سريع (حسب معامل الكارب 1:15)',
-        'tips': 'نصيحة: ابدي بالزلاطة والخضروات كبل التمن حتى ما يصعد السكر عندك بسرعة ورا الأكل.'
-    })
-
-if __name__ == '__main__':
-    with app.app_context():
-        init_db()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
-    
+            for model_name in candidate_models[:6]:
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt_text,
+                        config=types.GenerateContentConfig(
+                            system_instruction=DIABETES_SYSTEM_PROMPT,
+                            temperature=0.3,
+                        )
+                    )
+                    if response and response.text:
+                        return jsonify({'answer': response.text.strip()})
+                except Exception as e:
+                    errors.append(f"{model_name}({api_ver}): {e}")
+                    continue
+        except Exception as client_err:
+            errors.append(f"client({
