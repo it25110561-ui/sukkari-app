@@ -852,7 +852,7 @@
             loader.classList.remove('hidden');
 
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 25000);
+            const timer = setTimeout(() => controller.abort(), 45000);
             
             try {
                 const compressedBlob = await compressImageFile(input.files[0], 800, 0.8);
@@ -919,7 +919,7 @@
             box.scrollTop = box.scrollHeight;
             
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 25000);
+            const timer = setTimeout(() => controller.abort(), 45000);
 
             try {
                 const r = await fetch('/api/ai/assistant', {
