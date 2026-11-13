@@ -23,7 +23,6 @@ db = SQLAlchemy(app)
 _db_ready = False
 
 # ---------------- إعدادات جمناي (Gemini AI) ----------------
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '').strip()
 DIABETES_SYSTEM_PROMPT = """
 أنت مساعد طبي ذكي متخصص حصراً في مرض السكري (النوع الأول، النوع الثاني، وسكري الحمل) ضمن منصة "سُكّري الذكي".
 قواعد صارمة يجب الالتزام بها في كل رد:
@@ -400,9 +399,7 @@ def ai_assistant():
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=f"{patient_context}
-
-سؤال المريض: {question}",
+            contents=f"{patient_context}\n\nسؤال المريض: {question}",
             config=types.GenerateContentConfig(
                 system_instruction=DIABETES_SYSTEM_PROMPT,
                 temperature=0.3,
@@ -410,8 +407,8 @@ def ai_assistant():
         )
         ans = response.text.strip() if response.text else "ما كدرت أكون إجابة واضحة، حاول تعيد صياغة سؤالك عن السكري."
         return jsonify({'answer': ans})
-    except Exception as e:
-        return jsonify({'answer': f'⚠️ صار خلل أثناء الاتصال بمساعد جمناي، حاول مرة ثانية بعد لحظات.'})
+    except Exception:
+        return jsonify({'answer': '⚠️ صار خلل أثناء الاتصال بمساعد جمناي، حاول مرة ثانية بعد لحظات.'})
 
 @app.route('/api/ai/meal-analyze', methods=['POST'])
 def analyze_meal():
@@ -440,3 +437,4 @@ if __name__ == '__main__':
         init_db()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+        
