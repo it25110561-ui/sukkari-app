@@ -23,9 +23,164 @@
         * { font-family: 'Cairo', sans-serif; }
         body.is-doctor .patient-only { display: none !important; }
         body.is-patient .doctor-only { display: none !important; }
-        .tab-content, .doc-tab-content { display: none; }
+        .tab-content, .doc-tab-content { display: none; animation: macWindowOpen 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         .tab-content.active, .doc-tab-content.active { display: block; }
-        
+
+        @keyframes macWindowOpen {
+            from { opacity: 0; transform: translateY(10px) scale(0.985); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ---------------- macOS Dock Styling ---------------- */
+        .macos-dock-container {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            box-shadow:
+                0 20px 45px -10px rgba(15, 23, 42, 0.22),
+                0 4px 16px -2px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+        }
+
+        html.dark .macos-dock-container {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 24px 50px -12px rgba(0, 0, 0, 0.65),
+                0 4px 16px -2px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .dock-item {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), margin 0.22s ease;
+            transform-origin: bottom center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .dock-icon-tile {
+            transition: box-shadow 0.2s ease, filter 0.2s ease;
+            box-shadow: 0 6px 14px -3px rgba(0, 0, 0, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+        }
+
+        .dock-item:hover .dock-icon-tile {
+            box-shadow: 0 12px 22px -4px rgba(0, 0, 0, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Tooltip above Dock Icon */
+        .dock-tooltip {
+            position: absolute;
+            top: -42px;
+            left: 50%;
+            transform: translateX(-50%) translateY(4px) scale(0.92);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            background: rgba(248, 250, 252, 0.92);
+            color: #0f172a;
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 800;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            z-index: 60;
+        }
+
+        html.dark .dock-tooltip {
+            background: rgba(30, 41, 59, 0.92);
+            color: #f8fafc;
+            border: 1px solid rgba(71, 85, 105, 0.7);
+        }
+
+        .dock-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 8px;
+            height: 8px;
+            background: inherit;
+            border-right: inherit;
+            border-bottom: inherit;
+        }
+
+        .dock-item:hover .dock-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        /* The little black dot under the open app icon */
+        .dock-dot {
+            position: absolute;
+            bottom: -7px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            width: 5px;
+            height: 5px;
+            border-radius: 9999px;
+            background-color: #0f172a;
+            opacity: 0;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+        }
+
+        html.dark .dock-dot {
+            background-color: #f8fafc;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+        }
+
+        .dock-item.is-open .dock-dot {
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+        }
+
+        /* Dock Badge (Red count on top corner) */
+        .dock-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.45);
+            border: 2px solid #ffffff;
+            z-index: 10;
+        }
+
+        html.dark .dock-badge {
+            border-color: #0f172a;
+        }
+
+        /* Thin Vertical Dock Divider */
+        .dock-divider {
+            width: 1px;
+            height: 36px;
+            background: rgba(100, 116, 139, 0.32);
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+
+        html.dark .dock-divider {
+            background: rgba(148, 163, 184, 0.24);
+        }
+
         @media print {
             body * { visibility: hidden; }
             #printableReport, #printableReport * { visibility: visible; }
@@ -34,13 +189,13 @@
                 background: #ffffff !important; color: #000000 !important; 
                 padding: 20px; border: none !important;
             }
-            .no-print { display: none !important; }
+            .no-print, #macosDock, header { display: none !important; }
         }
         .loader { border-top-color: #059669; animation: spinner 1s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased min-h-screen flex flex-col transition-colors duration-300">
+<body class="bg-gradient-to-br from-slate-100 via-slate-50 to-emerald-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 antialiased min-h-screen flex flex-col transition-colors duration-300">
 
     <!-- شاشة تسجيل الدخول (بدون form لمنع تحديث الصفحة نهائياً) -->
     <div id="authScreen" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -79,49 +234,32 @@
         </div>
     </div>
 
-    <!-- الشريط العلوي (Header) -->
-    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <!-- شريط الحالة العلوي بنمط macOS Menu Bar -->
+    <header class="bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 sticky top-0 z-40 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 h-11 flex items-center justify-between text-xs">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <i class="fa-solid fa-heart-pulse text-xl"></i>
+                <div class="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+                    <i class="fa-solid fa-heart-pulse text-xs"></i>
                 </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="font-black text-lg text-slate-900 dark:text-white">سُكّري</span>
-                        <span id="roleBadge" class="text-[11px] px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full font-bold"></span>
-                    </div>
-                    <p id="navUserName" class="text-[11px] text-slate-500 dark:text-slate-400"></p>
-                </div>
+                <span class="font-black text-sm text-slate-900 dark:text-white">سُكّري</span>
+                <span class="text-slate-300 dark:text-slate-700">|</span>
+                <span id="activeAppTitle" class="font-bold text-slate-700 dark:text-slate-200">قياساتي</span>
+                <span id="roleBadge" class="text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full font-bold"></span>
             </div>
-            
-            <nav class="patient-only flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto max-w-[60vw] md:max-w-none">
-                <button type="button" onclick="switchTab('dashboard', this)" class="p-nav-btn px-3 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-chart-line text-emerald-600"></i> قياساتي</button>
-                <button type="button" onclick="switchTab('mealAi', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-camera text-amber-500"></i> فحص الأكل</button>
-                <button type="button" onclick="switchTab('aiAssistant', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-robot text-purple-500"></i> أحجي ويه الذكاء</button>
-                <button type="button" onclick="switchTab('chatDoctor', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-md text-blue-500"></i> راسل الدكتور</button>
-                <button type="button" onclick="switchTab('profileSettings', this)" class="p-nav-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-700/50 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-gear text-slate-500"></i> بياناتي الصحية</button>
-            </nav>
-            
-            <nav class="doctor-only flex items-center gap-1.5 overflow-x-auto">
-                <button type="button" onclick="switchDocTab('docDashboard', this)" class="d-nav-btn px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-users-medical"></i> ملفات المراجعين</button>
-                <button type="button" onclick="switchDocTab('docChat', this)" class="d-nav-btn px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-comments text-blue-500"></i> رسائل المراجعين</button>
-                <button type="button" onclick="openAddModal()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-user-plus"></i> ضيف مراجع جديد</button>
-            </nav>
 
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="toggleTheme()" title="تبديل الوضع الليلي والنهاري" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition">
-                    <i id="themeIcon" class="fa-solid fa-moon"></i>
-                </button>
-                <button type="button" onclick="handleLogout()" title="اطلع من الحساب" class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 hover:bg-red-100 flex items-center justify-center transition">
-                    <i class="fa-solid fa-right-from-bracket"></i>
+            <div class="flex items-center gap-3">
+                <span id="navUserName" class="font-bold text-slate-600 dark:text-slate-300 hidden sm:inline"></span>
+                <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+                <span id="macClock" class="font-semibold text-slate-500 dark:text-slate-400 tabular-nums"></span>
+                <button type="button" onclick="toggleTheme()" title="تبديل المظهر" class="w-7 h-7 rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 text-slate-700 dark:text-amber-400 flex items-center justify-center transition">
+                    <i id="themeIcon" class="fa-solid fa-moon text-xs"></i>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- ================= واجهة المريض ================= -->
-    <main id="patientViews" class="patient-only max-w-7xl mx-auto px-4 py-6 w-full flex-1">
+    <main id="patientViews" class="patient-only max-w-7xl mx-auto px-4 pt-6 pb-28 w-full flex-1">
         
         <div id="dashboardTab" class="tab-content active space-y-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -163,14 +301,14 @@
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div id="quickLogCard" class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
                     <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
                         <i class="fa-solid fa-plus-circle text-emerald-600"></i> سجّل قياس جديد
                     </h3>
                     <div class="space-y-3">
                         <div>
                             <label class="text-xs font-bold text-slate-500 mb-1 block">شكد طلع السكر؟</label>
-                            <input type="number" id="logVal" min="20" max="600" placeholder="مثلاً: 115" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                            <input type="number" id="logVal" min="20" max="600" placeholder="مثلاً: 115" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                         </div>
                         <div>
                             <label class="text-xs font-bold text-slate-500 mb-1 block">شوكت قسته؟</label>
@@ -326,7 +464,7 @@
     </main>
 
     <!-- ================= واجهة الطبيب ================= -->
-    <main id="doctorViews" class="doctor-only max-w-7xl mx-auto px-4 py-6 w-full flex-1 flex flex-col">
+    <main id="doctorViews" class="doctor-only max-w-7xl mx-auto px-4 pt-6 pb-28 w-full flex-1 flex flex-col">
         
         <div id="docDashboardTab" class="doc-tab-content active flex-1">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
@@ -426,6 +564,152 @@
             </div>
         </div>
     </main>
+
+    <!-- ================= شريط macOS Dock العائم أسفل الشاشة ================= -->
+    <div id="macosDock" class="fixed bottom-3.5 left-1/2 -translate-x-1/2 z-40 max-w-[96vw]">
+        
+        <!-- Dock المريض -->
+        <nav id="patientDock" class="patient-only macos-dock-container px-3 py-2.5 pb-3 rounded-[26px] flex items-end gap-2 sm:gap-2.5">
+            <!-- 1. التطبيقات الأساسية المثبتة -->
+            <button type="button" onclick="switchTab('dashboard', this)" data-title="قياساتي" class="dock-item p-nav-btn is-open">
+                <span class="dock-tooltip">قياساتي</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="switchTab('mealAi', this)" data-title="فحص الأكل" class="dock-item p-nav-btn">
+                <span class="dock-tooltip">فحص الأكل</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="switchTab('aiAssistant', this)" data-title="أحجي ويه الذكاء" class="dock-item p-nav-btn">
+                <span class="dock-tooltip">أحجي ويه الذكاء</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="switchTab('chatDoctor', this)" data-title="راسل الدكتور" class="dock-item p-nav-btn">
+                <span class="dock-tooltip">راسل الدكتور</span>
+                <span id="patChatDockBadge" class="dock-badge hidden">0</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-user-md"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="switchTab('profileSettings', this)" data-title="بياناتي الصحية" class="dock-item p-nav-btn">
+                <span class="dock-tooltip">بياناتي الصحية</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <!-- الفاصل الأول: اختصارات سريعة ومقترحة -->
+            <div class="dock-divider"></div>
+
+            <button type="button" onclick="focusQuickLog()" data-title="سجّل قياس سريع" class="dock-item">
+                <span class="dock-tooltip">سجّل قياس سريع</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-lime-500 to-emerald-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-droplet"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="triggerSOS()" data-title="نداء طوارئ SOS" class="dock-item">
+                <span class="dock-tooltip">نداء طوارئ SOS</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-truck-medical"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <!-- الفاصل الثاني: المظهر والخروج -->
+            <div class="dock-divider hidden sm:block"></div>
+
+            <button type="button" onclick="toggleTheme()" data-title="تبديل المظهر" class="dock-item hidden sm:flex">
+                <span class="dock-tooltip">تبديل المظهر</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-zinc-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 text-slate-800 dark:text-amber-400 flex items-center justify-center text-base sm:text-xl">
+                    <i id="dockThemeIconPat" class="fa-solid fa-circle-half-stroke"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="handleLogout()" data-title="تسجيل الخروج" class="dock-item">
+                <span class="dock-tooltip">تسجيل الخروج</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-red-500/90 to-rose-700 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+        </nav>
+
+        <!-- Dock الطبيب -->
+        <nav id="doctorDock" class="doctor-only macos-dock-container px-3 py-2.5 pb-3 rounded-[26px] flex items-end gap-2 sm:gap-2.5">
+            <!-- 1. التطبيقات الأساسية المثبتة -->
+            <button type="button" onclick="switchDocTab('docDashboard', this)" data-title="ملفات المراجعين" class="dock-item d-nav-btn is-open">
+                <span class="dock-tooltip">ملفات المراجعين</span>
+                <span id="docPatientsDockBadge" class="dock-badge hidden">0</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-users-medical"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="switchDocTab('docChat', this)" data-title="رسائل المراجعين" class="dock-item d-nav-btn">
+                <span class="dock-tooltip">رسائل المراجعين</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-cyan-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-comments"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <!-- الفاصل الأول: أدوات الطبيب السريعة -->
+            <div class="dock-divider"></div>
+
+            <button type="button" onclick="openAddModal()" data-title="ضيف مراجع جديد" class="dock-item">
+                <span class="dock-tooltip">ضيف مراجع جديد</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="openDocReport()" data-title="التقرير الطبي والباركود" class="dock-item">
+                <span class="dock-tooltip">التقرير الطبي والباركود</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-file-medical"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <!-- الفاصل الثاني: المظهر والخروج -->
+            <div class="dock-divider"></div>
+
+            <button type="button" onclick="toggleTheme()" data-title="تبديل المظهر" class="dock-item">
+                <span class="dock-tooltip">تبديل المظهر</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-zinc-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 text-slate-800 dark:text-amber-400 flex items-center justify-center text-base sm:text-xl">
+                    <i id="dockThemeIconDoc" class="fa-solid fa-circle-half-stroke"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+
+            <button type="button" onclick="handleLogout()" data-title="تسجيل الخروج" class="dock-item">
+                <span class="dock-tooltip">تسجيل الخروج</span>
+                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-red-500/90 to-rose-700 text-white flex items-center justify-center text-base sm:text-xl">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </div>
+                <span class="dock-dot"></span>
+            </button>
+        </nav>
+    </div>
 
     <!-- ================= نافذة التقرير الطبي الشامل ================= -->
     <div id="reportModal" class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
@@ -531,8 +815,64 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
+            initMacClock();
+            initDockMagnification();
             initSession();
         });
+
+        function initMacClock() {
+            const updateClock = () => {
+                const el = document.getElementById('macClock');
+                if (el) {
+                    const now = new Date();
+                    el.innerText = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+                }
+            };
+            updateClock();
+            setInterval(updateClock, 15000);
+        }
+
+        function initDockMagnification() {
+            const docks = document.querySelectorAll('.macos-dock-container');
+            docks.forEach(dock => {
+                const items = dock.querySelectorAll('.dock-item');
+                items.forEach((item, idx) => {
+                    item.addEventListener('mouseenter', () => {
+                        if (window.innerWidth < 640) return;
+                        items.forEach((other, oIdx) => {
+                            const dist = Math.abs(idx - oIdx);
+                            if (dist === 0) {
+                                other.style.transform = 'translateY(-10px) scale(1.24)';
+                            } else if (dist === 1) {
+                                other.style.transform = 'translateY(-4px) scale(1.1)';
+                            } else {
+                                other.style.transform = 'translateY(0) scale(1)';
+                            }
+                        });
+                    });
+                });
+                dock.addEventListener('mouseleave', () => {
+                    items.forEach(other => {
+                        other.style.transform = 'translateY(0) scale(1)';
+                    });
+                });
+            });
+        }
+
+        function focusQuickLog() {
+            const firstBtn = document.querySelector('.p-nav-btn');
+            switchTab('dashboard', firstBtn);
+            setTimeout(() => {
+                const card = document.getElementById('quickLogCard');
+                const inp = document.getElementById('logVal');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('ring-2', 'ring-emerald-500');
+                    setTimeout(() => card.classList.remove('ring-2', 'ring-emerald-500'), 1500);
+                }
+                if (inp) inp.focus();
+            }, 120);
+        }
 
         function showLoginStatus(msg, type) {
             const box = document.getElementById('loginStatusBox');
@@ -562,7 +902,7 @@
         function initTheme() {
             if (localStorage.getItem('theme') === 'dark') {
                 document.documentElement.classList.add('dark');
-                document.getElementById('themeIcon').className = 'fa-solid fa-sun';
+                document.getElementById('themeIcon').className = 'fa-solid fa-sun text-xs';
             }
         }
 
@@ -572,11 +912,11 @@
             if (html.classList.contains('dark')) {
                 html.classList.remove('dark');
                 localStorage.setItem('theme', 'light');
-                icon.className = 'fa-solid fa-moon';
+                icon.className = 'fa-solid fa-moon text-xs';
             } else {
                 html.classList.add('dark');
                 localStorage.setItem('theme', 'dark');
-                icon.className = 'fa-solid fa-sun';
+                icon.className = 'fa-solid fa-sun text-xs';
             }
             if (state.user) {
                 state.user.role === 'doctor' ? selectDocPat(state.selDocPatId) : loadPatientData();
@@ -657,9 +997,11 @@
             document.getElementById('roleBadge').innerText = state.user.role === 'doctor' ? 'دكتور مشرف' : 'مراجع';
             if(state.user.role === 'doctor'){
                 document.body.classList.add('is-doctor'); document.body.classList.remove('is-patient');
+                document.getElementById('activeAppTitle').innerText = 'ملفات المراجعين';
                 loadDoctorData();
             } else {
                 document.body.classList.add('is-patient'); document.body.classList.remove('is-doctor');
+                document.getElementById('activeAppTitle').innerText = 'قياساتي';
                 populatePatientProfileForm();
                 loadPatientData();
                 loadPatientChat();
@@ -669,24 +1011,22 @@
         function switchTab(id, btn) {
             document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
             document.getElementById(id+'Tab').classList.add('active');
-            document.querySelectorAll('.p-nav-btn').forEach(b => {
-                b.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm');
-                b.classList.add('text-slate-600', 'dark:text-slate-300');
-            });
+            document.querySelectorAll('.p-nav-btn').forEach(b => b.classList.remove('is-open'));
             if(btn) {
-                btn.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm');
-                btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+                btn.classList.add('is-open');
+                const title = btn.getAttribute('data-title');
+                if (title) document.getElementById('activeAppTitle').innerText = title;
             }
         }
 
         function switchDocTab(id, btn) {
             document.querySelectorAll('.doc-tab-content').forEach(e => e.classList.remove('active'));
             document.getElementById(id+'Tab').classList.add('active');
-            document.querySelectorAll('.d-nav-btn').forEach(b => {
-                b.className = 'd-nav-btn px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1.5 whitespace-nowrap';
-            });
+            document.querySelectorAll('.d-nav-btn').forEach(b => b.classList.remove('is-open'));
             if(btn) {
-                btn.className = 'd-nav-btn px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 whitespace-nowrap';
+                btn.classList.add('is-open');
+                const title = btn.getAttribute('data-title');
+                if (title) document.getElementById('activeAppTitle').innerText = title;
             }
         }
 
@@ -964,6 +1304,15 @@
         async function loadDoctorData() {
             const r = await fetch('/api/doctor/patients'); state.patients = await r.json();
             document.getElementById('patientCountBadge').innerText = state.patients.length;
+            const docBadge = document.getElementById('docPatientsDockBadge');
+            if (docBadge) {
+                if (state.patients.length > 0) {
+                    docBadge.innerText = state.patients.length;
+                    docBadge.classList.remove('hidden');
+                } else {
+                    docBadge.classList.add('hidden');
+                }
+            }
             renderDocSidebar(); renderDocChatSidebar();
             if(state.patients.length && !state.selDocPatId) selectDocPat(state.patients[0].id);
             else if(state.selDocPatId) selectDocPat(state.selDocPatId);
@@ -1177,6 +1526,16 @@
         async function loadPatientChat() {
             const r = await fetch(`/api/chat/${state.user.id}`); const msgs = await r.json();
             const box = document.getElementById('patientDocChatBox');
+            const docReplies = msgs.filter(m => m.sender === 'doctor').length;
+            const badge = document.getElementById('patChatDockBadge');
+            if (badge) {
+                if (docReplies > 0) {
+                    badge.innerText = docReplies;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
             box.innerHTML = msgs.map(m => m.sender=='patient' 
                 ? `<div class="flex justify-end"><div class="bg-emerald-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
                 : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
