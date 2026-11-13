@@ -1,579 +1,740 @@
-from flask import Flask, render_template, request, jsonify, session
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError, OperationalError
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-from datetime import datetime
 import os
-import time
 import json
 import base64
-
-OPENAI_IMPORT_ERROR = ""
-try:
-    from openai import OpenAI
-    HAS_OPENAI = True
-except Exception as import_err:
-    HAS_OPENAI = False
-    OPENAI_IMPORT_ERROR = str(import_err)
+import sqlite3
+import urllib.request
+import urllib.error
+from datetime import datetime
+from functools import wraps
+from flask import Flask, render_template, request, jsonify, session, Response
 
 app = Flask(__name__)
-app.secret_key = 'sukari_secret_key_iraq_2026'
+app.secret_key = os.environ.get("SECRET_KEY", "sukkari_secret_key_2026_iraq")
+DB_PATH = os.environ.get("DB_PATH", "sukkari.db")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'diabetes_db.sqlite')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': {'timeout': 30}}
-app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-db = SQLAlchemy(app)
-_db_ready = False
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# ---------------- إعدادات الذكاء الاصطناعي (OpenRouter - DeepSeek) ----------------
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-DEEPSEEK_MODEL = "deepseek/deepseek-chat"
-VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "google/gemini-2.0-flash-001")
 
-DIABETES_SYSTEM_PROMPT = (
-    "أنت طبيب استشاري ومساعد طبي ذكي متخصص حصراً في المجال الطبي وتحديداً مرض السكري "
-    "(النوع الأول، النوع الثاني، وسكري الحمل) وتبعاته والأمراض المصاحبة له (مثل ضغط الدم، السمنة، "
-    "اعتلال الأعصاب، مشاكل الكلى والشبكية، والقدم السكرية) ضمن منصة سُكّري الذكي.\n"
-    "قواعد صارمة يجب الالتزام بها في كل رد:\n"
-    "1. أجب باللهجة العراقية الودودة والمبسطة والواضحة للمريض.\n"
-    "2. اختصاصك محصور بالطب ومرض السكري وتبعاته فقط: قياسات السكر، أعراض الهبوط والارتفاع وطرق التصرف الفوري، "
-    "التغذية المناسبة لمرضى السكري، الكربوهيدرات، الأنسولين وأدوية السكري، الرياضة، الفحص التراكمي (HbA1c)، "
-    "والوقاية من مضاعفات السكري والأمراض المرتبطة به.\n"
-    "3. إذا سألك المستخدم عن أي موضوع خارج الطب ومرض السكري وتبعاته (مثل: برمجة، طبخ عام غير مرتبط بالسكري، "
-    "رياضة عامة، سياسة، تاريخ، أسئلة ثقافية، أو مواضيع لا علاقة لها بالطب والسكري)، اعتذر بلطف باللهجة العراقية "
-    "وقل له: عذراً عيني، أني مساعد طبي مخصص فقط للإجابة عن الأسئلة الطبية المتعلقة بمرض السكري وتبعاته وتنظيمه. "
-    "اسألني أي شي يخص السكر وصحتك وأني حاضر!\n"
-    "4. في حالات الطوارئ أو القراءات الخطيرة جداً (هبوط حاد أقل من 70 أو ارتفاع شديد فوق 250 مع أعراض)، "
-    "نبه المريض فوراً للتصرف الآمن واستخدام زر الطوارئ SOS أو مراجعة الطبيب فوراً.\n"
-    "5. لا تقم بتشخيص أمراض جديدة أو تغيير جرعات الأدوية بشكل نهائي، وذكّر المريض دائماً باستشارة دكتوره المشرف."
-)
+def ensure_column(cursor, table_name, column_name, column_def):
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    cols = [row[1] for row in cursor.fetchall()]
+    if column_name not in cols:
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}")
 
-MEAL_ANALYSIS_PROMPT = (
-    "أنت خبير تغذية سريرية متخصص بمرض السكري ضمن منصة (سُكّري الذكي).\n"
-    "مهمتك تحليل صور الوجبات بدقة وتقدير قيمتها الغذائية لمساعدة مريض السكري.\n"
-    "أعد النتيجة بصيغة JSON فقط بدون أي نص إضافي خارج JSON وبالمفاتيح التالية حصراً:\n"
-    "{\n"
-    '  "is_food": true أو false (هل تحتوي الصورة على طعام أو مشروب؟),\n'
-    '  "meal_name": "اسم الوجبة ومكوناتها الرئيسية باللهجة العراقية",\n'
-    '  "carbs": "كمية الكربوهيدرات التقديرية بالغرام، مثلاً: 55 - 65 غرام",\n'
-    '  "calories": "السعرات الحرارية التقديرية، مثلاً: 430 سعرة حرارية",\n'
-    '  "insulin_dose": "تقدير الجرعة (1 وحدة لكل 15 غرام كارب لمرضى الأنسولين مع التنبيه بمراجعة الطبيب) أو مدى ملاءمة الوجبة لمستوى السكر",\n'
-    '  "tips": "نصيحة غذائية عملية لمرضى السكري باللهجة العراقية"\n'
-    "}"
-)
 
-def _get_openrouter_client():
-    api_key = os.environ.get('OPENROUTER_API_KEY', '').strip().strip('"').strip("'")
-    if not api_key:
+def init_db():
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            name TEXT NOT NULL,
+            role TEXT NOT NULL,
+            age INTEGER DEFAULT 40,
+            weight REAL DEFAULT 75,
+            height REAL DEFAULT 170,
+            bmi REAL DEFAULT 26.0,
+            diabetes_type TEXT DEFAULT 'النوع الثاني',
+            gender TEXT DEFAULT 'ذكر',
+            blood TEXT DEFAULT 'O+',
+            emergency_phone TEXT DEFAULT '07700000000',
+            doctor_notes TEXT DEFAULT '',
+            target_glucose INTEGER DEFAULT 110,
+            correction_factor REAL DEFAULT 50
+        )
+    """)
+
+    ensure_column(c, "users", "target_glucose", "INTEGER DEFAULT 110")
+    ensure_column(c, "users", "correction_factor", "REAL DEFAULT 50")
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            val INTEGER NOT NULL,
+            timing TEXT NOT NULL,
+            meds TEXT DEFAULT '-',
+            bp_sys INTEGER DEFAULT NULL,
+            bp_dia INTEGER DEFAULT NULL,
+            date TEXT NOT NULL,
+            FOREIGN KEY(patient_id) REFERENCES users(id)
+        )
+    """)
+
+    ensure_column(c, "logs", "bp_sys", "INTEGER DEFAULT NULL")
+    ensure_column(c, "logs", "bp_dia", "INTEGER DEFAULT NULL")
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            sender TEXT NOT NULL,
+            text TEXT NOT NULL,
+            time TEXT NOT NULL,
+            FOREIGN KEY(patient_id) REFERENCES users(id)
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS lab_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            items_json TEXT NOT NULL,
+            advice TEXT DEFAULT '',
+            date TEXT NOT NULL,
+            FOREIGN KEY(patient_id) REFERENCES users(id)
+        )
+    """)
+
+    # حسابات تجريبية افتراضية إذا كانت القاعدة جديدة
+    c.execute("SELECT COUNT(*) FROM users")
+    if c.fetchone()[0] == 0:
+        c.execute("""
+            INSERT INTO users (username, password, name, role, age, weight, height, bmi, diabetes_type, gender, blood, emergency_phone, doctor_notes, target_glucose, correction_factor)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("doctor", "123", "د. خالد السامرائي", "doctor", 45, 80, 178, 25.2, "-", "ذكر", "A+", "07701110000", "", 110, 50))
+
+        c.execute("""
+            INSERT INTO users (username, password, name, role, age, weight, height, bmi, diabetes_type, gender, blood, emergency_phone, doctor_notes, target_glucose, correction_factor)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, ("patient", "123", "أحمد علي", "patient", 42, 75, 175, 24.5, "النوع الثاني", "ذكر", "O+", "07701112233", "الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.", 110, 50))
+        pat_id = c.lastrowid
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        sample_logs = [
+            (pat_id, 140, "ورا الأكل", "-", 125, 80, now_str),
+            (pat_id, 122, "عشوائي", "-", 120, 78, now_str),
+            (pat_id, 115, "على الريك", "4 وحدات", 118, 76, now_str),
+        ]
+        c.executemany("INSERT INTO logs (patient_id, val, timing, meds, bp_sys, bp_dia, date) VALUES (?, ?, ?, ?, ?, ?, ?)", sample_logs)
+
+        c.execute("INSERT INTO messages (patient_id, sender, text, time) VALUES (?, ?, ?, ?)",
+                  (pat_id, "doctor", "هلا أحمد، قياساتك زينة بس حاول تقلل النشويات بالعشا.", "10:30 ص"))
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+def calc_bmi(weight, height):
+    try:
+        w = float(weight)
+        h_m = float(height) / 100.0
+        if w > 0 and h_m > 0:
+            return round(w / (h_m * h_m), 1)
+    except Exception:
+        pass
+    return 0.0
+
+
+def serialize_user(row):
+    if not row:
         return None
-    return OpenAI(
-        base_url=OPENROUTER_BASE_URL,
-        api_key=api_key,
-        timeout=25.0,
-        default_headers={
-            "HTTP-Referer": "https://sukkari-app.up.railway.app",
-            "X-Title": "Sukkari Smart Diabetes Platform"
-        }
-    )
-
-# ---------------- نماذج قاعدة البيانات (Models) ----------------
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), nullable=False)
-    name = db.Column(db.String(120), nullable=False)
-    age = db.Column(db.Integer, default=40)
-    gender = db.Column(db.String(20), default='ذكر')
-    weight = db.Column(db.Float, default=70.0)
-    height = db.Column(db.Float, default=170.0)
-    bmi = db.Column(db.Float, default=24.2)
-    blood = db.Column(db.String(10), default='O+')
-    emergency_phone = db.Column(db.String(30), default='07700000000')
-    diabetes_type = db.Column(db.String(50), default='النوع الثاني')
-    doctor_notes = db.Column(db.Text, default='يرجى الالتزام بالعلاج والمتابعة المستمرة.')
-    conditions = db.Column(db.String(255), default='')
-
-    logs = db.relationship('GlucoseLog', backref='patient', lazy=True, cascade="all, delete-orphan")
-    messages = db.relationship('ChatMessage', backref='patient', lazy=True, cascade="all, delete-orphan")
-
-class GlucoseLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    val = db.Column(db.Integer, nullable=False)
-    timing = db.Column(db.String(50), nullable=False)
-    meds = db.Column(db.String(100), default='-')
-    created_at = db.Column(db.DateTime, default=datetime.now)
-
-class ChatMessage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    sender = db.Column(db.String(20), nullable=False)
-    text = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
-
-def _user_dict(user):
     return {
-        'id': user.id,
-        'name': user.name,
-        'username': user.username,
-        'role': user.role,
-        'age': user.age,
-        'gender': user.gender,
-        'weight': user.weight,
-        'height': user.height,
-        'bmi': user.bmi,
-        'blood': user.blood,
-        'emergencyPhone': user.emergency_phone,
-        'diabetesType': user.diabetes_type,
-        'doctorNotes': user.doctor_notes,
-        'conditions': user.conditions.split(',') if user.conditions else []
+        "id": row["id"],
+        "username": row["username"],
+        "name": row["name"],
+        "role": row["role"],
+        "age": row["age"],
+        "weight": row["weight"],
+        "height": row["height"],
+        "bmi": row["bmi"],
+        "diabetesType": row["diabetes_type"],
+        "gender": row["gender"],
+        "blood": row["blood"],
+        "emergencyPhone": row["emergency_phone"],
+        "doctorNotes": row["doctor_notes"] or "",
+        "targetGlucose": row["target_glucose"] if row["target_glucose"] else 110,
+        "correctionFactor": row["correction_factor"] if row["correction_factor"] is not None else 50,
     }
 
-# ---------------- تهيئة قاعدة البيانات بأمان ----------------
-def init_db():
-    for _ in range(3):
-        try:
-            db.create_all()
-            if not User.query.filter_by(username='doctor').first():
-                doc = User(
-                    username='doctor',
-                    password_hash=generate_password_hash('123', method='pbkdf2:sha256'),
-                    role='doctor',
-                    name='د. خالد السامرائي'
-                )
-                db.session.add(doc)
-                db.session.commit()
 
-            patients_data = [
-                {
-                    'username': 'patient',
-                    'password': '123',
-                    'name': 'أحمد علي',
-                    'age': 42,
-                    'gender': 'ذكر',
-                    'weight': 75.0,
-                    'height': 175.0,
-                    'bmi': 24.5,
-                    'blood': 'O+',
-                    'emergency_phone': '07701112233',
-                    'diabetes_type': 'النوع الثاني',
-                    'doctor_notes': 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.',
-                    'conditions': 'ضغط الدم',
-                    'logs': [(115, 'على الريك', '4 وحدات'), (140, 'ورا الأكل', '-'), (122, 'عشوائي', '-')]
-                },
-                {
-                    'username': 'patient2',
-                    'password': '123',
-                    'name': 'سارة فاضل',
-                    'age': 31,
-                    'gender': 'أنثى',
-                    'weight': 64.0,
-                    'height': 162.0,
-                    'bmi': 24.4,
-                    'blood': 'A+',
-                    'emergency_phone': '07809998877',
-                    'diabetes_type': 'سكري الحمل',
-                    'doctor_notes': 'قيسي السكر ورا كل وجبة بساعة وسجليها بالجدول.',
-                    'conditions': 'حمل',
-                    'logs': [(95, 'على الريك', '-'), (132, 'ورا الأكل', '-')]
-                },
-                {
-                    'username': 'patient3',
-                    'password': '123',
-                    'name': 'حسين جاسم',
-                    'age': 58,
-                    'gender': 'ذكر',
-                    'weight': 88.0,
-                    'height': 170.0,
-                    'bmi': 30.4,
-                    'blood': 'B+',
-                    'emergency_phone': '07714445566',
-                    'diabetes_type': 'النوع الثاني',
-                    'doctor_notes': 'استمر على علاج الضغط وافحص رجليك يومياً.',
-                    'conditions': 'اعتلال أعصاب، ضغط',
-                    'logs': [(185, 'على الريك', 'منظم سكر'), (210, 'ورا الأكل', '-'), (165, 'عشوائي', '-')]
-                },
-                {
-                    'username': 'patient4',
-                    'password': '123',
-                    'name': 'مريم كمال',
-                    'age': 24,
-                    'gender': 'أنثى',
-                    'weight': 55.0,
-                    'height': 165.0,
-                    'bmi': 20.2,
-                    'blood': 'O-',
-                    'emergency_phone': '07503332211',
-                    'diabetes_type': 'النوع الأول',
-                    'doctor_notes': 'عدلي جرعة الأنسولين السريع حسب كمية الكارب بالأكل.',
-                    'conditions': 'لا يوجد',
-                    'logs': [(105, 'على الريك', '6 وحدات سريع'), (148, 'ورا الأكل', '4 وحدات')]
-                },
-                {
-                    'username': 'patient5',
-                    'password': '123',
-                    'name': 'حيدر عبد الله',
-                    'age': 50,
-                    'gender': 'ذكر',
-                    'weight': 82.0,
-                    'height': 173.0,
-                    'bmi': 27.4,
-                    'blood': 'AB+',
-                    'emergency_phone': '07726667788',
-                    'diabetes_type': 'النوع الثاني',
-                    'doctor_notes': 'قلل الدهون والأكل الدسم وتابع فحوصات القلب.',
-                    'conditions': 'أمراض القلب',
-                    'logs': [(130, 'على الريك', '-'), (160, 'ورا الأكل', 'منظم سكر')]
-                }
-            ]
+def login_required(role=None):
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if "user_id" not in session:
+                return jsonify({"success": False, "message": "غير مصرح، سجل دخولك أولاً"}), 401
+            if role and session.get("role") != role:
+                return jsonify({"success": False, "message": "صلاحية غير كافية"}), 403
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
 
-            for item in patients_data:
-                if not User.query.filter_by(username=item['username']).first():
-                    p = User(
-                        username=item['username'],
-                        password_hash=generate_password_hash(item['password'], method='pbkdf2:sha256'),
-                        role='patient',
-                        name=item['name'],
-                        age=item['age'],
-                        gender=item['gender'],
-                        weight=item['weight'],
-                        height=item['height'],
-                        bmi=item['bmi'],
-                        blood=item['blood'],
-                        emergency_phone=item['emergency_phone'],
-                        diabetes_type=item['diabetes_type'],
-                        doctor_notes=item['doctor_notes'],
-                        conditions=item['conditions']
-                    )
-                    db.session.add(p)
-                    db.session.commit()
-                    for val, timing, meds in item['logs']:
-                        db.session.add(GlucoseLog(user_id=p.id, val=val, timing=timing, meds=meds))
-                    db.session.add(ChatMessage(patient_id=p.id, sender='patient', text='هلو دكتور، سجلت قياساتي مال اليوم.'))
-                    db.session.add(ChatMessage(patient_id=p.id, sender='doctor', text='هلا بيك عيني، قياساتك كلش زينة استمر هيج.'))
-                    db.session.commit()
-            return
-        except (IntegrityError, OperationalError):
-            db.session.rollback()
-            time.sleep(0.5)
 
-@app.before_request
-def ensure_db_initialized():
-    global _db_ready
-    if not _db_ready:
-        init_db()
-        _db_ready = True
+def call_openrouter(messages, max_tokens=700, json_mode=False):
+    if not OPENROUTER_API_KEY:
+        return None, "مفتاح الذكاء الاصطناعي (OPENROUTER_API_KEY) غير مضاف بإعدادات السيرفر."
 
-# ---------------- مسارات النظام (Routes) ----------------
-@app.route('/')
-def index():
-    return render_template('index.html')
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    payload = {
+        "model": "google/gemini-2.0-flash-001",
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": 0.3,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json(silent=True) or {}
-    username = str(data.get('username', '')).strip().lower()
-    password = str(data.get('password', '')).strip()
-    
-    user = User.query.filter_by(username=username).first()
-    if user and check_password_hash(user.password_hash, password):
-        session['user_id'] = user.id
-        session['role'] = user.role
-        return jsonify({'success': True, 'user': _user_dict(user)})
-    return jsonify({'success': False, 'message': 'اليوزر أو الرمز السري غلط، تأكد منهم وحاول مرة ثانية'}), 401
-
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'success': True})
-
-@app.route('/api/me', methods=['GET'])
-def get_current_user():
-    if not session.get('user_id'):
-        return jsonify({'logged_in': False})
-    user = User.query.get(session['user_id'])
-    if not user:
-        session.clear()
-        return jsonify({'logged_in': False})
-    return jsonify({'logged_in': True, 'user': _user_dict(user)})
-
-# ---------------- تحديث البيانات الأساسية للمريض فقط (بدون الرمز السري) ----------------
-@app.route('/api/patient/update-profile', methods=['POST'])
-def update_patient_profile():
-    user_id = session.get('user_id')
-    if not user_id or session.get('role') != 'patient':
-        return jsonify({'success': False, 'message': 'ما مسموحلك تفوت هنا'}), 401
-    
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({'success': False, 'message': 'الحساب ما موجود'}), 404
-
-    data = request.get_json(silent=True) or {}
-    if data.get('age'):
-        user.age = int(data['age'])
-    if data.get('weight'):
-        user.weight = float(data['weight'])
-    if data.get('height'):
-        user.height = float(data['height'])
-    if data.get('emergencyPhone'):
-        user.emergency_phone = str(data['emergencyPhone']).strip()
-    
-    if user.height > 0:
-        h_meters = user.height / 100.0
-        user.bmi = round(user.weight / (h_meters * h_meters), 1)
-
-    db.session.commit()
-    return jsonify({'success': True, 'message': 'تم تحديث بياناتك الصحية بنجاح', 'user': _user_dict(user)})
-
-@app.route('/api/logs', methods=['GET', 'POST'])
-def handle_logs():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'غير مصرح'}), 401
-    if request.method == 'POST':
-        data = request.get_json(silent=True) or {}
-        db.session.add(GlucoseLog(user_id=user_id, val=int(data['val']), timing=data['timing'], meds=data.get('meds', '-')))
-        db.session.commit()
-        return jsonify({'success': True})
-    logs = GlucoseLog.query.filter_by(user_id=user_id).order_by(GlucoseLog.created_at.desc()).all()
-    return jsonify([{'id': l.id, 'val': l.val, 'timing': l.timing, 'meds': l.meds, 'date': l.created_at.strftime('%Y-%m-%d %H:%M')} for l in logs])
-
-@app.route('/api/doctor/patients', methods=['GET'])
-def get_doctor_patients():
-    if session.get('role') != 'doctor':
-        return jsonify({'error': 'غير مصرح'}), 403
-    patients = User.query.filter_by(role='patient').all()
-    result = []
-    for p in patients:
-        logs = GlucoseLog.query.filter_by(user_id=p.id).order_by(GlucoseLog.created_at.desc()).all()
-        p_dict = _user_dict(p)
-        p_dict['logs'] = [{'val': l.val, 'timing': l.timing, 'date': l.created_at.strftime('%Y-%m-%d %H:%M'), 'meds': l.meds} for l in logs]
-        result.append(p_dict)
-    return jsonify(result)
-
-@app.route('/api/doctor/create-patient', methods=['POST'])
-def create_patient():
-    if session.get('role') != 'doctor':
-        return jsonify({'error': 'غير مصرح'}), 403
-    data = request.get_json(silent=True) or {}
-    clean_username = str(data.get('username', '')).strip().lower()
-    if User.query.filter_by(username=clean_username).first():
-        return jsonify({'success': False, 'message': 'هذا اليوزر مستخدم كبل، اختار غيره'}), 400
-    w = float(data.get('weight', 70))
-    h = float(data.get('height', 170)) / 100.0
-    bmi = round(w / (h * h), 1) if h > 0 else 24.2
-    new_patient = User(
-        username=clean_username,
-        password_hash=generate_password_hash(str(data['password']).strip(), method='pbkdf2:sha256'),
-        role='patient',
-        name=data['name'],
-        age=int(data.get('age', 40)),
-        gender=data.get('gender', 'ذكر'),
-        weight=w,
-        height=float(data.get('height', 170)),
-        bmi=bmi,
-        blood=data.get('blood', 'O+'),
-        emergency_phone=data.get('emergencyPhone', '07700000000'),
-        diabetes_type=data.get('diabetesType', 'النوع الثاني')
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://sukkari.app",
+            "X-Title": "Sukkari Smart Platform",
+        },
+        method="POST",
     )
-    db.session.add(new_patient)
-    db.session.commit()
-    return jsonify({'success': True, 'patient_id': new_patient.id})
+    try:
+        with urllib.request.urlopen(req, timeout=35) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            content = data["choices"][0]["message"]["content"]
+            return content, None
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="ignore")
+        return None, f"خطأ من خدمة الذكاء ({e.code}): {err_body[:140]}"
+    except Exception as e:
+        return None, f"تعذر الاتصال بخدمة الذكاء: {str(e)}"
 
-# ---------------- تغيير الرمز السري للمراجع (صلاحية الطبيب فقط) ----------------
-@app.route('/api/doctor/reset-patient-password', methods=['POST'])
-def reset_patient_password():
-    if session.get('role') != 'doctor':
-        return jsonify({'success': False, 'message': 'غير مصرح، تغيير الرمز السري من صلاحية الدكتور فقط'}), 403
+
+# ==================== PWA Routes ====================
+@app.route("/manifest.json")
+def pwa_manifest():
+    manifest = {
+        "name": "سُكّري الذكي - متابعة السكري",
+        "short_name": "سُكّري",
+        "description": "منصتك الذكية لمتابعة السكر والتواصل ويه دكتورك",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#059669",
+        "dir": "rtl",
+        "lang": "ar",
+        "icons": [
+            {
+                "src": "/icon.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "any maskable",
+            }
+        ],
+    }
+    return jsonify(manifest)
+
+
+@app.route("/icon.svg")
+def pwa_icon():
+    svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+      <rect width="512" height="512" rx="112" fill="#059669"/>
+      <path d="M256 416s-144-92-144-200c0-53 43-96 96-96 31 0 58 15 76 38 18-23 45-38 76-38 53 0 96 43 96 96 0 108-144 200-144 200z" fill="#ffffff" opacity="0.2"/>
+      <polyline points="96,264 176,264 212,184 256,336 296,224 328,264 416,264" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>"""
+    return Response(svg, mimetype="image/svg+xml")
+
+
+@app.route("/sw.js")
+def pwa_sw():
+    sw_code = """
+    const CACHE_NAME = 'sukkari-v1';
+    self.addEventListener('install', (e) => {
+        self.skipWaiting();
+    });
+    self.addEventListener('activate', (e) => {
+        e.waitUntil(clients.claim());
+    });
+    self.addEventListener('fetch', (e) => {
+        if (e.request.method !== 'GET') return;
+        e.respondWith(
+            fetch(e.request).catch(() => caches.match(e.request))
+        );
+    });
+    """
+    return Response(sw_code, mimetype="application/javascript")
+
+
+# ==================== Main & Auth Routes ====================
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/api/me")
+def api_me():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"logged_in": False})
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    conn.close()
+    if not row:
+        session.clear()
+        return jsonify({"logged_in": False})
+    return jsonify({"logged_in": True, "user": serialize_user(row)})
+
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
     data = request.get_json(silent=True) or {}
-    patient_id = data.get('patient_id')
-    new_password = str(data.get('new_password', '') or data.get('newPassword', '')).strip()
-    
-    if not patient_id or not new_password:
-        return jsonify({'success': False, 'message': 'يرجى تحديد المراجع وكتابة الرمز السري الجديد'}), 400
-        
-    patient = User.query.filter_by(id=patient_id, role='patient').first()
-    if not patient:
-        return jsonify({'success': False, 'message': 'المراجع ما موجود'}), 404
-        
-    patient.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
-    db.session.commit()
-    return jsonify({'success': True, 'message': f'تم تغيير الرمز السري للمراجع ({patient.name}) بنجاح'})
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"success": False, "message": "اسم المستخدم أو الرمز السري غير صحيح"}), 401
+    session["user_id"] = row["id"]
+    session["role"] = row["role"]
+    return jsonify({"success": True, "user": serialize_user(row)})
 
-@app.route('/api/doctor/update-notes', methods=['POST'])
-def update_doctor_notes():
-    if session.get('role') != 'doctor':
-        return jsonify({'error': 'غير مصرح'}), 403
+
+@app.route("/api/logout", methods=["POST"])
+def api_logout():
+    session.clear()
+    return jsonify({"success": True})
+
+
+# ==================== Patient Routes ====================
+@app.route("/api/logs", methods=["GET"])
+@login_required()
+def get_logs():
+    uid = session["user_id"]
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM logs WHERE patient_id = ? ORDER BY id DESC", (uid,)).fetchall()
+    conn.close()
+    return jsonify([
+        {
+            "id": r["id"],
+            "val": r["val"],
+            "timing": r["timing"],
+            "meds": r["meds"],
+            "bp_sys": r["bp_sys"],
+            "bp_dia": r["bp_dia"],
+            "date": r["date"],
+        }
+        for r in rows
+    ])
+
+
+@app.route("/api/logs", methods=["POST"])
+@login_required()
+def add_log():
+    uid = session["user_id"]
     data = request.get_json(silent=True) or {}
-    patient = User.query.get(data.get('patient_id'))
-    if patient:
-        patient.doctor_notes = data.get('notes', '')
-        db.session.commit()
-        return jsonify({'success': True})
-    return jsonify({'error': 'المراجع ما موجود'}), 404
+    try:
+        val = int(float(data.get("val")))
+    except Exception:
+        return jsonify({"success": False, "message": "قيمة السكر غير صالحة"}), 400
 
-@app.route('/api/chat/<int:patient_id>', methods=['GET', 'POST'])
-def handle_chat(patient_id):
-    role = session.get('role')
-    uid = session.get('user_id')
-    if role != 'doctor' and uid != patient_id:
-        return jsonify({'error': 'غير مصرح'}), 403
-    
-    if request.method == 'POST':
-        data = request.get_json(silent=True) or {}
-        db.session.add(ChatMessage(patient_id=patient_id, sender=role, text=data.get('text', '')))
-        db.session.commit()
-        return jsonify({'success': True})
-    
-    msgs = ChatMessage.query.filter_by(patient_id=patient_id).order_by(ChatMessage.created_at).all()
-    return jsonify([{'id': m.id, 'sender': m.sender, 'text': m.text, 'time': m.created_at.strftime('%H:%M')} for m in msgs])
+    timing = (data.get("timing") or "عشوائي").strip()
+    meds = (data.get("meds") or "-").strip() or "-"
+    bp_sys = data.get("bp_sys")
+    bp_dia = data.get("bp_dia")
+    try:
+        bp_sys = int(bp_sys) if bp_sys not in (None, "", 0, "0") else None
+        bp_dia = int(bp_dia) if bp_dia not in (None, "", 0, "0") else None
+    except Exception:
+        bp_sys, bp_dia = None, None
 
-# ---------------- المساعد الطبي الذكي المربوط بـ DeepSeek عبر OpenRouter ----------------
-@app.route('/api/ai/assistant', methods=['POST'])
-def ai_assistant():
-    if session.get('role') != 'patient' or not session.get('user_id'):
-        return jsonify({'answer': 'عذراً، هذه الخدمة مخصصة فقط لحسابات المرضى المسجلين.'}), 403
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO logs (patient_id, val, timing, meds, bp_sys, bp_dia, date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uid, val, timing, meds, bp_sys, bp_dia, now_str),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "val": val})
 
-    if not HAS_OPENAI:
-        return jsonify({'answer': f'⚠️ مكتبة openai غير مثبتة بالسيرفر: {OPENAI_IMPORT_ERROR}'})
 
+@app.route("/api/patient/update-profile", methods=["POST"])
+@login_required("patient")
+def update_patient_profile():
+    uid = session["user_id"]
     data = request.get_json(silent=True) or {}
-    question = str(data.get('question', '')).strip()
-    if not question:
-        return jsonify({'answer': 'اكتب سؤالك عن مرض السكري عيني حتى أجاوبك.'})
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"success": False, "message": "المستخدم غير موجود"}), 404
 
-    user = User.query.get(session['user_id'])
-    latest_log = GlucoseLog.query.filter_by(user_id=user.id).order_by(GlucoseLog.created_at.desc()).first() if user else None
+    age = int(data.get("age") or row["age"])
+    weight = float(data.get("weight") or row["weight"])
+    height = float(data.get("height") or row["height"])
+    phone = (data.get("emergencyPhone") or row["emergency_phone"]).strip()
+    bmi = calc_bmi(weight, height)
 
-    patient_context = ""
-    if user:
-        patient_context = f"بيانات المريض: الاسم {user.name}، العمر {user.age} سنة، نوع السكري: {user.diabetes_type}، مؤشر كتلة الجسم: {user.bmi}."
-        if latest_log:
-            patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
+    conn.execute(
+        "UPDATE users SET age = ?, weight = ?, height = ?, bmi = ?, emergency_phone = ? WHERE id = ?",
+        (age, weight, height, bmi, phone, uid),
+    )
+    conn.commit()
+    updated = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    conn.close()
+    return jsonify({"success": True, "user": serialize_user(updated)})
 
-    db.session.remove()
 
-    client = _get_openrouter_client()
-    if not client:
-        return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة مفتاح OPENROUTER_API_KEY في إعدادات السيرفر (Variables).'})
+@app.route("/api/patient/lab-reports", methods=["GET"])
+@login_required()
+def get_patient_lab_reports():
+    uid = session["user_id"]
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM lab_reports WHERE patient_id = ? ORDER BY id DESC", (uid,)).fetchall()
+    conn.close()
+    return jsonify([
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "summary": r["summary"],
+            "items": json.loads(r["items_json"] or "[]"),
+            "advice": r["advice"],
+            "date": r["date"],
+        }
+        for r in rows
+    ])
 
-    history = session.get('ai_history', [])
+
+# ==================== AI Routes ====================
+@app.route("/api/ai/meal-analyze", methods=["POST"])
+@login_required()
+def ai_meal_analyze():
+    if "image" not in request.files:
+        return jsonify({"success": False, "message": "ما وصلت صورة للأكل"}), 400
+    img_bytes = request.files["image"].read()
+    b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    prompt = (
+        "أنت أخصائي تغذية وطبيب سكري عراقي. حلل صورة الوجبة وأرجع النتيجة بصيغة JSON فقط بهذه الحقول بالضبط باللهجة العراقية الواضحة:\n"
+        '{"meal_name": "اسم الأكلة ومكوناتها", "carbs": "كمية الكربوهيدرات بالغرام", '
+        '"calories": "السعرات الحرارية التقريبية", "insulin_dose": "تقدير وحدات الأنسولين السريع المقترحة مع التنبيه لمراجعة الطبيب", '
+        '"tips": "نصيحة غذائية مختصرة لمريض السكري"}'
+    )
     messages = [
-        {"role": "system", "content": DIABETES_SYSTEM_PROMPT + "\n\n" + patient_context}
-    ]
-    for h in history[-10:]:
-        messages.append(h)
-    messages.append({"role": "user", "content": question})
-
-    try:
-        response = client.chat.completions.create(
-            model=DEEPSEEK_MODEL,
-            messages=messages,
-            temperature=0.3,
-        )
-        answer_text = (response.choices[0].message.content or "").strip()
-        if answer_text:
-            history.append({"role": "user", "content": question})
-            history.append({"role": "assistant", "content": answer_text})
-            session['ai_history'] = history[-10:]
-            return jsonify({'answer': answer_text})
-        return jsonify({'answer': '⚠️ لم يصل رد من المساعد الذكي، حاول مرة ثانية.'})
-    except Exception as client_err:
-        return jsonify({'answer': f'⚠️ تعذر الاتصال بالمساعد الطبي (DeepSeek). السبب: {client_err}'})
-
-# ---------------- تحليل صور الوجبات بالذكاء الاصطناعي عبر OpenRouter ----------------
-@app.route('/api/ai/meal-analyze', methods=['POST'])
-def analyze_meal():
-    if session.get('role') != 'patient' or not session.get('user_id'):
-        return jsonify({'success': False, 'message': 'عذراً، هذه الخدمة مخصصة فقط لحسابات المرضى المسجلين.'}), 403
-
-    if not HAS_OPENAI:
-        return jsonify({'success': False, 'message': f'⚠️ مكتبة openai غير مثبتة بالسيرفر: {OPENAI_IMPORT_ERROR}'})
-
-    client = _get_openrouter_client()
-    if not client:
-        return jsonify({'success': False, 'message': '⚠️ خدمة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة OPENROUTER_API_KEY.'})
-
-    if 'image' not in request.files:
-        return jsonify({'success': False, 'message': 'ماكو صورة مرفوعة، اختار صورة وحاول مرة ثانية.'}), 400
-
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'success': False, 'message': 'ما اختاريت أي ملف صورة.'}), 400
-
-    mime_type = file.mimetype or 'image/jpeg'
-    if not mime_type.startswith('image/'):
-        return jsonify({'success': False, 'message': 'الملف المرفوع مو صورة! يرجى اختيار صورة صحيحة للأكل.'}), 400
-
-    image_bytes = file.read()
-    if not image_bytes:
-        return jsonify({'success': False, 'message': 'ملف الصورة فارغ أو تالف.'}), 400
-
-    filename = secure_filename(file.filename) or 'meal.jpg'
-    saved_name = f"{int(time.time())}_{filename}"
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], saved_name)
-    with open(filepath, 'wb') as f:
-        f.write(image_bytes)
-
-    user = User.query.get(session['user_id'])
-    latest_log = GlucoseLog.query.filter_by(user_id=user.id).order_by(GlucoseLog.created_at.desc()).first() if user else None
-
-    patient_context = "حلل هذه الوجبة لمريض سكري."
-    if user:
-        patient_context = f"بيانات المريض: نوع السكري ({user.diabetes_type})، العمر {user.age} سنة."
-        if latest_log:
-            patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
-
-    db.session.remove()
-
-    b64_image = base64.b64encode(image_bytes).decode('utf-8')
-    data_url = f"data:{mime_type};base64,{b64_image}"
-
-    try:
-        response = client.chat.completions.create(
-            model=VISION_MODEL,
-            messages=[
-                {"role": "system", "content": MEAL_ANALYSIS_PROMPT},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": patient_context},
-                        {"type": "image_url", "image_url": {"url": data_url}}
-                    ]
-                }
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
             ],
-            temperature=0.2,
-        )
-        raw_text = (response.choices[0].message.content or "").strip()
-        if raw_text.startswith("```"):
-            raw_text = raw_text.strip("`").replace("json", "", 1).strip()
+        }
+    ]
+    raw, err = call_openrouter(messages, max_tokens=500, json_mode=True)
+    if err:
+        return jsonify({"success": False, "message": err})
+    try:
+        parsed = json.loads(raw)
+        return jsonify({
+            "success": True,
+            "meal_name": parsed.get("meal_name", "وجبة غذائية"),
+            "carbs": parsed.get("carbs", "غير محدد"),
+            "calories": parsed.get("calories", "غير محدد"),
+            "insulin_dose": parsed.get("insulin_dose", "استشر طبيبك لتحديد الجرعة"),
+            "tips": parsed.get("tips", "يفضل قياس السكر بعد الأكل بساعتين."),
+        })
+    except Exception:
+        return jsonify({"success": False, "message": "تعذر قراءة تحليل الوجبة، حاول مرة ثانية."})
 
-        result = json.loads(raw_text)
-        if not result.get('is_food', True):
-            return jsonify({
-                'success': False,
-                'message': 'عذراً عيني، هذه الصورة ما مبين بيها أكل أو شرب! طك صورة واضحة للوجبة وحاول مرة ثانية.'
-            })
+
+@app.route("/api/ai/lab-analyze", methods=["POST"])
+@login_required()
+def ai_lab_analyze():
+    if "image" not in request.files:
+        return jsonify({"success": False, "message": "اختار صورة ورقة التحليل بالبداية"}), 400
+
+    img_bytes = request.files["image"].read()
+    b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    prompt = (
+        "أنت طبيب عراقي متخصص بالسكري والباطنية. اقرأ ورقة التحاليل المختبرية في الصورة واشرحها للمراجع باللهجة العراقية البسيطة.\n"
+        "أرجع JSON فقط بهذا الشكل الدقيق:\n"
+        '{"title": "عنوان التحليل (مثلاً: فحص التراكمي ووظائف الكلى)", '
+        '"summary": "ملخص عام لحالة التحاليل بسطرين", '
+        '"items": [{"name": "اسم الفحص بالعربي والانكليزي", "value": "النتيجة الرقمية", "status": "طبيعي أو مرتفع أو منخفض", "note": "شرح مبسط"}], '
+        '"advice": "توصية طبية مختصرة للمراجع"}'
+    )
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+            ],
+        }
+    ]
+    raw, err = call_openrouter(messages, max_tokens=800, json_mode=True)
+    if err:
+        return jsonify({"success": False, "message": err})
+
+    try:
+        parsed = json.loads(raw)
+        title = parsed.get("title", "تحليل مختبري")
+        summary = parsed.get("summary", "تمت قراءة التحليل.")
+        items = parsed.get("items", [])
+        advice = parsed.get("advice", "يرجى عرض التحليل على الدكتور المشرف.")
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        uid = session["user_id"]
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO lab_reports (patient_id, title, summary, items_json, advice, date) VALUES (?, ?, ?, ?, ?, ?)",
+            (uid, title, summary, json.dumps(items, ensure_ascii=False), advice, now_str),
+        )
+        rep_id = cur.lastrowid
+        conn.commit()
+        conn.close()
 
         return jsonify({
-            'success': True,
-            'meal_name': result.get('meal_name', 'غير محدد'),
-            'carbs': result.get('carbs', 'غير محدد'),
-            'calories': result.get('calories', 'غير محدد'),
-            'insulin_dose': result.get('insulin_dose', 'استشر طبيبك لتحديد الجرعة.'),
-            'tips': result.get('tips', 'تناول الخضروات أولاً لتقليل ارتفاع السكر.')
+            "success": True,
+            "report": {
+                "id": rep_id,
+                "title": title,
+                "summary": summary,
+                "items": items,
+                "advice": advice,
+                "date": now_str,
+            },
         })
-    except Exception as client_err:
-        return jsonify({'success': False, 'message': f'⚠️ تعذر تحليل الصورة. السبب: {client_err}'})
+    except Exception:
+        return jsonify({"success": False, "message": "ما كدرنا نقرأ ورقة التحليل بوضوح، تأكد أن الصورة واضحة وحاول مرة ثانية."})
 
-if __name__ == '__main__':
-    with app.app_context():
-        init_db()
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+
+@app.route("/api/ai/assistant", methods=["POST"])
+@login_required()
+def ai_assistant():
+    data = request.get_json(silent=True) or {}
+    q = (data.get("question") or "").strip()
+    if not q:
+        return jsonify({"answer": "اكتب سؤالك عيني حتى أجاوبك."})
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "أنت مساعد طبي ذكي متخصص بمرض السكري وتبعاته، تتحدث باللهجة العراقية الودودة والمحترمة. "
+                "إجاباتك دقيقة طبياً، مختصرة، ومرتبة بنقاط واضحة، وتنبه دائماً لمراجعة الطبيب في الحالات الطارئة."
+            ),
+        },
+        {"role": "user", "content": q},
+    ]
+    ans, err = call_openrouter(messages, max_tokens=550, json_mode=False)
+    if err:
+        return jsonify({"answer": f"⚠️ {err}"})
+    return jsonify({"answer": ans})
+
+
+# ==================== Doctor Routes ====================
+@app.route("/api/doctor/patients", methods=["GET"])
+@login_required("doctor")
+def doctor_get_patients():
+    conn = get_db()
+    users = conn.execute("SELECT * FROM users WHERE role = 'patient' ORDER BY id DESC").fetchall()
+    result = []
+    for u in users:
+        pid = u["id"]
+        logs = conn.execute("SELECT * FROM logs WHERE patient_id = ? ORDER BY id DESC", (pid,)).fetchall()
+        labs = conn.execute("SELECT * FROM lab_reports WHERE patient_id = ? ORDER BY id DESC", (pid,)).fetchall()
+
+        logs_list = [
+            {
+                "id": l["id"],
+                "val": l["val"],
+                "timing": l["timing"],
+                "meds": l["meds"],
+                "bp_sys": l["bp_sys"],
+                "bp_dia": l["bp_dia"],
+                "date": l["date"],
+            }
+            for l in logs
+        ]
+
+        critical_alert = None
+        if logs_list:
+            latest_val = logs_list[0]["val"]
+            if latest_val < 70:
+                critical_alert = {"type": "low", "val": latest_val, "label": f"هبوط حاد ({latest_val})"}
+            elif latest_val >= 250:
+                critical_alert = {"type": "high", "val": latest_val, "label": f"ارتفاع خطر ({latest_val})"}
+
+        p_obj = serialize_user(u)
+        p_obj["logs"] = logs_list
+        p_obj["criticalAlert"] = critical_alert
+        p_obj["labReports"] = [
+            {
+                "id": lb["id"],
+                "title": lb["title"],
+                "summary": lb["summary"],
+                "items": json.loads(lb["items_json"] or "[]"),
+                "advice": lb["advice"],
+                "date": lb["date"],
+            }
+            for lb in labs
+        ]
+        result.append(p_obj)
+
+    conn.close()
+    # ترتيب الحالات الحرجة بأعلى القائمة تلقائياً
+    result.sort(key=lambda x: 0 if x["criticalAlert"] else 1)
+    return jsonify(result)
+
+
+@app.route("/api/doctor/update-notes", methods=["POST"])
+@login_required("doctor")
+def doctor_update_notes():
+    data = request.get_json(silent=True) or {}
+    pid = data.get("patient_id")
+    notes = data.get("notes", "")
+    conn = get_db()
+    conn.execute("UPDATE users SET doctor_notes = ? WHERE id = ? AND role = 'patient'", (notes, pid))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route("/api/doctor/update-patient-info", methods=["POST"])
+@login_required("doctor")
+def doctor_update_patient_info():
+    data = request.get_json(silent=True) or {}
+    pid = data.get("patient_id")
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'patient'", (pid,)).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"success": False, "message": "المراجع غير موجود"}), 404
+
+    name = (data.get("name") or row["name"]).strip()
+    age = int(data.get("age") or row["age"])
+    weight = float(data.get("weight") or row["weight"])
+    height = float(data.get("height") or row["height"])
+    bmi = calc_bmi(weight, height)
+    d_type = (data.get("diabetesType") or row["diabetes_type"]).strip()
+    gender = (data.get("gender") or row["gender"]).strip()
+    blood = (data.get("blood") or row["blood"]).strip()
+    phone = (data.get("emergencyPhone") or row["emergency_phone"]).strip()
+    target_g = int(data.get("targetGlucose") or 110)
+    corr_f = float(data.get("correctionFactor") or 50)
+
+    conn.execute("""
+        UPDATE users
+        SET name = ?, age = ?, weight = ?, height = ?, bmi = ?, diabetes_type = ?,
+            gender = ?, blood = ?, emergency_phone = ?, target_glucose = ?, correction_factor = ?
+        WHERE id = ?
+    """, (name, age, weight, height, bmi, d_type, gender, blood, phone, target_g, corr_f, pid))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route("/api/doctor/delete-patient", methods=["POST"])
+@login_required("doctor")
+def doctor_delete_patient():
+    data = request.get_json(silent=True) or {}
+    pid = data.get("patient_id")
+    conn = get_db()
+    conn.execute("DELETE FROM logs WHERE patient_id = ?", (pid,))
+    conn.execute("DELETE FROM messages WHERE patient_id = ?", (pid,))
+    conn.execute("DELETE FROM lab_reports WHERE patient_id = ?", (pid,))
+    conn.execute("DELETE FROM users WHERE id = ? AND role = 'patient'", (pid,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route("/api/doctor/reset-patient-password", methods=["POST"])
+@login_required("doctor")
+def doctor_reset_patient_password():
+    data = request.get_json(silent=True) or {}
+    pid = data.get("patient_id")
+    new_pass = (data.get("new_password") or "").strip()
+    if not new_pass:
+        return jsonify({"success": False, "message": "اكتب الرمز السري الجديد"}), 400
+    conn = get_db()
+    conn.execute("UPDATE users SET password = ? WHERE id = ? AND role = 'patient'", (new_pass, pid))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": "تم تحديث الرمز السري للمراجع بنجاح"})
+
+
+@app.route("/api/doctor/create-patient", methods=["POST"])
+@login_required("doctor")
+def doctor_create_patient():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+    if not name or not username or not password:
+        return jsonify({"success": False, "message": "املأ الاسم واليوزر والرمز السري"}), 400
+
+    age = int(data.get("age") or 40)
+    weight = float(data.get("weight") or 70)
+    height = float(data.get("height") or 170)
+    bmi = calc_bmi(weight, height)
+    d_type = (data.get("diabetesType") or "النوع الثاني").strip()
+    phone = (data.get("emergencyPhone") or "07700000000").strip()
+    gender = (data.get("gender") or "ذكر").strip()
+    blood = (data.get("blood") or "O+").strip()
+    target_g = int(data.get("targetGlucose") or 110)
+    corr_f = float(data.get("correctionFactor") or 50)
+
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO users (username, password, name, role, age, weight, height, bmi, diabetes_type, gender, blood, emergency_phone, doctor_notes, target_glucose, correction_factor)
+            VALUES (?, ?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
+        """, (username, password, name, age, weight, height, bmi, d_type, gender, blood, phone, target_g, corr_f))
+        pid = cur.lastrowid
+        conn.commit()
+        return jsonify({"success": True, "patient_id": pid})
+    except sqlite3.IntegrityError:
+        return jsonify({"success": False, "message": "اسم المستخدم موجود مسبقاً، اختار غيره"}), 400
+    finally:
+        conn.close()
+
+
+# ==================== Chat Routes ====================
+@app.route("/api/chat/<int:patient_id>", methods=["GET"])
+@login_required()
+def get_chat(patient_id):
+    if session.get("role") == "patient" and session.get("user_id") != patient_id:
+        return jsonify([]), 403
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM messages WHERE patient_id = ? ORDER BY id ASC", (patient_id,)).fetchall()
+    conn.close()
+    return jsonify([{"sender": r["sender"], "text": r["text"], "time": r["time"]} for r in rows])
+
+
+@app.route("/api/chat/<int:patient_id>", methods=["POST"])
+@login_required()
+def post_chat(patient_id):
+    if session.get("role") == "patient" and session.get("user_id") != patient_id:
+        return jsonify({"success": False}), 403
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    if not text:
+        return jsonify({"success": False}), 400
+    sender = session.get("role", "patient")
+    time_str = datetime.now().strftime("%I:%M %p")
+    conn = get_db()
+    conn.execute("INSERT INTO messages (patient_id, sender, text, time) VALUES (?, ?, ?, ?)", (patient_id, sender, text, time_str))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
