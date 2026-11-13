@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime
 import os
 import time
@@ -29,6 +30,14 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
 _db_ready = False
+
+def _call_gemini_with_timeout(fn, timeout_sec=15):
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(fn)
+    try:
+        return future.result(timeout=timeout_sec)
+    finally:
+        executor.shutdown(wait=False)
 
 # ---------------- إعدادات جمناي (Gemini AI) ----------------
 DIABETES_SYSTEM_PROMPT = (
@@ -412,6 +421,8 @@ def ai_assistant():
         if latest_log:
             patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
 
+    db.session.remove()
+
     api_key = os.environ.get('GEMINI_API_KEY', '').strip().strip('"').strip("'")
     if not api_key:
         return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي (Gemini) غير مفعلة حالياً. يرجى إضافة مفتاح GEMINI_API_KEY في إعدادات السيرفر (Variables).'})
@@ -419,48 +430,34 @@ def ai_assistant():
     prompt_text = patient_context + "\n\nسؤال المريض: " + question
     errors = []
 
-    for api_ver in ['v1beta', None]:
-        try:
-            if api_ver:
-                client = genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version=api_ver))
-            else:
-                client = genai.Client(api_key=api_key)
-
-            candidate_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    try:
+        client = genai.Client(api_key=api_key)
+        for model_name in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
             try:
-                for m in client.models.list():
-                    m_name = getattr(m, 'name', '')
-                    if m_name.startswith('models/'):
-                        m_name = m_name.replace('models/', '', 1)
-                    if 'gemini' in m_name.lower() and not any(x in m_name.lower() for x in ['embedding', 'imagen', 'veo', 'aqa', 'tts', 'audio']):
-                        if m_name not in candidate_models:
-                            if 'flash' in m_name.lower():
-                                candidate_models.insert(0, m_name)
-                            else:
-                                candidate_models.append(m_name)
-            except Exception as list_err:
-                errors.append(f"list({api_ver}): {list_err}")
-
-            for model_name in candidate_models[:6]:
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
+                response = _call_gemini_with_timeout(
+                    lambda m=model_name: client.models.generate_content(
+                        model=m,
                         contents=prompt_text,
                         config=types.GenerateContentConfig(
                             system_instruction=DIABETES_SYSTEM_PROMPT,
                             temperature=0.3,
                         )
-                    )
-                    if response and response.text:
-                        return jsonify({'answer': response.text.strip()})
-                except Exception as e:
-                    errors.append(f"{model_name}({api_ver}): {e}")
-                    continue
-        except Exception as client_err:
-            errors.append(f"client({api_ver}): {client_err}")
+                    ),
+                    timeout_sec=15
+                )
+                if response and response.text:
+                    return jsonify({'answer': response.text.strip()})
+            except FuturesTimeoutError:
+                errors.append(f"{model_name}: انتهت مهلة الاتصال (Timeout)")
+                continue
+            except Exception as e:
+                errors.append(f"{model_name}: {e}")
+                continue
+    except Exception as client_err:
+        errors.append(f"client: {client_err}")
 
     first_err = errors[0] if errors else "غير معروف"
-    return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب الأول: {first_err}'})
+    return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب: {first_err}'})
 
 # ---------------- تحليل صور الوجبات بالذكاء الاصطناعي (Gemini Vision) ----------------
 @app.route('/api/ai/meal-analyze', methods=['POST'])
@@ -505,6 +502,8 @@ def analyze_meal():
         if latest_log:
             patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
 
+    db.session.remove()
+
     meal_schema = types.Schema(
         type=types.Type.OBJECT,
         properties={
@@ -521,15 +520,13 @@ def analyze_meal():
     image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
     errors = []
 
-    for api_ver in ['v1beta', None]:
-        try:
-            client = genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version=api_ver)) if api_ver else genai.Client(api_key=api_key)
-            candidate_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
-
-            for model_name in candidate_models:
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
+    try:
+        client = genai.Client(api_key=api_key)
+        for model_name in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
+            try:
+                response = _call_gemini_with_timeout(
+                    lambda m=model_name: client.models.generate_content(
+                        model=m,
                         contents=[image_part, patient_context],
                         config=types.GenerateContentConfig(
                             system_instruction=MEAL_ANALYSIS_PROMPT,
@@ -537,28 +534,33 @@ def analyze_meal():
                             response_schema=meal_schema,
                             temperature=0.2,
                         )
-                    )
-                    if response and response.text:
-                        result = json.loads(response.text)
-                        if not result.get('is_food', True):
-                            return jsonify({
-                                'success': False,
-                                'message': 'عذراً عيني، هذه الصورة ما مبين بيها أكل أو شرب! طك صورة واضحة للوجبة وحاول مرة ثانية.'
-                            })
-
+                    ),
+                    timeout_sec=18
+                )
+                if response and response.text:
+                    result = json.loads(response.text)
+                    if not result.get('is_food', True):
                         return jsonify({
-                            'success': True,
-                            'meal_name': result.get('meal_name', 'غير محدد'),
-                            'carbs': result.get('carbs', 'غير محدد'),
-                            'calories': result.get('calories', 'غير محدد'),
-                            'insulin_dose': result.get('insulin_dose', 'استشر طبيبك لتحديد الجرعة.'),
-                            'tips': result.get('tips', 'تناول الخضروات أولاً لتقليل ارتفاع السكر.')
+                            'success': False,
+                            'message': 'عذراً عيني، هذه الصورة ما مبين بيها أكل أو شرب! طك صورة واضحة للوجبة وحاول مرة ثانية.'
                         })
-                except Exception as e:
-                    errors.append(f"{model_name}({api_ver}): {e}")
-                    continue
-        except Exception as client_err:
-            errors.append(f"client({api_ver}): {client_err}")
+
+                    return jsonify({
+                        'success': True,
+                        'meal_name': result.get('meal_name', 'غير محدد'),
+                        'carbs': result.get('carbs', 'غير محدد'),
+                        'calories': result.get('calories', 'غير محدد'),
+                        'insulin_dose': result.get('insulin_dose', 'استشر طبيبك لتحديد الجرعة.'),
+                        'tips': result.get('tips', 'تناول الخضروات أولاً لتقليل ارتفاع السكر.')
+                    })
+            except FuturesTimeoutError:
+                errors.append(f"{model_name}: انتهت مهلة تحليل الصورة (Timeout)")
+                continue
+            except Exception as e:
+                errors.append(f"{model_name}: {e}")
+                continue
+    except Exception as client_err:
+        errors.append(f"client: {client_err}")
 
     first_err = errors[0] if errors else "غير معروف"
     return jsonify({'success': False, 'message': f'⚠️ تعذر تحليل الصورة عبر جمناي. السبب: {first_err}'})
