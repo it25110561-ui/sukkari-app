@@ -33,18 +33,18 @@
 
         /* ---------------- macOS Dock Styling ---------------- */
         .macos-dock-container {
-            background: rgba(255, 255, 255, 0.72);
+            background: rgba(255, 255, 255, 0.76);
             backdrop-filter: blur(24px) saturate(180%);
             -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.7);
             box-shadow:
                 0 20px 45px -10px rgba(15, 23, 42, 0.22),
                 0 4px 16px -2px rgba(15, 23, 42, 0.08),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
         }
 
         html.dark .macos-dock-container {
-            background: rgba(15, 23, 42, 0.72);
+            background: rgba(15, 23, 42, 0.76);
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow:
                 0 24px 50px -12px rgba(0, 0, 0, 0.65),
@@ -168,7 +168,7 @@
             border-color: #0f172a;
         }
 
-        /* Thin Vertical Dock Divider */
+        /* Thin Vertical Dock Divider (for Doctor Dock) */
         .dock-divider {
             width: 1px;
             height: 36px;
@@ -189,7 +189,7 @@
                 background: #ffffff !important; color: #000000 !important; 
                 padding: 20px; border: none !important;
             }
-            .no-print, #macosDock, header { display: none !important; }
+            .no-print, #macosDock, header, #patientDrawerBackdrop, #patientSideDrawer { display: none !important; }
         }
         .loader { border-top-color: #059669; animation: spinner 1s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -234,11 +234,11 @@
         </div>
     </div>
 
-    <!-- شريط الحالة العلوي بنمط macOS Menu Bar -->
-    <header class="bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 sticky top-0 z-40 transition-colors">
-        <div class="max-w-7xl mx-auto px-4 h-11 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-3">
-                <div class="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+    <!-- شريط الحالة العلوي -->
+    <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 sticky top-0 z-40 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white shadow-sm">
                     <i class="fa-solid fa-heart-pulse text-xs"></i>
                 </div>
                 <span class="font-black text-sm text-slate-900 dark:text-white">سُكّري</span>
@@ -247,16 +247,98 @@
                 <span id="roleBadge" class="text-[10px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 rounded-full font-bold"></span>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2.5">
                 <span id="navUserName" class="font-bold text-slate-600 dark:text-slate-300 hidden sm:inline"></span>
                 <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
                 <span id="macClock" class="font-semibold text-slate-500 dark:text-slate-400 tabular-nums"></span>
-                <button type="button" onclick="toggleTheme()" title="تبديل المظهر" class="w-7 h-7 rounded-lg hover:bg-slate-200/70 dark:hover:bg-slate-800 text-slate-700 dark:text-amber-400 flex items-center justify-center transition">
+
+                <!-- زر تبديل المظهر للطبيب -->
+                <button type="button" onclick="toggleTheme()" title="تبديل المظهر" class="doctor-only w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-400 flex items-center justify-center transition">
                     <i id="themeIcon" class="fa-solid fa-moon text-xs"></i>
+                </button>
+
+                <!-- زر الثلاث نقاط / الشرحات بالجانب للمريض -->
+                <button type="button" onclick="openPatientDrawer()" title="المزيد من الخيارات" aria-label="القائمة الجانبية" class="patient-only w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center gap-1 transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                    <i class="fa-solid fa-bars text-xs"></i>
                 </button>
             </div>
         </div>
     </header>
+
+    <!-- ================= القائمة الجانبية للمريض (تظهر بنصف الشاشة) ================= -->
+    <div id="patientDrawerBackdrop" onclick="closePatientDrawer()" class="patient-only fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-[2px] hidden opacity-0 transition-opacity duration-300"></div>
+
+    <aside id="patientSideDrawer" class="patient-only fixed top-0 left-0 bottom-0 z-50 w-[56%] sm:w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between p-4 -translate-x-full transition-transform duration-300 ease-out">
+        <div class="space-y-4 overflow-y-auto">
+            <!-- رأس القائمة الجانبية -->
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </div>
+                    <div class="truncate">
+                        <div id="drawerUserName" class="font-black text-xs text-slate-900 dark:text-white truncate">المراجع</div>
+                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">حساب مراجع</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closePatientDrawer()" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition shrink-0">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- عناصر القائمة الجانبية -->
+            <div class="space-y-2">
+                <button type="button" id="drawerProfileBtn" onclick="openTabFromDrawer('profileSettings')" class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 hover:bg-emerald-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3 text-right transition group">
+                    <div class="w-9 h-9 rounded-xl bg-slate-700 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <i class="fa-solid fa-user-gear text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">بياناتي الصحية</div>
+                        <div class="text-[10px] text-slate-400 truncate">الوزن، الطول، العمر</div>
+                    </div>
+                </button>
+
+                <button type="button" onclick="closePatientDrawer(); focusQuickLog();" class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 hover:bg-emerald-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3 text-right transition group">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <i class="fa-solid fa-droplet text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">سجّل قياس سريع</div>
+                        <div class="text-[10px] text-slate-400 truncate">إضافة قراءة جديدة</div>
+                    </div>
+                </button>
+
+                <button type="button" onclick="closePatientDrawer(); triggerSOS();" class="w-full p-3 rounded-2xl bg-red-50/80 dark:bg-red-950/30 hover:bg-red-100/80 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-900/70 flex items-center gap-3 text-right transition group">
+                    <div class="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <i class="fa-solid fa-truck-medical text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-xs text-red-700 dark:text-red-400 truncate">نداء طوارئ SOS</div>
+                        <div id="drawerSosPhone" class="text-[10px] text-red-500/90 truncate">07700000000</div>
+                    </div>
+                </button>
+
+                <button type="button" onclick="toggleTheme()" class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 hover:bg-amber-50/70 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 flex items-center gap-3 text-right transition group">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <i id="drawerThemeIcon" class="fa-solid fa-moon text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div id="drawerThemeText" class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">الوضع الليلي</div>
+                        <div class="text-[10px] text-slate-400 truncate">تبديل ألوان الشاشة</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- زر تسجيل الخروج أسفل القائمة الجانبية -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" onclick="handleLogout()" class="w-full py-3 px-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-red-600/20 transition active:scale-95">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>تسجيل الخروج</span>
+            </button>
+        </div>
+    </aside>
 
     <!-- ================= واجهة المريض ================= -->
     <main id="patientViews" class="patient-only max-w-7xl mx-auto px-4 pt-6 pb-28 w-full flex-1">
@@ -568,12 +650,11 @@
     <!-- ================= شريط macOS Dock العائم أسفل الشاشة ================= -->
     <div id="macosDock" class="fixed bottom-3.5 left-1/2 -translate-x-1/2 z-40 max-w-[96vw]">
         
-        <!-- Dock المريض -->
-        <nav id="patientDock" class="patient-only macos-dock-container px-3 py-2.5 pb-3 rounded-[26px] flex items-end gap-2 sm:gap-2.5">
-            <!-- 1. التطبيقات الأساسية المثبتة -->
+        <!-- Dock المريض: 4 أزرار فقط -->
+        <nav id="patientDock" class="patient-only macos-dock-container px-4 py-2.5 pb-3 rounded-[26px] flex items-end gap-3.5 sm:gap-4">
             <button type="button" onclick="switchTab('dashboard', this)" data-title="قياساتي" class="dock-item p-nav-btn is-open">
                 <span class="dock-tooltip">قياساتي</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-base sm:text-xl">
+                <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-lg sm:text-xl">
                     <i class="fa-solid fa-chart-line"></i>
                 </div>
                 <span class="dock-dot"></span>
@@ -581,7 +662,7 @@
 
             <button type="button" onclick="switchTab('mealAi', this)" data-title="فحص الأكل" class="dock-item p-nav-btn">
                 <span class="dock-tooltip">فحص الأكل</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-base sm:text-xl">
+                <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-lg sm:text-xl">
                     <i class="fa-solid fa-camera"></i>
                 </div>
                 <span class="dock-dot"></span>
@@ -589,7 +670,7 @@
 
             <button type="button" onclick="switchTab('aiAssistant', this)" data-title="أحجي ويه الذكاء" class="dock-item p-nav-btn">
                 <span class="dock-tooltip">أحجي ويه الذكاء</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center text-base sm:text-xl">
+                <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center text-lg sm:text-xl">
                     <i class="fa-solid fa-robot"></i>
                 </div>
                 <span class="dock-dot"></span>
@@ -598,54 +679,8 @@
             <button type="button" onclick="switchTab('chatDoctor', this)" data-title="راسل الدكتور" class="dock-item p-nav-btn">
                 <span class="dock-tooltip">راسل الدكتور</span>
                 <span id="patChatDockBadge" class="dock-badge hidden">0</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center text-base sm:text-xl">
+                <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center text-lg sm:text-xl">
                     <i class="fa-solid fa-user-md"></i>
-                </div>
-                <span class="dock-dot"></span>
-            </button>
-
-            <button type="button" onclick="switchTab('profileSettings', this)" data-title="بياناتي الصحية" class="dock-item p-nav-btn">
-                <span class="dock-tooltip">بياناتي الصحية</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center text-base sm:text-xl">
-                    <i class="fa-solid fa-user-gear"></i>
-                </div>
-                <span class="dock-dot"></span>
-            </button>
-
-            <!-- الفاصل الأول: اختصارات سريعة ومقترحة -->
-            <div class="dock-divider"></div>
-
-            <button type="button" onclick="focusQuickLog()" data-title="سجّل قياس سريع" class="dock-item">
-                <span class="dock-tooltip">سجّل قياس سريع</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-lime-500 to-emerald-600 text-white flex items-center justify-center text-base sm:text-xl">
-                    <i class="fa-solid fa-droplet"></i>
-                </div>
-                <span class="dock-dot"></span>
-            </button>
-
-            <button type="button" onclick="triggerSOS()" data-title="نداء طوارئ SOS" class="dock-item">
-                <span class="dock-tooltip">نداء طوارئ SOS</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 text-white flex items-center justify-center text-base sm:text-xl">
-                    <i class="fa-solid fa-truck-medical"></i>
-                </div>
-                <span class="dock-dot"></span>
-            </button>
-
-            <!-- الفاصل الثاني: المظهر والخروج -->
-            <div class="dock-divider hidden sm:block"></div>
-
-            <button type="button" onclick="toggleTheme()" data-title="تبديل المظهر" class="dock-item hidden sm:flex">
-                <span class="dock-tooltip">تبديل المظهر</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-zinc-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 text-slate-800 dark:text-amber-400 flex items-center justify-center text-base sm:text-xl">
-                    <i id="dockThemeIconPat" class="fa-solid fa-circle-half-stroke"></i>
-                </div>
-                <span class="dock-dot"></span>
-            </button>
-
-            <button type="button" onclick="handleLogout()" data-title="تسجيل الخروج" class="dock-item">
-                <span class="dock-tooltip">تسجيل الخروج</span>
-                <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-red-500/90 to-rose-700 text-white flex items-center justify-center text-base sm:text-xl">
-                    <i class="fa-solid fa-right-from-bracket"></i>
                 </div>
                 <span class="dock-dot"></span>
             </button>
@@ -653,7 +688,6 @@
 
         <!-- Dock الطبيب -->
         <nav id="doctorDock" class="doctor-only macos-dock-container px-3 py-2.5 pb-3 rounded-[26px] flex items-end gap-2 sm:gap-2.5">
-            <!-- 1. التطبيقات الأساسية المثبتة -->
             <button type="button" onclick="switchDocTab('docDashboard', this)" data-title="ملفات المراجعين" class="dock-item d-nav-btn is-open">
                 <span class="dock-tooltip">ملفات المراجعين</span>
                 <span id="docPatientsDockBadge" class="dock-badge hidden">0</span>
@@ -671,7 +705,6 @@
                 <span class="dock-dot"></span>
             </button>
 
-            <!-- الفاصل الأول: أدوات الطبيب السريعة -->
             <div class="dock-divider"></div>
 
             <button type="button" onclick="openAddModal()" data-title="ضيف مراجع جديد" class="dock-item">
@@ -690,13 +723,12 @@
                 <span class="dock-dot"></span>
             </button>
 
-            <!-- الفاصل الثاني: المظهر والخروج -->
             <div class="dock-divider"></div>
 
             <button type="button" onclick="toggleTheme()" data-title="تبديل المظهر" class="dock-item">
                 <span class="dock-tooltip">تبديل المظهر</span>
                 <div class="dock-icon-tile w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-zinc-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 text-slate-800 dark:text-amber-400 flex items-center justify-center text-base sm:text-xl">
-                    <i id="dockThemeIconDoc" class="fa-solid fa-circle-half-stroke"></i>
+                    <i class="fa-solid fa-circle-half-stroke"></i>
                 </div>
                 <span class="dock-dot"></span>
             </button>
@@ -820,6 +852,45 @@
             initSession();
         });
 
+        /* ---------------- التحكم بالقائمة الجانبية للمريض ---------------- */
+        function openPatientDrawer() {
+            const drawer = document.getElementById('patientSideDrawer');
+            const backdrop = document.getElementById('patientDrawerBackdrop');
+            if (!drawer || !backdrop) return;
+            backdrop.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                backdrop.classList.remove('opacity-0');
+                drawer.classList.remove('-translate-x-full');
+            });
+        }
+
+        function closePatientDrawer() {
+            const drawer = document.getElementById('patientSideDrawer');
+            const backdrop = document.getElementById('patientDrawerBackdrop');
+            if (!drawer || !backdrop) return;
+            backdrop.classList.add('opacity-0');
+            drawer.classList.add('-translate-x-full');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        function openTabFromDrawer(tabId) {
+            closePatientDrawer();
+            document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+            document.getElementById(tabId + 'Tab').classList.add('active');
+            document.querySelectorAll('.p-nav-btn').forEach(b => b.classList.remove('is-open'));
+            if (tabId === 'profileSettings') {
+                document.getElementById('activeAppTitle').innerText = 'بياناتي الصحية';
+                const profBtn = document.getElementById('drawerProfileBtn');
+                if (profBtn) profBtn.classList.add('ring-2', 'ring-emerald-500');
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closePatientDrawer();
+        });
+
         function initMacClock() {
             const updateClock = () => {
                 const el = document.getElementById('macClock');
@@ -899,25 +970,32 @@
             }
         }
 
+        function syncThemeUI(isDark) {
+            const docIcon = document.getElementById('themeIcon');
+            const drawerIcon = document.getElementById('drawerThemeIcon');
+            const drawerText = document.getElementById('drawerThemeText');
+            if (docIcon) docIcon.className = isDark ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs';
+            if (drawerIcon) drawerIcon.className = isDark ? 'fa-solid fa-sun text-sm' : 'fa-solid fa-moon text-sm';
+            if (drawerText) drawerText.innerText = isDark ? 'الوضع النهاري' : 'الوضع الليلي';
+        }
+
         function initTheme() {
-            if (localStorage.getItem('theme') === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.getElementById('themeIcon').className = 'fa-solid fa-sun text-xs';
-            }
+            const isDark = localStorage.getItem('theme') === 'dark';
+            if (isDark) document.documentElement.classList.add('dark');
+            syncThemeUI(isDark);
         }
 
         function toggleTheme() {
             const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-                icon.className = 'fa-solid fa-moon text-xs';
-            } else {
+            const willBeDark = !html.classList.contains('dark');
+            if (willBeDark) {
                 html.classList.add('dark');
                 localStorage.setItem('theme', 'dark');
-                icon.className = 'fa-solid fa-sun text-xs';
+            } else {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
             }
+            syncThemeUI(willBeDark);
             if (state.user) {
                 state.user.role === 'doctor' ? selectDocPat(state.selDocPatId) : loadPatientData();
             }
@@ -994,6 +1072,8 @@
 
         function applyUI() {
             document.getElementById('navUserName').innerText = state.user.name;
+            const drawerName = document.getElementById('drawerUserName');
+            if (drawerName) drawerName.innerText = state.user.name;
             document.getElementById('roleBadge').innerText = state.user.role === 'doctor' ? 'دكتور مشرف' : 'مراجع';
             if(state.user.role === 'doctor'){
                 document.body.classList.add('is-doctor'); document.body.classList.remove('is-patient');
@@ -1012,6 +1092,8 @@
             document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
             document.getElementById(id+'Tab').classList.add('active');
             document.querySelectorAll('.p-nav-btn').forEach(b => b.classList.remove('is-open'));
+            const profBtn = document.getElementById('drawerProfileBtn');
+            if (profBtn) profBtn.classList.remove('ring-2', 'ring-emerald-500');
             if(btn) {
                 btn.classList.add('is-open');
                 const title = btn.getAttribute('data-title');
@@ -1063,6 +1145,8 @@
                 if (d.success) {
                     state.user = d.user;
                     document.getElementById('navUserName').innerText = state.user.name;
+                    const drawerName = document.getElementById('drawerUserName');
+                    if (drawerName) drawerName.innerText = state.user.name;
                     loadPatientData();
                     alert('✅ عاشت ايدك! تم تحديث بياناتك الصحية بنجاح.');
                 } else {
@@ -1086,6 +1170,8 @@
             document.getElementById('pA1c').innerText = avg ? ((avg+46.7)/28.7).toFixed(1)+'%' : '-';
             document.getElementById('pBmi').innerText = u.bmi || '-';
             document.getElementById('pSos').innerText = u.emergencyPhone;
+            const drawerSos = document.getElementById('drawerSosPhone');
+            if (drawerSos) drawerSos.innerText = u.emergencyPhone || '07700000000';
 
             const historyBody = document.getElementById('patientHistoryTable');
             if (logs.length === 0) {
