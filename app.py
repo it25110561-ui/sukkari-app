@@ -3,20 +3,19 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError, OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime
 import os
 import time
 import json
+import base64
 
-GENAI_IMPORT_ERROR = ""
+OPENAI_IMPORT_ERROR = ""
 try:
-    from google import genai
-    from google.genai import types
-    HAS_GENAI = True
+    from openai import OpenAI
+    HAS_OPENAI = True
 except Exception as import_err:
-    HAS_GENAI = False
-    GENAI_IMPORT_ERROR = str(import_err)
+    HAS_OPENAI = False
+    OPENAI_IMPORT_ERROR = str(import_err)
 
 app = Flask(__name__)
 app.secret_key = 'sukari_secret_key_iraq_2026'
@@ -30,118 +29,57 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
 _db_ready = False
-_cached_working_model = None
 
-def _call_gemini_with_timeout(fn, timeout_sec=10):
-    executor = ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(fn)
-    try:
-        return future.result(timeout=timeout_sec)
-    finally:
-        executor.shutdown(wait=False)
+# ---------------- إعدادات الذكاء الاصطناعي (OpenRouter - DeepSeek) ----------------
+OPENROUTER_BASE_URL = "[https://openrouter.ai/api/v1](https://openrouter.ai/api/v1)"
+DEEPSEEK_MODEL = "deepseek/deepseek-chat"
+VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "google/gemini-2.0-flash-001")
 
-def _generate_with_best_model(client, contents, config, timeout_sec=10):
-    global _cached_working_model
-    errors = []
-
-    # 1. إذا كان هناك نموذج ناجح محفوظ مسبقاً، نستخدمه فوراً
-    if _cached_working_model:
-        try:
-            response = _call_gemini_with_timeout(
-                lambda m=_cached_working_model: client.models.generate_content(
-                    model=m,
-                    contents=contents,
-                    config=config
-                ),
-                timeout_sec=timeout_sec
-            )
-            if response and response.text:
-                return response.text.strip(), None
-        except Exception as e:
-            errors.append(f"{_cached_working_model}: {e}")
-            _cached_working_model = None
-
-    # 2. تجربة النموذج الأساسي
-    primary_models = ['gemini-3.8-flash']
-    for model_name in primary_models:
-        try:
-            response = _call_gemini_with_timeout(
-                lambda m=model_name: client.models.generate_content(
-                    model=m,
-                    contents=contents,
-                    config=config
-                ),
-                timeout_sec=timeout_sec
-            )
-            if response and response.text:
-                _cached_working_model = model_name
-                return response.text.strip(), None
-        except FuturesTimeoutError:
-            errors.append(f"{model_name}: Timeout")
-        except Exception as e:
-            errors.append(f"{model_name}: {e}")
-
-    # 3. جلب النماذج المتاحة لمفتاحك وتجربة أسرع نموذجين فقط (بحد أقصى 2)
-    try:
-        available_models = _call_gemini_with_timeout(lambda: list(client.models.list()), timeout_sec=5)
-        discovered = []
-        for m in available_models:
-            m_name = getattr(m, 'name', '')
-            if m_name.startswith('models/'):
-                m_name = m_name.replace('models/', '', 1)
-            low = m_name.lower()
-            if 'gemini' in low and 'flash' in low and m_name not in primary_models:
-                if not any(x in low for x in ['embedding', 'imagen', 'veo', 'aqa', 'tts', 'audio', 'lite', 'image', 'thinking']):
-                    discovered.append(m_name)
-
-        # ترتيب الأحدث أولاً (3.x ثم latest ثم 2.0)
-        discovered.sort(key=lambda x: (
-            0 if '3.' in x else (1 if 'latest' in x else (2 if '2.0' in x else 3)),
-            x
-        ))
-
-        for mod_name in discovered[:2]:
-            try:
-                response = _call_gemini_with_timeout(
-                    lambda mod=mod_name: client.models.generate_content(
-                        model=mod,
-                        contents=contents,
-                        config=config
-                    ),
-                    timeout_sec=timeout_sec
-                )
-                if response and response.text:
-                    _cached_working_model = mod_name
-                    return response.text.strip(), None
-            except FuturesTimeoutError:
-                errors.append(f"{mod_name}: Timeout")
-            except Exception as e:
-                errors.append(f"{mod_name}: {e}")
-    except Exception as list_err:
-        errors.append(f"list_models: {list_err}")
-
-    return None, (" | ".join(errors[:2]) if errors else "غير معروف")
-
-# ---------------- إعدادات جمناي (Gemini AI) ----------------
 DIABETES_SYSTEM_PROMPT = (
-    "أنت مساعد طبي ذكي متخصص حصراً في مرض السكري (النوع الأول، النوع الثاني، وسكري الحمل) ضمن منصة سُكّري الذكي.\n"
+    "أنت طبيب استشاري ومساعد طبي ذكي متخصص حصراً في المجال الطبي وتحديداً مرض السكري "
+    "(النوع الأول، النوع الثاني، وسكري الحمل) وتبعاته والأمراض المصاحبة له (مثل ضغط الدم، السمنة، "
+    "اعتلال الأعصاب، مشاكل الكلى والشبكية، والقدم السكرية) ضمن منصة سُكّري الذكي.\n"
     "قواعد صارمة يجب الالتزام بها في كل رد:\n"
     "1. أجب باللهجة العراقية الودودة والمبسطة والواضحة للمريض.\n"
-    "2. اختصاصك محصور بمرض السكري فقط: قياسات السكر، أعراض الهبوط والارتفاع وطرق التصرف الفوري، التغذية المناسبة لمرضى السكري، الكربوهيدرات، الأنسولين وأدوية السكري، الرياضة، الفحص التراكمي (HbA1c)، والوقاية من مضاعفات السكري.\n"
-    "3. إذا سأل المريض عن أي موضوع خارج مرض السكري (مثل: برمجة، طبخ عام غير مرتبط بالسكري، رياضة عامة، سياسة، أسئلة ثقافية، أو أمراض أخرى لا علاقة لها بالسكري)، اعتذر بلطف باللهجة العراقية وقل له: عذراً عيني، أني مساعد مخصص فقط للإجابة عن الأسئلة المتعلقة بمرض السكري وتنظيمه. اسألني أي شي يخص السكر وأني حاضر!\n"
-    "4. في حالات الطوارئ أو القراءات الخطيرة جداً (هبوط حاد أقل من 70 أو ارتفاع شديد فوق 250 مع أعراض)، نبه المريض فوراً للتصرف الآمن واستخدام زر الطوارئ SOS أو مراجعة الطبيب فوراً.\n"
+    "2. اختصاصك محصور بالطب ومرض السكري وتبعاته فقط: قياسات السكر، أعراض الهبوط والارتفاع وطرق التصرف الفوري، "
+    "التغذية المناسبة لمرضى السكري، الكربوهيدرات، الأنسولين وأدوية السكري، الرياضة، الفحص التراكمي (HbA1c)، "
+    "والوقاية من مضاعفات السكري والأمراض المرتبطة به.\n"
+    "3. إذا سألك المستخدم عن أي موضوع خارج الطب ومرض السكري وتبعاته (مثل: برمجة، طبخ عام غير مرتبط بالسكري، "
+    "رياضة عامة، سياسة، تاريخ، أسئلة ثقافية، أو مواضيع لا علاقة لها بالطب والسكري)، اعتذر بلطف باللهجة العراقية "
+    "وقل له: عذراً عيني، أني مساعد طبي مخصص فقط للإجابة عن الأسئلة الطبية المتعلقة بمرض السكري وتبعاته وتنظيمه. "
+    "اسألني أي شي يخص السكر وصحتك وأني حاضر!\n"
+    "4. في حالات الطوارئ أو القراءات الخطيرة جداً (هبوط حاد أقل من 70 أو ارتفاع شديد فوق 250 مع أعراض)، "
+    "نبه المريض فوراً للتصرف الآمن واستخدام زر الطوارئ SOS أو مراجعة الطبيب فوراً.\n"
     "5. لا تقم بتشخيص أمراض جديدة أو تغيير جرعات الأدوية بشكل نهائي، وذكّر المريض دائماً باستشارة دكتوره المشرف."
 )
 
 MEAL_ANALYSIS_PROMPT = (
     "أنت خبير تغذية سريرية متخصص بمرض السكري ضمن منصة (سُكّري الذكي).\n"
-    "مهمتك تحليل صور الوجبات بدقة وتقدير قيمتها الغذائية لمساعدة مريض السكري:\n"
-    "1. تأكد أولاً هل الصورة تحتوي فعلاً على طعام أو مشروب أم لا (is_food).\n"
-    "2. اكتب جميع الإجابات باللهجة العراقية الودودة والواضحة.\n"
-    "3. قدّر كمية الكربوهيدرات الصافية بالغرام والسعرات الحرارية بشكل واقعي حسب حجم الحصة الظاهرة بالصورة.\n"
-    "4. في حقل (insulin_dose): إذا كان المريض من النوع الأول أو يأخذ أنسولين، اذكر التقدير التقريبي بناءً على معامل الكارب الشائع (1 وحدة لكل 15 غرام كارب) مع التنبيه بضرورة الالتزام بالمعامل الذي حدده دكتوره. وإذا كان من النوع الثاني أو سكري الحمل، وضح مدى ملاءمة الوجبة لمستوى سكره الحالي.\n"
-    "5. في حقل (tips): قدم نصيحة عملية لترتيب الأكل أو تقليل امتصاص السكر السريع."
+    "مهمتك تحليل صور الوجبات بدقة وتقدير قيمتها الغذائية لمساعدة مريض السكري.\n"
+    "أعد النتيجة بصيغة JSON فقط بدون أي نص إضافي خارج JSON وبالمفاتيح التالية حصراً:\n"
+    "{\n"
+    '  "is_food": true أو false (هل تحتوي الصورة على طعام أو مشروب؟),\n'
+    '  "meal_name": "اسم الوجبة ومكوناتها الرئيسية باللهجة العراقية",\n'
+    '  "carbs": "كمية الكربوهيدرات التقديرية بالغرام، مثلاً: 55 - 65 غرام",\n'
+    '  "calories": "السعرات الحرارية التقديرية، مثلاً: 430 سعرة حرارية",\n'
+    '  "insulin_dose": "تقدير الجرعة (1 وحدة لكل 15 غرام كارب لمرضى الأنسولين مع التنبيه بمراجعة الطبيب) أو مدى ملاءمة الوجبة لمستوى السكر",\n'
+    '  "tips": "نصيحة غذائية عملية لمرضى السكري باللهجة العراقية"\n'
+    "}"
 )
+
+def _get_openrouter_client():
+    api_key = os.environ.get('OPENROUTER_API_KEY', '').strip().strip('"').strip("'")
+    if not api_key:
+        return None
+    return OpenAI(
+        base_url=OPENROUTER_BASE_URL,
+        api_key=api_key,
+        timeout=25.0,
+        default_headers={
+            "HTTP-Referer": "[https://sukkari-app.up.railway.app](https://sukkari-app.up.railway.app)",
+            "X-Title": "Sukkari Smart Diabetes Platform"
+        }
+    )
 
 # ---------------- نماذج قاعدة البيانات (Models) ----------------
 class User(db.Model):
@@ -160,18 +98,9 @@ class User(db.Model):
     diabetes_type = db.Column(db.String(50), default='النوع الثاني')
     doctor_notes = db.Column(db.Text, default='يرجى الالتزام بالعلاج والمتابعة المستمرة.')
     conditions = db.Column(db.String(255), default='')
-    
-    # الحقول الجديدة
-    caregiver_code = db.Column(db.String(20), unique=True, nullable=True)
-    test_strips = db.Column(db.Integer, default=50)
-    insulin_pens = db.Column(db.Integer, default=3)
-    water_intake = db.Column(db.Integer, default=0)
-    adherence_streak = db.Column(db.Integer, default=0)
 
     logs = db.relationship('GlucoseLog', backref='patient', lazy=True, cascade="all, delete-orphan")
     messages = db.relationship('ChatMessage', backref='patient', lazy=True, cascade="all, delete-orphan")
-    injection_logs = db.relationship('InjectionLog', backref='patient', lazy=True, cascade="all, delete-orphan")
-    lab_reports = db.relationship('LabReport', backref='patient', lazy=True, cascade="all, delete-orphan")
 
 class GlucoseLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -186,20 +115,6 @@ class ChatMessage(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     sender = db.Column(db.String(20), nullable=False)
     text = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    
-class InjectionLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    site = db.Column(db.String(50), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
-
-class LabReport(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    report_type = db.Column(db.String(50)) 
-    extracted_data = db.Column(db.Text)
-    ai_interpretation = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
 def _user_dict(user):
@@ -388,10 +303,11 @@ def get_current_user():
         return jsonify({'logged_in': False})
     return jsonify({'logged_in': True, 'user': _user_dict(user)})
 
+# ---------------- تحديث البيانات الأساسية للمريض فقط (بدون الرمز السري) ----------------
 @app.route('/api/patient/update-profile', methods=['POST'])
 def update_patient_profile():
     user_id = session.get('user_id')
-    if not user_id:
+    if not user_id or session.get('role') != 'patient':
         return jsonify({'success': False, 'message': 'ما مسموحلك تفوت هنا'}), 401
     
     user = User.query.get(user_id)
@@ -399,8 +315,7 @@ def update_patient_profile():
         return jsonify({'success': False, 'message': 'الحساب ما موجود'}), 404
 
     data = request.get_json(silent=True) or {}
-    if data.get('name'):
-        user.name = data['name']
+    # يسمح للمريض بتعديل الوزن والطول والعمر ورقم الطوارئ فقط، ولا يسمح بتغيير الرمز السري
     if data.get('age'):
         user.age = int(data['age'])
     if data.get('weight'):
@@ -408,18 +323,14 @@ def update_patient_profile():
     if data.get('height'):
         user.height = float(data['height'])
     if data.get('emergencyPhone'):
-        user.emergency_phone = data['emergencyPhone']
+        user.emergency_phone = str(data['emergencyPhone']).strip()
     
     if user.height > 0:
         h_meters = user.height / 100.0
         user.bmi = round(user.weight / (h_meters * h_meters), 1)
 
-    new_password = str(data.get('newPassword', '')).strip()
-    if new_password:
-        user.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
-
     db.session.commit()
-    return jsonify({'success': True, 'message': 'تم تحديث بياناتك بنجاح', 'user': _user_dict(user)})
+    return jsonify({'success': True, 'message': 'تم تحديث بياناتك الصحية بنجاح', 'user': _user_dict(user)})
 
 @app.route('/api/logs', methods=['GET', 'POST'])
 def handle_logs():
@@ -476,6 +387,26 @@ def create_patient():
     db.session.commit()
     return jsonify({'success': True, 'patient_id': new_patient.id})
 
+# ---------------- تغيير الرمز السري للمراجع (صلاحية الطبيب فقط) ----------------
+@app.route('/api/doctor/reset-patient-password', methods=['POST'])
+def reset_patient_password():
+    if session.get('role') != 'doctor':
+        return jsonify({'success': False, 'message': 'غير مصرح، تغيير الرمز السري من صلاحية الدكتور فقط'}), 403
+    data = request.get_json(silent=True) or {}
+    patient_id = data.get('patient_id')
+    new_password = str(data.get('new_password', '') or data.get('newPassword', '')).strip()
+    
+    if not patient_id or not new_password:
+        return jsonify({'success': False, 'message': 'يرجى تحديد المراجع وكتابة الرمز السري الجديد'}), 400
+        
+    patient = User.query.filter_by(id=patient_id, role='patient').first()
+    if not patient:
+        return jsonify({'success': False, 'message': 'المراجع ما موجود'}), 404
+        
+    patient.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'تم تغيير الرمز السري للمراجع ({patient.name}) بنجاح'})
+
 @app.route('/api/doctor/update-notes', methods=['POST'])
 def update_doctor_notes():
     if session.get('role') != 'doctor':
@@ -504,14 +435,14 @@ def handle_chat(patient_id):
     msgs = ChatMessage.query.filter_by(patient_id=patient_id).order_by(ChatMessage.created_at).all()
     return jsonify([{'id': m.id, 'sender': m.sender, 'text': m.text, 'time': m.created_at.strftime('%H:%M')} for m in msgs])
 
-# ---------------- المساعد الطبي الذكي المربوط بـ Gemini (للمريض فقط وبمجال السكري حصراً) ----------------
+# ---------------- المساعد الطبي الذكي المربوط بـ DeepSeek عبر OpenRouter ----------------
 @app.route('/api/ai/assistant', methods=['POST'])
 def ai_assistant():
     if session.get('role') != 'patient' or not session.get('user_id'):
         return jsonify({'answer': 'عذراً، هذه الخدمة مخصصة فقط لحسابات المرضى المسجلين.'}), 403
 
-    if not HAS_GENAI:
-        return jsonify({'answer': f'⚠️ مكتبة google-genai غير مثبتة بالسيرفر: {GENAI_IMPORT_ERROR}'})
+    if not HAS_OPENAI:
+        return jsonify({'answer': f'⚠️ مكتبة openai غير مثبتة بالسيرفر: {OPENAI_IMPORT_ERROR}'})
 
     data = request.get_json(silent=True) or {}
     question = str(data.get('question', '')).strip()
@@ -523,52 +454,53 @@ def ai_assistant():
 
     patient_context = ""
     if user:
-        patient_context = f"بيانات المريض: الاسم {user.name}، العمر {user.age} سنة، نوع السكري: {user.diabetes_type}."
+        patient_context = f"بيانات المريض: الاسم {user.name}، العمر {user.age} سنة، نوع السكري: {user.diabetes_type}، مؤشر كتلة الجسم: {user.bmi}."
         if latest_log:
             patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
 
-    # جلب آخر 5 رسائل لتوفير الذاكرة
-    recent_msgs = ChatMessage.query.filter_by(patient_id=user.id).order_by(ChatMessage.created_at.desc()).limit(5).all()
-    recent_msgs.reverse()
-    history_text = "\n".join([f"{'المريض' if m.sender == 'patient' else 'المساعد الذكي'}: {m.text}" for m in recent_msgs])
-
-    prompt_text = patient_context + f"\n\nالسياق السابق للمحادثة:\n{history_text}\n\nسؤال المريض الحالي: " + question
-
     db.session.remove()
 
-    api_key = os.environ.get('GEMINI_API_KEY', '').strip().strip('"').strip("'")
-    if not api_key:
-        return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي (Gemini) غير مفعلة حالياً. يرجى إضافة مفتاح GEMINI_API_KEY في إعدادات السيرفر (Variables).'})
+    client = _get_openrouter_client()
+    if not client:
+        return jsonify({'answer': '⚠️ خدمة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة مفتاح OPENROUTER_API_KEY في إعدادات السيرفر (Variables).'})
+
+    # الاحتفاظ بذاكرة آخر 5 محادثات في الجلسة
+    history = session.get('ai_history', [])
+    messages = [
+        {"role": "system", "content": DIABETES_SYSTEM_PROMPT + "\n\n" + patient_context}
+    ]
+    for h in history[-10:]:
+        messages.append(h)
+    messages.append({"role": "user", "content": question})
 
     try:
-        client = genai.Client(api_key=api_key)
-        answer_text, err_msg = _generate_with_best_model(
-            client=client,
-            contents=prompt_text,
-            config=types.GenerateContentConfig(
-                system_instruction=DIABETES_SYSTEM_PROMPT,
-                temperature=0.3,
-            ),
-            timeout_sec=10
+        response = client.chat.completions.create(
+            model=DEEPSEEK_MODEL,
+            messages=messages,
+            temperature=0.3,
         )
+        answer_text = (response.choices[0].message.content or "").strip()
         if answer_text:
+            history.append({"role": "user", "content": question})
+            history.append({"role": "assistant", "content": answer_text})
+            session['ai_history'] = history[-10:]
             return jsonify({'answer': answer_text})
-        return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب: {err_msg}'})
+        return jsonify({'answer': '⚠️ لم يصل رد من المساعد الذكي، حاول مرة ثانية.'})
     except Exception as client_err:
-        return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب: {client_err}'})
+        return jsonify({'answer': f'⚠️ تعذر الاتصال بالمساعد الطبي (DeepSeek). السبب: {client_err}'})
 
-# ---------------- تحليل صور الوجبات بالذكاء الاصطناعي (Gemini Vision) ----------------
+# ---------------- تحليل صور الوجبات بالذكاء الاصطناعي عبر OpenRouter ----------------
 @app.route('/api/ai/meal-analyze', methods=['POST'])
 def analyze_meal():
     if session.get('role') != 'patient' or not session.get('user_id'):
         return jsonify({'success': False, 'message': 'عذراً، هذه الخدمة مخصصة فقط لحسابات المرضى المسجلين.'}), 403
 
-    if not HAS_GENAI:
-        return jsonify({'success': False, 'message': f'⚠️ مكتبة google-genai غير مثبتة بالسيرفر: {GENAI_IMPORT_ERROR}'})
+    if not HAS_OPENAI:
+        return jsonify({'success': False, 'message': f'⚠️ مكتبة openai غير مثبتة بالسيرفر: {OPENAI_IMPORT_ERROR}'})
 
-    api_key = os.environ.get('GEMINI_API_KEY', '').strip().strip('"').strip("'")
-    if not api_key:
-        return jsonify({'success': False, 'message': '⚠️ خدمة الذكاء الاصطناعي (Gemini) غير مفعلة حالياً. يرجى إضافة GEMINI_API_KEY.'})
+    client = _get_openrouter_client()
+    if not client:
+        return jsonify({'success': False, 'message': '⚠️ خدمة الذكاء الاصطناعي غير مفعلة حالياً. يرجى إضافة OPENROUTER_API_KEY.'})
 
     if 'image' not in request.files:
         return jsonify({'success': False, 'message': 'ماكو صورة مرفوعة، اختار صورة وحاول مرة ثانية.'}), 400
@@ -602,78 +534,45 @@ def analyze_meal():
 
     db.session.remove()
 
-    meal_schema = types.Schema(
-        type=types.Type.OBJECT,
-        properties={
-            "is_food": types.Schema(type=types.Type.BOOLEAN, description="هل تحتوي الصورة على طعام أو مشروب؟"),
-            "meal_name": types.Schema(type=types.Type.STRING, description="اسم الوجبة ومكوناتها الرئيسية باللهجة العراقية"),
-            "carbs": types.Schema(type=types.Type.STRING, description="كمية الكربوهيدرات التقديرية بالغرام، مثلاً: 55 - 65 غرام"),
-            "calories": types.Schema(type=types.Type.STRING, description="السعرات الحرارية التقديرية، مثلاً: 430 سعرة حرارية"),
-            "insulin_dose": types.Schema(type=types.Type.STRING, description="تقدير الجرعة أو التوصية العلاجية المناسبة لنوع سكري المريض"),
-            "tips": types.Schema(type=types.Type.STRING, description="نصيحة غذائية عملية لمرضى السكري باللهجة العراقية"),
-        },
-        required=["is_food", "meal_name", "carbs", "calories", "insulin_dose", "tips"],
-    )
-
-    image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    b64_image = base64.b64encode(image_bytes).decode('utf-8')
+    data_url = f"data:{mime_type};base64,{b64_image}"
 
     try:
-        client = genai.Client(api_key=api_key)
-        raw_json, err_msg = _generate_with_best_model(
-            client=client,
-            contents=[image_part, patient_context],
-            config=types.GenerateContentConfig(
-                system_instruction=MEAL_ANALYSIS_PROMPT,
-                response_mime_type="application/json",
-                response_schema=meal_schema,
-                temperature=0.2,
-            ),
-            timeout_sec=11
+        response = client.chat.completions.create(
+            model=VISION_MODEL,
+            messages=[
+                {"role": "system", "content": MEAL_ANALYSIS_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": patient_context},
+                        {"type": "image_url", "image_url": {"url": data_url}}
+                    ]
+                }
+            ],
+            temperature=0.2,
         )
-        if raw_json:
-            result = json.loads(raw_json)
-            if not result.get('is_food', True):
-                return jsonify({
-                    'success': False,
-                    'message': 'عذراً عيني، هذه الصورة ما مبين بيها أكل أو شرب! طك صورة واضحة للوجبة وحاول مرة ثانية.'
-                })
+        raw_text = (response.choices[0].message.content or "").strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.strip("`").replace("json", "", 1).strip()
 
+        result = json.loads(raw_text)
+        if not result.get('is_food', True):
             return jsonify({
-                'success': True,
-                'meal_name': result.get('meal_name', 'غير محدد'),
-                'carbs': result.get('carbs', 'غير محدد'),
-                'calories': result.get('calories', 'غير محدد'),
-                'insulin_dose': result.get('insulin_dose', 'استشر طبيبك لتحديد الجرعة.'),
-                'tips': result.get('tips', 'تناول الخضروات أولاً لتقليل ارتفاع السكر.')
+                'success': False,
+                'message': 'عذراً عيني، هذه الصورة ما مبين بيها أكل أو شرب! طك صورة واضحة للوجبة وحاول مرة ثانية.'
             })
 
-        return jsonify({'success': False, 'message': f'⚠️ تعذر تحليل الصورة عبر جمناي. السبب: {err_msg}'})
+        return jsonify({
+            'success': True,
+            'meal_name': result.get('meal_name', 'غير محدد'),
+            'carbs': result.get('carbs', 'غير محدد'),
+            'calories': result.get('calories', 'غير محدد'),
+            'insulin_dose': result.get('insulin_dose', 'استشر طبيبك لتحديد الجرعة.'),
+            'tips': result.get('tips', 'تناول الخضروات أولاً لتقليل ارتفاع السكر.')
+        })
     except Exception as client_err:
-        return jsonify({'success': False, 'message': f'⚠️ تعذر تحليل الصورة عبر جمناي. السبب: {client_err}'})
-
-@app.route('/api/doctor/clinical-brief/<int:patient_id>', methods=['GET'])
-def get_clinical_brief(patient_id):
-    if session.get('role') != 'doctor':
-        return jsonify({'error': 'غير مصرح'}), 403
-
-    if not HAS_GENAI:
-        return jsonify({'brief': 'مكتبة Gemini غير مفعلة.'})
-
-    api_key = os.environ.get('GEMINI_API_KEY', '').strip().strip('"').strip("'")
-    client = genai.Client(api_key=api_key)
-
-    logs = GlucoseLog.query.filter_by(user_id=patient_id).order_by(GlucoseLog.created_at.desc()).limit(30).all()
-    if not logs:
-        return jsonify({'brief': 'لا توجد قراءات كافية لتوليد ملخص.'})
-
-    logs_text = ", ".join([f"({l.timing}: {l.val} mg/dL)" for l in logs])
-    prompt = f"أنت طبيب استشاري غدد صماء. هذه قراءات السكر لمريض خلال الأسبوعين الماضيين: {logs_text}. اكتب ملخصاً سريرياً مركزاً من 3 أسطر فقط يشمل: نمط القراءات، الارتفاعات بعد الأكل، والهبوط الليلي إن وجد."
-
-    try:
-        response, err = _generate_with_best_model(client, prompt, types.GenerateContentConfig(temperature=0.2), 10)
-        return jsonify({'brief': response if response else 'تعذر توليد الملخص.'})
-    except Exception as e:
-        return jsonify({'brief': f'حدث خطأ: {e}'})
+        return jsonify({'success': False, 'message': f'⚠️ تعذر تحليل الصورة. السبب: {client_err}'})
 
 if __name__ == '__main__':
     with app.app_context():
