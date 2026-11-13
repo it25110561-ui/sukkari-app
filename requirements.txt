@@ -1,5 +1,0 @@
-Flask
-Flask-SQLAlchemy
-Werkzeug
-gunicorn
-google-genai
