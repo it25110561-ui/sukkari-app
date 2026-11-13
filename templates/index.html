@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="سُكّري">
+    <link rel="manifest" id="dynamicManifest">
     <title>سُكّري الذكي - منصتك لمتابعة السكر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -177,6 +182,16 @@
             background: rgba(148, 163, 184, 0.24);
         }
 
+        .mic-recording {
+            animation: pulseMic 1s infinite;
+            background-color: #dc2626 !important;
+            color: #ffffff !important;
+        }
+        @keyframes pulseMic {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
+            50% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+        }
+
         @media print {
             body * { visibility: hidden; }
             #printableReport, #printableReport * { visibility: visible; }
@@ -256,10 +271,10 @@
         </div>
     </header>
 
-    <!-- ================= القائمة الجانبية للمريض (نصف الشاشة) ================= -->
+    <!-- ================= القائمة الجانبية للمريض ================= -->
     <div id="patientDrawerBackdrop" onclick="closePatientDrawer()" class="patient-only fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-[2px] hidden opacity-0 transition-opacity duration-300"></div>
 
-    <aside id="patientSideDrawer" class="patient-only fixed top-0 left-0 bottom-0 z-50 w-[56%] sm:w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between p-4 -translate-x-full transition-transform duration-300 ease-out">
+    <aside id="patientSideDrawer" class="patient-only fixed top-0 left-0 bottom-0 z-50 w-[62%] sm:w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col justify-between p-4 -translate-x-full transition-transform duration-300 ease-out">
         <div class="space-y-4 overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div class="flex items-center gap-2.5 min-w-0">
@@ -283,7 +298,7 @@
                     </div>
                     <div class="min-w-0">
                         <div class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">بياناتي الصحية</div>
-                        <div class="text-[10px] text-slate-400 truncate">الوزن، الطول، BMI، الطوارئ</div>
+                        <div class="text-[10px] text-slate-400 truncate">الوزن، BMI، الطوارئ، منبّه العلاج</div>
                     </div>
                 </button>
 
@@ -294,6 +309,16 @@
                     <div class="min-w-0">
                         <div class="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">تقرير الباركود</div>
                         <div class="text-[10px] text-slate-400 truncate">عرض وتصدير بطاقتي الطبية</div>
+                    </div>
+                </button>
+
+                <button type="button" onclick="installPWA()" class="w-full p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-slate-800 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-3 text-right transition group">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="font-bold text-xs text-emerald-900 dark:text-emerald-300 truncate">تثبيت التطبيق بالموبايل</div>
+                        <div class="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 truncate">أضفه للشاشة الرئيسية (PWA)</div>
                     </div>
                 </button>
 
@@ -321,7 +346,22 @@
     <main id="patientViews" class="patient-only max-w-5xl mx-auto px-4 pt-6 pb-28 w-full flex-1">
         
         <!-- 1. خانة قياساتي -->
-        <div id="dashboardTab" class="tab-content active space-y-6">
+        <div id="dashboardTab" class="tab-content active space-y-5">
+            <!-- شريط تنبيه الحالة الحرجة إن وجد -->
+            <div id="patientCriticalBanner" class="hidden p-4 rounded-2xl bg-red-600 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <div class="font-black text-sm" id="patientCriticalTitle">تنبيه: آخر قياس للسكر خارج النطاق الآمن!</div>
+                        <div class="text-xs opacity-90">يرجى اتباع خطوات الإسعاف الأولي أو التواصل مع الدكتور.</div>
+                    </div>
+                </div>
+                <button type="button" onclick="openFirstAidModal(state.patientLogs[0]?.val)" class="px-4 py-2 bg-white text-red-700 font-black text-xs rounded-xl shrink-0 shadow">خطوات الإسعاف الأولي</button>
+            </div>
+
+            <!-- بطاقات ملخص السكر الثلاث -->
             <div class="grid grid-cols-3 gap-3 sm:gap-4">
                 <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center sm:text-right">
                     <div class="text-[11px] sm:text-xs text-slate-400 font-bold mb-1">آخر قياس للسكر</div>
@@ -340,13 +380,20 @@
                 </div>
             </div>
 
-            <div id="quickLogCard" class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-plus-circle text-emerald-600"></i> سجّل قياس جديد
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- صندوق تسجيل قياس جديد + ضغط الدم + التسجيل الصوتي -->
+            <div id="quickLogCard" class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="font-bold text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle text-emerald-600"></i> سجّل قياس جديد
+                    </h3>
+                    <button type="button" id="btnVoiceLog" onclick="startVoiceLog()" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-microphone"></i> <span id="voiceLogLabel">سجّل بالصوت (مثلاً: سكري 130 ورا الأكل)</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                     <div>
-                        <label class="text-xs font-bold text-slate-500 mb-1 block">شكد طلع السكر؟</label>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block">شكد طلع السكر؟ *</label>
                         <input type="number" id="logVal" min="20" max="600" placeholder="مثلاً: 115" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div>
@@ -358,7 +405,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs font-bold text-slate-500 mb-1 block">العلاج أو الجرعة (إذا ماخذ)</label>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block">ضغط الدم (اختياري)</label>
+                        <input type="text" id="logBp" placeholder="مثلاً: 120/80" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block">العلاج أو الوجبة</label>
                         <input type="text" id="logMeds" placeholder="مثلاً: 4 وحدات أنسولين" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm outline-none">
                     </div>
                 </div>
@@ -367,6 +418,54 @@
                 </button>
             </div>
 
+            <!-- أدوات المتابعة الذكية: حاسبة الجرعة التصحيحية + المؤقت وفحص القدم -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- حاسبة الجرعة التصحيحية للأنسولين -->
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-xs text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calculator"></i> حاسبة الجرعة التصحيحية للأنسولين
+                        </h4>
+                        <span id="calcParamsBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold">المستهدف: 120 | المعامل: 40</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="number" id="corrGlucoseInput" placeholder="اكتب قراءة السكر الصاعدة هنا" class="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
+                        <button type="button" onclick="calculateCorrectionDose()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition">احسب</button>
+                    </div>
+                    <div id="corrDoseResult" class="hidden p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs flex items-center justify-between gap-2">
+                        <span id="corrDoseText" class="font-bold text-blue-900 dark:text-blue-200"></span>
+                        <button type="button" onclick="applyCalculatedDoseToLog()" class="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold shrink-0">انقلها للتسجيل</button>
+                    </div>
+                </div>
+
+                <!-- مؤقت القياس بعد الأكل + فحص القدم السكري -->
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                        <div>
+                            <div class="font-bold text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-stopwatch"></i> مؤقت القياس بعد الأكل (ساعتين)
+                            </div>
+                            <div id="postMealTimerDisplay" class="text-sm font-black text-slate-800 dark:text-white mt-0.5 tabular-nums">غير مفعّل حالياً</div>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button type="button" id="btnStartPostMealTimer" onclick="startPostMealTimer()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[11px] font-bold transition">ابدأ ساعتين</button>
+                            <button type="button" id="btnStopPostMealTimer" onclick="stopPostMealTimer()" class="hidden px-2.5 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-[11px] font-bold">إيقاف</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-0.5">
+                        <div>
+                            <div class="font-bold text-xs text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-shoe-prints"></i> التذكير الأسبوعي لفحص القدمين
+                            </div>
+                            <div id="footCheckStatusText" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ينصح بفحص القدمين أسبوعياً للوقاية</div>
+                        </div>
+                        <button type="button" onclick="markFootCheckedToday()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-[11px] font-bold transition">تم الفحص اليوم ✓</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- جدول سجل القياسات السابقة -->
             <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <h3 class="font-bold mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 text-sm flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> سجل قياساتك السابقة كلها
@@ -378,7 +477,8 @@
                                 <th class="p-3">التاريخ والوقت</th>
                                 <th class="p-3">القياس (mg/dL)</th>
                                 <th class="p-3">الوقت</th>
-                                <th class="p-3">العلاج / الجرعة</th>
+                                <th class="p-3">الضغط</th>
+                                <th class="p-3">العلاج / الوجبة</th>
                                 <th class="p-3">الحالة</th>
                             </tr>
                         </thead>
@@ -388,70 +488,129 @@
             </div>
         </div>
 
-        <!-- 2. خانة فحص الأكل -->
-        <div id="mealAiTab" class="tab-content">
+        <!-- 2. خانة الكاميرا الذكية (فحص الأكل + قراءة التحاليل المختبرية) -->
+        <div id="mealAiTab" class="tab-content space-y-5">
             <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div class="text-center mb-6">
-                    <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
-                        <i class="fa-solid fa-camera"></i>
-                    </div>
-                    <h2 class="text-xl font-black">افحص وجبتك بالذكاء الاصطناعي</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">طك صورة للأكل أو اختارها من الاستوديو حتى نحسبلك الكارب والجرعة المناسبة</p>
-                </div>
-                
-                <input type="file" id="mealImageInput" accept="image/*" class="hidden" onchange="previewMealImage(event)">
-                <div id="imagePreviewBox" onclick="document.getElementById('mealImageInput').click()" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl h-52 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition bg-cover bg-center mb-4">
-                    <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2" id="uploadIcon"></i>
-                    <span id="uploadText" class="text-xs font-bold px-3 py-1 rounded-lg bg-slate-900/60 text-white">دوس هنا حتى تختار صورة الأكل</span>
-                </div>
-                
-                <button type="button" id="btnAnalyzeMeal" onclick="processMealImage()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">افحص الصورة واحسب الجرعة</button>
-                
-                <div id="mealAiLoader" class="hidden text-center mt-6">
-                    <div class="inline-block w-8 h-8 border-4 border-slate-200 rounded-full loader mb-2"></div>
-                    <p class="text-xs font-bold text-amber-600">لحظة.. دا نفحص الصورة ونحسب مكونات الأكل...</p>
+                <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-5 text-xs font-bold">
+                    <button type="button" id="modeMealBtn" onclick="switchCameraMode('meal')" class="py-2.5 rounded-xl bg-amber-500 text-white shadow transition">
+                        <i class="fa-solid fa-utensils ml-1"></i> فحص وجبة أكل
+                    </button>
+                    <button type="button" id="modeLabBtn" onclick="switchCameraMode('lab')" class="py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-file-medical ml-1"></i> قراءة تحليل مختبري
+                    </button>
                 </div>
 
-                <div id="mealAiResult" class="hidden mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl text-xs"></div>
+                <!-- قسم فحص الأكل -->
+                <div id="mealScanSection">
+                    <div class="text-center mb-5">
+                        <div class="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <h2 class="text-xl font-black">افحص وجبتك بالذكاء الاصطناعي</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">طك صورة للأكل أو اختارها حتى نحسبلك الكارب والجرعة المناسبة</p>
+                    </div>
+                    
+                    <input type="file" id="mealImageInput" accept="image/*" class="hidden" onchange="previewMealImage(event)">
+                    <div id="imagePreviewBox" onclick="document.getElementById('mealImageInput').click()" class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl h-48 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition bg-cover bg-center mb-4">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl mb-2" id="uploadIcon"></i>
+                        <span id="uploadText" class="text-xs font-bold px-3 py-1 rounded-lg bg-slate-900/60 text-white">دوس هنا حتى تختار صورة الأكل</span>
+                    </div>
+                    
+                    <button type="button" id="btnAnalyzeMeal" onclick="processMealImage()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">افحص الصورة واحسب الجرعة</button>
+                    
+                    <div id="mealAiLoader" class="hidden text-center mt-6">
+                        <div class="inline-block w-8 h-8 border-4 border-slate-200 rounded-full loader mb-2"></div>
+                        <p class="text-xs font-bold text-amber-600">لحظة.. دا نفحص الصورة ونحسب مكونات الأكل...</p>
+                    </div>
+
+                    <div id="mealAiResult" class="hidden mt-5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl text-xs space-y-3"></div>
+                </div>
+
+                <!-- قسم قراءة التحاليل المختبرية بالكاميرا -->
+                <div id="labScanSection" class="hidden">
+                    <div class="text-center mb-5">
+                        <div class="w-14 h-14 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">
+                            <i class="fa-solid fa-microscope"></i>
+                        </div>
+                        <h2 class="text-xl font-black">اقرأ ورقة التحليل المختبري</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">صوّر ورقة التحليل (تراكمي، كلى، دهون) ونشرحلك نتيجتها بالعراقي ونرسلها للدكتور</p>
+                    </div>
+
+                    <input type="file" id="labImageInput" accept="image/*" class="hidden" onchange="previewLabImage(event)">
+                    <div id="labPreviewBox" onclick="document.getElementById('labImageInput').click()" class="border-2 border-dashed border-blue-300 dark:border-blue-800 rounded-2xl h-48 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-blue-50/40 dark:hover:bg-slate-800/50 transition bg-cover bg-center mb-4">
+                        <i class="fa-solid fa-file-arrow-up text-3xl mb-2 text-blue-500" id="labUploadIcon"></i>
+                        <span id="labUploadText" class="text-xs font-bold px-3 py-1 rounded-lg bg-blue-900/75 text-white">دوس هنا حتى تختار صورة ورقة التحليل</span>
+                    </div>
+
+                    <button type="button" id="btnAnalyzeLab" onclick="processLabImage()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md text-xs transition">اقرأ التحليل واشرحه</button>
+
+                    <div id="labAiLoader" class="hidden text-center mt-6">
+                        <div class="inline-block w-8 h-8 border-4 border-slate-200 rounded-full loader mb-2"></div>
+                        <p class="text-xs font-bold text-blue-600">لحظة.. دا نقرأ أرقام التحليل المختبري ونفسرها...</p>
+                    </div>
+
+                    <div id="labAiResult" class="hidden mt-5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 p-5 rounded-2xl text-xs space-y-2.5"></div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-folder-open text-blue-600"></i> سجل تحاليلك المختبرية المحفوظة:
+                        </h4>
+                        <div id="patientLabHistoryList" class="space-y-2.5 text-xs"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 3. خانة أحجي ويه الذكاء -->
+        <!-- 3. خانة أحجي ويه الذكاء (مع زر التسجيل الصوتي باللهجة العراقية) -->
         <div id="aiAssistantTab" class="tab-content">
             <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[70vh] overflow-hidden">
-                <div class="p-4 bg-purple-600 text-white font-bold text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-robot"></i> المساعد الطبي الذكي (متخصص بالسكري)
+                <div class="p-4 bg-purple-600 text-white font-bold text-sm flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-robot"></i> المساعد الطبي الذكي (صوتي وكتابي)</span>
+                    <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">يدعم اللهجة العراقية</span>
                 </div>
                 <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
                     <div class="flex justify-start">
                         <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm">
-                            هلا بيك عيني! أني مساعدك الطبي المتخصص بالسكري وتبعاته، اسألني عن قياسات السكر، أعراض الهبوط والارتفاع، الأكل، أو العلاج وراح أجاوبك فوراً.
+                            هلا بيك عيني! أني مساعدك الطبي المتخصص بالسكري. تكدر تكتب سؤالك أو تدوس زر المايكروفون وتحجي بصوتك وراح أجاوبك فوراً.
                         </div>
                     </div>
                 </div>
                 <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
-                    <input type="text" id="aiInput" onkeydown="if(event.key==='Enter') askAiAssistant()" placeholder="أحجي أو اكتب سؤالك الطبي هنا..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
+                    <button type="button" id="btnAiMic" onclick="startVoiceForAiChat()" title="احجي بصوتك" class="w-11 h-11 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 hover:bg-purple-200 flex items-center justify-center shrink-0 transition">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <input type="text" id="aiInput" onkeydown="if(event.key==='Enter') askAiAssistant()" placeholder="احجي بالمايك أو اكتب سؤالك الطبي هنا..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
                     <button type="button" id="btnAskAi" onclick="askAiAssistant()" class="px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition">دز</button>
                 </div>
             </div>
         </div>
 
-        <!-- 4. خانة راسل الدكتور -->
+        <!-- 4. خانة راسل الدكتور (ملاحظات الدكتور + أزرار الأعراض السريعة) -->
         <div id="chatDoctorTab" class="tab-content">
-            <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[72vh] overflow-hidden">
+            <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col h-[74vh] overflow-hidden">
                 <div class="p-4 bg-blue-600 text-white font-bold text-sm flex items-center justify-between">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-user-md"></i> حجي مباشر ويه الدكتور المشرف</span>
                 </div>
 
+                <!-- صندوق ملاحظات وخطة العلاج من الدكتور -->
                 <div class="p-3.5 bg-blue-50/90 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800/60 text-xs">
                     <div class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5 mb-1">
                         <i class="fa-solid fa-file-prescription"></i> ملاحظات وخطة العلاج من الدكتور:
                     </div>
-                    <p id="patientDoctorNotesText" class="text-slate-700 dark:text-slate-300 leading-relaxed">ماكو ملاحظات مسجلة من الدكتور حالياً.</p>
+                    <p id="patientDoctorNotesText" class="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">ماكو ملاحظات مسجلة من الدكتور حالياً.</p>
                 </div>
 
                 <div id="patientDocChatBox" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50"></div>
-                <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+
+                <!-- أزرار أعراض واستفسارات سريعة بلمسة واحدة -->
+                <div class="px-3 pt-2 pb-1.5 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200/80 dark:border-slate-800 flex gap-1.5 overflow-x-auto">
+                    <button type="button" onclick="sendQuickSymptom('دكتور أحس بدوخة وتعرق ورجفة هسه')" class="px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 text-[11px] font-bold whitespace-nowrap hover:bg-red-100 transition">أحس بدوخة وتعرق</button>
+                    <button type="button" onclick="sendQuickSymptom('دكتور سكري صاعد هالأيام رغم الالتزام بالعلاج')" class="px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold whitespace-nowrap hover:bg-amber-100 transition">سكري صاعد هالأيام</button>
+                    <button type="button" onclick="sendQuickSymptom('دكتور خلص علاجي وأريد تجديد الوصفة')" class="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-bold whitespace-nowrap hover:bg-blue-100 transition">خلص علاجي وأريد تجديد</button>
+                    <button type="button" onclick="sendQuickSymptom('دكتور أريد أحجز موعد مراجعة بالعيادة')" class="px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold whitespace-nowrap hover:bg-emerald-100 transition">أريد أحجز موعد</button>
+                </div>
+
+                <div class="p-3 bg-white dark:bg-slate-900 flex gap-2">
                     <input type="text" id="pChatInput" onkeydown="if(event.key==='Enter') sendMsgAsPatient()" placeholder="اكتب رسالتك للدكتور هنا..." class="flex-1 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none">
                     <button type="button" onclick="sendMsgAsPatient()" class="px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition">دز</button>
                 </div>
@@ -468,7 +627,7 @@
                         </div>
                         <div>
                             <h2 class="text-lg font-black">بياناتي الصحية</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">الوزن، الطول، مؤشر الكتلة، ورقم الطوارئ</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">الوزن، الطول، BMI، الطوارئ، ومنبّه العلاج</p>
                         </div>
                     </div>
                     <button type="button" onclick="openPatientReport()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5 transition">
@@ -505,9 +664,15 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">رقم الطوارئ مال الأهل (SOS)</label>
-                        <input type="text" id="profPhone" class="w-full p-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 outline-none">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">رقم الطوارئ مال الأهل (SOS)</label>
+                            <input type="text" id="profPhone" class="w-full p-3 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 outline-none">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600 dark:text-slate-300 mb-1 block">منبّه موعد العلاج اليومي</label>
+                            <input type="time" id="profMedTime" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none">
+                        </div>
                     </div>
 
                     <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
@@ -528,26 +693,29 @@
         
         <div id="docDashboardTab" class="doc-tab-content active flex-1">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                <!-- قائمة المراجعين (الحالات الحرجة تظهر بالأعلى تلقائياً) -->
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
                     <div class="p-4 bg-blue-900 text-white font-bold text-sm flex items-center justify-between">
                         <span><i class="fa-solid fa-users ml-1"></i> قائمة المراجعين المسجلين</span>
                         <span id="patientCountBadge" class="bg-blue-700 text-xs px-2 py-0.5 rounded-full">0</span>
                     </div>
-                    <div id="docPatientList" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[75vh]"></div>
+                    <div id="docPatientList" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[78vh]"></div>
                 </div>
 
+                <!-- تفاصيل ملف المراجع -->
                 <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 flex flex-col justify-between space-y-5">
                     <div>
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 mb-5">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-5">
                             <div>
                                 <h2 id="dName" class="text-2xl font-black text-slate-900 dark:text-white">اختار مراجع من القائمة</h2>
                                 <p id="dMeta" class="text-xs text-slate-500 dark:text-slate-400 mt-1">-</p>
                             </div>
-                            <button type="button" onclick="openDocReport()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-2">
-                                <i class="fa-solid fa-qrcode"></i> التقرير المختصر والباركود
+                            <button type="button" onclick="openDocReport()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-2 shrink-0">
+                                <i class="fa-solid fa-qrcode"></i> التقرير والباركود
                             </button>
                         </div>
 
+                        <!-- الرسم البياني بواجهة الطبيب فقط -->
                         <div class="h-52 mb-5 relative">
                             <canvas id="dChart"></canvas>
                             <div id="dChartEmptyMsg" class="hidden absolute inset-0 flex items-center justify-center bg-slate-50/80 dark:bg-slate-800/80 rounded-2xl text-xs font-bold text-slate-500">
@@ -562,9 +730,10 @@
                             <p id="dAiNotes" class="text-slate-700 dark:text-slate-300 leading-relaxed">-</p>
                         </div>
 
+                        <!-- جدول قياسات السكر والضغط -->
                         <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-4">
                             <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5">
-                                <i class="fa-solid fa-list-check text-blue-600"></i> سجل قياسات السكر مال هذا المراجع:
+                                <i class="fa-solid fa-list-check text-blue-600"></i> سجل قياسات السكر والضغط مال هذا المراجع:
                             </h4>
                             <div class="overflow-x-auto max-h-44">
                                 <table class="w-full text-right border-collapse text-xs">
@@ -573,7 +742,8 @@
                                             <th class="p-2">التاريخ والوقت</th>
                                             <th class="p-2">القياس (mg/dL)</th>
                                             <th class="p-2">الوقت</th>
-                                            <th class="p-2">العلاج / الجرعة</th>
+                                            <th class="p-2">الضغط</th>
+                                            <th class="p-2">العلاج / الوجبة</th>
                                         </tr>
                                     </thead>
                                     <tbody id="docPatientLogsTable" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
@@ -582,24 +752,45 @@
                         </div>
                     </div>
 
+                    <!-- خطة العلاج + قوالب جاهزة + إعدادات حاسبة الأنسولين + تغيير الباسورد -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 block">اكتب ملاحظاتك وخطة العلاج للمراجع:</label>
-                            <textarea id="dNotesInput" rows="2" class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs mb-2 outline-none"></textarea>
-                            <button type="button" onclick="saveNotes()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition">احفظ الملاحظات بملف المراجع</button>
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block">قوالب خطط علاج جاهزة (اضغط للإضافة):</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" onclick="appendTemplateNote('الالتزام بحمية تقليل النشويات والخبز الأبيض والحلويات والمشروبات الغازية.')" class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px] font-bold hover:bg-blue-100">+ حمية النشويات</button>
+                                <button type="button" onclick="appendTemplateNote('عند هبوط السكر أقل من 70: تناول نصف كوب عصير محلى أو 3 تمرات فوراً وإعادة القياس بعد 15 دقيقة.')" class="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[10px] font-bold hover:bg-amber-100">+ بروتوكول الهبوط</button>
+                                <button type="button" onclick="appendTemplateNote('إجراء فحص التراكمي HbA1c ووظائف الكلى والدهون وفحص قاع العين والقدمين كل 3 أشهر.')" class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold hover:bg-emerald-100">+ فحوصات دورية</button>
+                            </div>
+
+                            <textarea id="dNotesInput" rows="2" placeholder="اكتب ملاحظاتك وخطة العلاج للمراجع..." class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none"></textarea>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 block">السكر المستهدف (mg/dL)</label>
+                                    <input type="number" id="dTargetGlucose" value="120" class="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 block">معامل التصحيح (ISF)</label>
+                                    <input type="number" id="dCorrectionFactor" value="40" class="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="saveNotes()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition">احفظ الملاحظات وإعدادات الجرعة</button>
                         </div>
 
-                        <div class="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 p-3.5 rounded-2xl">
-                            <label class="text-xs font-bold text-amber-900 dark:text-amber-300 mb-1.5 flex items-center gap-1.5">
-                                <i class="fa-solid fa-key"></i> تغيير الرمز السري للمراجع:
-                            </label>
-                            <div class="relative mb-2">
-                                <input type="password" id="docResetPatPass" placeholder="اكتب الرمز السري الجديد للمراجع" class="w-full p-2.5 pl-9 rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-800 text-xs outline-none">
-                                <button type="button" onclick="togglePasswordVisibility('docResetPatPass', 'docResetEyeIcon')" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-600">
-                                    <i id="docResetEyeIcon" class="fa-solid fa-eye text-xs"></i>
-                                </button>
+                        <div class="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 p-3.5 rounded-2xl flex flex-col justify-between">
+                            <div>
+                                <label class="text-xs font-bold text-amber-900 dark:text-amber-300 mb-1.5 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-key"></i> تغيير الرمز السري للمراجع:
+                                </label>
+                                <div class="relative mb-2">
+                                    <input type="password" id="docResetPatPass" placeholder="اكتب الرمز السري الجديد للمراجع" class="w-full p-2.5 pl-9 rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-800 text-xs outline-none">
+                                    <button type="button" onclick="togglePasswordVisibility('docResetPatPass', 'docResetEyeIcon')" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-600">
+                                        <i id="docResetEyeIcon" class="fa-solid fa-eye text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <button type="button" id="btnResetPatPass" onclick="resetPatientPasswordByDoctor()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition">تحديث الرمز السري</button>
+                            <button type="button" id="btnResetPatPass" onclick="resetPatientPasswordByDoctor()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition">تحديث الرمز السري</button>
                         </div>
                     </div>
                 </div>
@@ -637,8 +828,8 @@
                 <span class="dock-dot"></span>
             </button>
 
-            <button type="button" onclick="switchTab('mealAi', this)" data-title="فحص الأكل" class="dock-item p-nav-btn">
-                <span class="dock-tooltip">فحص الأكل</span>
+            <button type="button" onclick="switchTab('mealAi', this)" data-title="فحص الأكل والتحاليل" class="dock-item p-nav-btn">
+                <span class="dock-tooltip">فحص الأكل والتحاليل</span>
                 <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-lg sm:text-xl">
                     <i class="fa-solid fa-camera"></i>
                 </div>
@@ -664,6 +855,7 @@
 
             <div class="dock-divider"></div>
 
+            <!-- زر الطوارئ SOS بالأسفل -->
             <button type="button" onclick="triggerSOS()" data-title="نداء طوارئ SOS" class="dock-item">
                 <span class="dock-tooltip">نداء طوارئ SOS</span>
                 <div class="dock-icon-tile w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-700 text-white flex items-center justify-center text-lg sm:text-xl">
@@ -730,6 +922,55 @@
         </nav>
     </div>
 
+    <!-- ================= نافذة الإسعافات الأولية الفورية للحالات الحرجة ================= -->
+    <div id="firstAidModal" class="fixed inset-0 z-[110] bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border-2 border-red-500 space-y-4">
+            <div class="flex items-center gap-3 text-red-600">
+                <div class="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/60 flex items-center justify-center text-2xl shrink-0">
+                    <i class="fa-solid fa-kit-medical"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-lg" id="firstAidHeading">تنبيه إسعاف أولي عاجل!</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">تصرف فوراً حسب الخطوات التالية:</p>
+                </div>
+            </div>
+            <div id="firstAidSteps" class="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/60 text-xs space-y-2 leading-relaxed font-semibold text-slate-800 dark:text-slate-200"></div>
+            <div class="flex gap-2">
+                <button type="button" onclick="document.getElementById('firstAidModal').classList.add('hidden'); triggerSOS();" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-truck-medical"></i> استغاثة SOS للأهل
+                </button>
+                <button type="button" onclick="document.getElementById('firstAidModal').classList.add('hidden')" class="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-xl">فهمت</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= نافذة نداء الطوارئ SOS الحقيقية (واتساب + GPS + اتصال) ================= -->
+    <div id="sosModal" class="fixed inset-0 z-[110] bg-slate-900/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border-2 border-red-600 space-y-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center mx-auto text-3xl shadow-lg shadow-red-600/40 animate-pulse">
+                <i class="fa-solid fa-truck-medical"></i>
+            </div>
+            <h3 class="text-xl font-black text-red-600">نداء طوارئ عاجل (SOS)</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-300" id="sosStatusMsg">جاري تحديد موقعك الجغرافي (GPS) لإرساله مع آخر قياس سكر...</p>
+
+            <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-right text-xs space-y-1.5">
+                <div><strong>رقم طوارئ الأهل:</strong> <span id="sosTargetPhone" class="text-red-600 font-black"></span></div>
+                <div><strong>آخر قياس سكر:</strong> <span id="sosLatestSugar" class="font-bold"></span></div>
+                <div><strong>الموقع الجغرافي:</strong> <span id="sosLocationText" class="text-emerald-600 font-bold">جاري الالتقاط...</span></div>
+            </div>
+
+            <div class="space-y-2.5 pt-1">
+                <a id="btnSosWhatsapp" href="#" target="_blank" rel="noopener" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg flex items-center justify-center gap-2 transition">
+                    <i class="fa-brands fa-whatsapp text-base"></i> دز استغاثة + موقعي على واتساب فوراً
+                </a>
+                <a id="btnSosCall" href="#" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-phone-volume"></i> اتصال هاتفي مباشر بالأهل
+                </a>
+                <button type="button" onclick="document.getElementById('sosModal').classList.add('hidden')" class="w-full py-2.5 bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-xl">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= نافذة التقرير الطبي المصغر وتصدير الباركود ================= -->
     <div id="reportModal" class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-3 overflow-y-auto">
         <div class="bg-white text-black w-full max-w-lg rounded-2xl p-5 shadow-2xl relative my-4">
@@ -786,7 +1027,7 @@
 
                 <div class="border border-black p-2.5 rounded-xl">
                     <h4 class="font-bold text-[10px] mb-0.5">ملاحظات وخطة العلاج:</h4>
-                    <p id="rNotes" class="leading-snug font-semibold text-[11px]"></p>
+                    <p id="rNotes" class="leading-snug font-semibold text-[11px] whitespace-pre-line"></p>
                 </div>
 
                 <div class="pt-2 flex justify-between items-center text-[10px] border-t border-slate-300">
@@ -829,15 +1070,373 @@
     </div>
 
     <script>
-        let state = { user: null, patients: [], selDocPatId: null, selChatPatId: null, patientLogs: [], currentReportMeta: null };
+        let state = {
+            user: null,
+            patients: [],
+            selDocPatId: null,
+            selChatPatId: null,
+            patientLogs: [],
+            currentReportMeta: null,
+            lastMealAnalysis: null,
+            lastLabAnalysis: null,
+            calculatedCorrectionDose: null
+        };
         let dc = null;
+        let deferredInstallPrompt = null;
+        let postMealTimerInterval = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
             initMacClock();
             initDockMagnification();
+            initInlinePWA();
+            initPostMealTimerOnLoad();
+            initMedReminderWatcher();
             initSession();
         });
+
+        /* ---------------- إعداد Manifest لتثبيت التطبيق PWA بدون 404 ---------------- */
+        function initInlinePWA() {
+            try {
+                const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="115" fill="#059669"/><path d="M256 392s-124-78-124-174c0-46 36-82 80-82 26 0 44 14 44 14s18-14 44-14c44 0 80 36 80 82 0 96-124 174-124 174z" fill="#ffffff"/><polyline points="170,235 215,235 235,195 262,275 285,225 342,225" fill="none" stroke="#059669" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                const iconUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
+                const manifestObj = {
+                    name: 'سُكّري الذكي - متابعة السكري',
+                    short_name: 'سُكّري',
+                    start_url: window.location.origin + '/',
+                    display: 'standalone',
+                    background_color: '#0f172a',
+                    theme_color: '#059669',
+                    dir: 'rtl',
+                    lang: 'ar',
+                    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml' }]
+                };
+                const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                const linkEl = document.getElementById('dynamicManifest');
+                if (linkEl) linkEl.href = URL.createObjectURL(blob);
+            } catch (e) {}
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredInstallPrompt = e;
+            });
+        }
+
+        async function installPWA() {
+            closePatientDrawer();
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+            } else {
+                alert('لتثبيت تطبيق سُكّري على شاشة موبايلك:\n\n• في كروم (أندرويد): افتح قائمة المتصفح (⋮) واختر "الإضافة إلى الشاشة الرئيسية".\n• في سفاري (آيفون): اضغط زر المشاركة (Share) واختر "إضافة إلى الصفحة الرئيسية".');
+            }
+        }
+
+        /* ---------------- تحليل الملاحظات واستخراج إعدادات الجرعة التصحيحية ---------------- */
+        function parseDoctorNotesAndDose(rawNotes) {
+            const text = String(rawNotes || '');
+            const match = text.match(/\[\[DOSE:(\d+):(\d+)\]\]/);
+            let target = 120;
+            let factor = 40;
+            if (match) {
+                target = parseInt(match[1], 10) || 120;
+                factor = parseInt(match[2], 10) || 40;
+            }
+            const cleanText = text.replace(/\n?\[\[DOSE:\d+:\d+\]\]/g, '').trim();
+            return { cleanText, target, factor };
+        }
+
+        /* ---------------- تحليل حقل العلاج لاستخراج ضغط الدم إن وجد ---------------- */
+        function parseMedsAndBp(rawMeds) {
+            const str = String(rawMeds || '-');
+            const bpMatch = str.match(/\|\s*ضغط:\s*([0-9\/]+)/);
+            const bp = bpMatch ? bpMatch[1] : '-';
+            const cleanMeds = str.replace(/\s*\|\s*ضغط:\s*[0-9\/]+/g, '').trim() || '-';
+            return { cleanMeds, bp };
+        }
+
+        /* ---------------- مؤقت القياس بعد الأكل (ساعتين) ---------------- */
+        function initPostMealTimerOnLoad() {
+            const endTs = parseInt(localStorage.getItem('postMealTimerEnd') || '0', 10);
+            if (endTs > Date.now()) {
+                runPostMealCountdown(endTs);
+            }
+        }
+
+        function startPostMealTimer() {
+            const twoHoursMs = 2 * 60 * 60 * 1000;
+            const endTs = Date.now() + twoHoursMs;
+            localStorage.setItem('postMealTimerEnd', String(endTs));
+            runPostMealCountdown(endTs);
+            alert('⏱️ تم تشغيل مؤقت القياس بعد الأكل (ساعتين). راح ننبّهك أول ما يخلص الوقت!');
+        }
+
+        function stopPostMealTimer() {
+            localStorage.removeItem('postMealTimerEnd');
+            if (postMealTimerInterval) clearInterval(postMealTimerInterval);
+            const disp = document.getElementById('postMealTimerDisplay');
+            const stopBtn = document.getElementById('btnStopPostMealTimer');
+            if (disp) disp.innerText = 'غير مفعّل حالياً';
+            if (stopBtn) stopBtn.classList.add('hidden');
+        }
+
+        function runPostMealCountdown(endTs) {
+            if (postMealTimerInterval) clearInterval(postMealTimerInterval);
+            const disp = document.getElementById('postMealTimerDisplay');
+            const stopBtn = document.getElementById('btnStopPostMealTimer');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+
+            const tick = () => {
+                const diff = endTs - Date.now();
+                if (diff <= 0) {
+                    stopPostMealTimer();
+                    playSoftChime();
+                    alert('⏰ مرّت ساعتان على وجبتك! حان وقت قياس السكر ورا الأكل.');
+                    return;
+                }
+                const hrs = Math.floor(diff / 3600000);
+                const mins = Math.floor((diff % 3600000) / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                if (disp) {
+                    disp.innerText = `متبقي ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                }
+            };
+            tick();
+            postMealTimerInterval = setInterval(tick, 1000);
+        }
+
+        /* ---------------- منبّه موعد العلاج اليومي ---------------- */
+        function initMedReminderWatcher() {
+            setInterval(() => {
+                if (!state.user || state.user.role !== 'patient') return;
+                const savedTime = localStorage.getItem(`medReminderTime_${state.user.id}`);
+                if (!savedTime) return;
+                const now = new Date();
+                const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                const todayKey = `medNotified_${now.toDateString()}_${hhmm}`;
+                if (hhmm === savedTime && !sessionStorage.getItem(todayKey)) {
+                    sessionStorage.setItem(todayKey, '1');
+                    playSoftChime();
+                    alert(`💊 تذكير بموعد العلاج اليومي (${hhmm})! لا تنسى تاخذ جرعتك بوقتها.`);
+                }
+            }, 20000);
+        }
+
+        function playSoftChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            } catch (e) {}
+        }
+
+        /* ---------------- فحص القدم السكري الأسبوعي ---------------- */
+        function updateFootCheckUI() {
+            const el = document.getElementById('footCheckStatusText');
+            if (!el || !state.user) return;
+            const lastDateStr = localStorage.getItem(`footCheck_${state.user.id}`);
+            if (!lastDateStr) {
+                el.innerText = 'ينصح بفحص القدمين أسبوعياً للوقاية';
+                return;
+            }
+            const last = new Date(lastDateStr);
+            const daysAgo = Math.floor((Date.now() - last.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysAgo <= 7) {
+                el.innerText = `آخر فحص: ${lastDateStr} (مكتمل لهذا الأسبوع ✓)`;
+            } else {
+                el.innerText = `آخر فحص قبل ${daysAgo} يوم — حان وقت الفحص الأسبوعي!`;
+            }
+        }
+
+        function markFootCheckedToday() {
+            if (!state.user) return;
+            const todayStr = new Date().toISOString().slice(0, 10);
+            localStorage.setItem(`footCheck_${state.user.id}`, todayStr);
+            updateFootCheckUI();
+            alert('✅ عاشت ايدك! تم تسجيل فحص القدمين اليوم.');
+        }
+
+        /* ---------------- حاسبة الجرعة التصحيحية للأنسولين ---------------- */
+        function calculateCorrectionDose() {
+            const currentVal = parseFloat(document.getElementById('corrGlucoseInput').value);
+            if (!currentVal || currentVal < 40) {
+                alert('اكتب قراءة السكر الحالية بشكل صحيح');
+                return;
+            }
+            const parsed = parseDoctorNotesAndDose(state.user?.doctorNotes);
+            const target = parsed.target;
+            const factor = parsed.factor;
+            const resBox = document.getElementById('corrDoseResult');
+            const resText = document.getElementById('corrDoseText');
+
+            if (currentVal <= target) {
+                state.calculatedCorrectionDose = 0;
+                resText.innerText = `سكرك (${currentVal}) ضمن المستهدف (${target}) — ما تحتاج جرعة تصحيحية.`;
+                resBox.classList.remove('hidden');
+                return;
+            }
+
+            const rawUnits = (currentVal - target) / factor;
+            const roundedUnits = Math.round(rawUnits * 2) / 2;
+            state.calculatedCorrectionDose = roundedUnits;
+            resText.innerText = `الجرعة التصحيحية المقترحة: ${roundedUnits} وحدة أنسولين سريع`;
+            resBox.classList.remove('hidden');
+        }
+
+        function applyCalculatedDoseToLog() {
+            const gVal = document.getElementById('corrGlucoseInput').value;
+            if (gVal) document.getElementById('logVal').value = gVal;
+            if (state.calculatedCorrectionDose !== null) {
+                document.getElementById('logMeds').value = `${state.calculatedCorrectionDose} وحدة أنسولين تصحيحي`;
+            }
+            document.getElementById('quickLogCard').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /* ---------------- التسجيل الصوتي باللهجة العراقية ---------------- */
+        function createSpeechRecognizer(onResultCallback, onEndCallback) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('عذراً، متصفحك الحالي ما يدعم التسجيل الصوتي المباشر. جرب متصفح Google Chrome.');
+                return null;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-IQ';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                onResultCallback(transcript);
+            };
+            recognition.onerror = () => {
+                if (onEndCallback) onEndCallback();
+            };
+            recognition.onend = () => {
+                if (onEndCallback) onEndCallback();
+            };
+            return recognition;
+        }
+
+        function startVoiceLog() {
+            const btn = document.getElementById('btnVoiceLog');
+            const label = document.getElementById('voiceLogLabel');
+            const rec = createSpeechRecognizer((spokenText) => {
+                const numMatch = spokenText.match(/\d{2,3}/);
+                if (numMatch) {
+                    document.getElementById('logVal').value = numMatch[0];
+                }
+                if (spokenText.includes('ريك') || spokenText.includes('صائم') || spokenText.includes('صايم')) {
+                    document.getElementById('logTime').value = 'على الريك';
+                } else if (spokenText.includes('أكل') || spokenText.includes('اكل') || spokenText.includes('غدا') || spokenText.includes('عشا')) {
+                    document.getElementById('logTime').value = 'ورا الأكل';
+                } else {
+                    document.getElementById('logTime').value = 'عشوائي';
+                }
+                document.getElementById('logMeds').value = spokenText;
+                alert(`🎙️ سمعناك: "${spokenText}"\nتم تعبئة الحقول تلقائياً، اضغط "احفظ القياس" للتأكيد.`);
+            }, () => {
+                btn.classList.remove('mic-recording');
+                label.innerText = 'سجّل بالصوت (مثلاً: سكري 130 ورا الأكل)';
+            });
+
+            if (rec) {
+                btn.classList.add('mic-recording');
+                label.innerText = 'دا نسمعك هسه... احجي القياس';
+                rec.start();
+            }
+        }
+
+        function startVoiceForAiChat() {
+            const btn = document.getElementById('btnAiMic');
+            const rec = createSpeechRecognizer((spokenText) => {
+                document.getElementById('aiInput').value = spokenText;
+                askAiAssistant();
+            }, () => {
+                btn.classList.remove('mic-recording');
+            });
+
+            if (rec) {
+                btn.classList.add('mic-recording');
+                rec.start();
+            }
+        }
+
+        /* ---------------- الإسعافات الأولية ونداء SOS الحقيقي ---------------- */
+        function openFirstAidModal(glucoseVal) {
+            const val = parseFloat(glucoseVal);
+            const heading = document.getElementById('firstAidHeading');
+            const steps = document.getElementById('firstAidSteps');
+            if (!val || (val >= 70 && val <= 250)) return;
+
+            if (val < 70) {
+                heading.innerText = `هبوط حاد بالسكر (${val} mg/dL)!`;
+                steps.innerHTML = `
+                    <p>1. تناول فوراً <strong>نصف كوب عصير محلى</strong> أو <strong>ملعقة كبيرة سكر/عسل</strong> أو <strong>3 تمرات</strong>.</p>
+                    <p>2. ارتاح بمكانك ولا تسوق سيارة أو تمشي وحدك.</p>
+                    <p>3. أعد قياس السكر بعد <strong>15 دقيقة</strong> للتأكد من ارتفاعه فوق 80.</p>
+                `;
+            } else {
+                heading.innerText = `ارتفاع عالي بالسكر (${val} mg/dL)!`;
+                steps.innerHTML = `
+                    <p>1. اشرب <strong>كوبين ماء</strong> فوراً لتجنب الجفاف.</p>
+                    <p>2. تجنب أكل أي نشويات أو سكريات، ولا تمارس رياضة عنيفة.</p>
+                    <p>3. راجع خطة الجرعة التصحيحية من الدكتور وتواصل وياه إذا استمر الارتفاع أو حسيت بغثيان.</p>
+                `;
+            }
+            document.getElementById('firstAidModal').classList.remove('hidden');
+        }
+
+        function formatIraqWhatsAppPhone(rawPhone) {
+            let digits = String(rawPhone || '').replace(/\D/g, '');
+            if (digits.startsWith('07')) {
+                digits = '964' + digits.slice(1);
+            } else if (digits.startsWith('00')) {
+                digits = digits.slice(2);
+            }
+            return digits || '9647700000000';
+        }
+
+        function triggerSOS() {
+            const phone = state.user?.emergencyPhone || '07700000000';
+            const waPhone = formatIraqWhatsAppPhone(phone);
+            const latestSugar = state.patientLogs?.length ? `${state.patientLogs[0].val} mg/dL (${state.patientLogs[0].timing})` : 'غير مسجل';
+            const patName = state.user?.name || 'المراجع';
+
+            document.getElementById('sosTargetPhone').innerText = phone;
+            document.getElementById('sosLatestSugar').innerText = latestSugar;
+            document.getElementById('sosLocationText').innerText = 'جاري تحديد الموقع...';
+            document.getElementById('btnSosCall').href = `tel:${phone}`;
+
+            const buildMsg = (locLine) => {
+                const text = `🚨 نداء طوارئ عاجل من تطبيق سُكّري!\nالمراجع: ${patName}\nآخر قياس سكر: ${latestSugar}\n${locLine}\nيرجى التواصل والاطمئنان فوراً.`;
+                document.getElementById('btnSosWhatsapp').href = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
+            };
+
+            buildMsg('الموقع: تعذر تحديد الإحداثيات تلقائياً.');
+            document.getElementById('sosModal').classList.remove('hidden');
+
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude.toFixed(6);
+                        const lng = pos.coords.longitude.toFixed(6);
+                        const mapLink = `https://maps.google.com/?q=${lat},${lng}`;
+                        document.getElementById('sosLocationText').innerText = 'تم التقاط الموقع بدقة ✓';
+                        document.getElementById('sosStatusMsg').innerText = 'تم تجهيز رسالة الاستغاثة مع رابط موقعك على الخريطة:';
+                        buildMsg(`موقعي الحالي على الخريطة: ${mapLink}`);
+                    },
+                    () => {
+                        document.getElementById('sosLocationText').innerText = 'غير متاح (تم تجهيز الرسالة بدونه)';
+                        document.getElementById('sosStatusMsg').innerText = 'اضغط على زر واتساب لإرسال الاستغاثة فوراً:';
+                    },
+                    { timeout: 5000 }
+                );
+            }
+        }
 
         /* ---------------- التحكم بالقائمة الجانبية للمريض ---------------- */
         function openPatientDrawer() {
@@ -1001,7 +1600,7 @@
                 try {
                     d = JSON.parse(text);
                 } catch (parseErr) {
-                    showLoginStatus('❌ خطأ بالسيرفر (' + r.status + '): تأكد من تحديث ملف app.py', 'error');
+                    showLoginStatus('❌ خطأ بالسيرفر (' + r.status + '): تأكد من تشغيل app.py', 'error');
                     return;
                 }
                 if (d.success) {
@@ -1055,6 +1654,7 @@
                 populatePatientProfileForm();
                 loadPatientData();
                 loadPatientChat();
+                loadPatientLabReports();
             }
         }
 
@@ -1109,6 +1709,7 @@
             document.getElementById('profWeight').value = u.weight || '';
             document.getElementById('profHeight').value = u.height || '';
             document.getElementById('profPhone').value = u.emergencyPhone || '';
+            document.getElementById('profMedTime').value = localStorage.getItem(`medReminderTime_${u.id}`) || '';
             updateBmiDisplay(u.bmi);
         }
 
@@ -1117,6 +1718,12 @@
             const originalText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> لحظة دا نحفظ...';
+
+            const medTimeVal = document.getElementById('profMedTime').value;
+            if (state.user) {
+                if (medTimeVal) localStorage.setItem(`medReminderTime_${state.user.id}`, medTimeVal);
+                else localStorage.removeItem(`medReminderTime_${state.user.id}`);
+            }
 
             const payload = {
                 age: document.getElementById('profAge').value,
@@ -1138,7 +1745,7 @@
                     const drawerName = document.getElementById('drawerUserName');
                     if (drawerName) drawerName.innerText = state.user.name;
                     updateBmiDisplay(state.user.bmi);
-                    alert('✅ عاشت ايدك! تم تحديث بياناتك الصحية بنجاح.');
+                    alert('✅ عاشت ايدك! تم تحديث بياناتك الصحية ومنبّه العلاج بنجاح.');
                 } else {
                     alert('❌ صار خطأ: ' + (d.message || 'ما كدرنا نحدث البيانات'));
                 }
@@ -1169,28 +1776,48 @@
             document.getElementById('pAvg').innerText = avg || '-';
             document.getElementById('pA1c').innerText = avg ? ((avg+46.7)/28.7).toFixed(1)+'%' : '-';
             updateBmiDisplay(u.bmi);
+            updateFootCheckUI();
+
+            const parsedDoc = parseDoctorNotesAndDose(u.doctorNotes);
+            const calcBadge = document.getElementById('calcParamsBadge');
+            if (calcBadge) {
+                calcBadge.innerText = `المستهدف: ${parsedDoc.target} | المعامل: ${parsedDoc.factor}`;
+            }
+
+            const critBanner = document.getElementById('patientCriticalBanner');
+            if (logs.length && (logs[0].val < 70 || logs[0].val > 250)) {
+                critBanner.classList.remove('hidden');
+                document.getElementById('patientCriticalTitle').innerText = logs[0].val < 70
+                    ? `تحذير: هبوط حاد بالسكر (${logs[0].val} mg/dL)!`
+                    : `تحذير: ارتفاع عالي بالسكر (${logs[0].val} mg/dL)!`;
+            } else {
+                critBanner.classList.add('hidden');
+            }
 
             const notesEl = document.getElementById('patientDoctorNotesText');
             if (notesEl) {
-                notesEl.innerText = (u.doctorNotes && u.doctorNotes.trim())
-                    ? u.doctorNotes
+                notesEl.innerText = parsedDoc.cleanText
+                    ? parsedDoc.cleanText
                     : 'ماكو ملاحظات مسجلة من الدكتور حالياً.';
             }
 
             const historyBody = document.getElementById('patientHistoryTable');
             if (logs.length === 0) {
-                historyBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">ماكو أي قياس مسجل لحد هسه.. بلّش سجّل أول قياس إلك!</td></tr>';
+                historyBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">ماكو أي قياس مسجل لحد هسه.. بلّش سجّل أول قياس إلك!</td></tr>';
             } else {
                 historyBody.innerHTML = logs.map(l => {
+                    const parsedRow = parseMedsAndBp(l.meds);
                     let badge = '<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">طبيعي وزين</span>';
-                    if (l.val < 70) badge = '<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold text-[10px]">هبوط!</span>';
+                    if (l.val < 70) badge = '<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">هبوط حاد!</span>';
+                    else if (l.val > 250) badge = '<span class="px-2 py-0.5 rounded-full bg-red-600 text-white font-bold text-[10px]">ارتفاع خطر!</span>';
                     else if (l.val > 180) badge = '<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px]">صاعد!</span>';
                     return `
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                             <td class="p-3 text-slate-500">${l.date}</td>
                             <td class="p-3 font-black text-slate-800 dark:text-white">${l.val}</td>
                             <td class="p-3">${l.timing}</td>
-                            <td class="p-3 text-slate-500">${l.meds}</td>
+                            <td class="p-3 text-slate-500">${parsedRow.bp}</td>
+                            <td class="p-3 text-slate-500">${parsedRow.cleanMeds}</td>
                             <td class="p-3">${badge}</td>
                         </tr>
                     `;
@@ -1201,19 +1828,56 @@
         async function addLog() {
             const valInput = document.getElementById('logVal');
             const timeInput = document.getElementById('logTime');
+            const bpInput = document.getElementById('logBp');
             const medsInput = document.getElementById('logMeds');
             if (!valInput.value) { alert('اكتب رقم القياس بالبداية'); return; }
             
-            await fetch('/api/logs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({val:valInput.value, timing:timeInput.value, meds:medsInput.value || '-'})});
+            const numVal = parseFloat(valInput.value);
+            const bpStr = bpInput.value.trim();
+            let combinedMeds = medsInput.value.trim() || '-';
+            if (bpStr) {
+                combinedMeds = combinedMeds === '-' ? `ضغط: ${bpStr}` : `${combinedMeds} | ضغط: ${bpStr}`;
+            }
+
+            await fetch('/api/logs', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    val: numVal,
+                    timing: timeInput.value,
+                    meds: combinedMeds
+                })
+            });
             
             valInput.value = ''; 
+            bpInput.value = '';
             medsInput.value = ''; 
-            loadPatientData();
+            await loadPatientData();
+
+            if (numVal < 70 || numVal > 250) {
+                openFirstAidModal(numVal);
+            }
         }
 
-        function triggerSOS() {
-            const phone = state.user?.emergencyPhone || '07700000000';
-            alert(`🚨 دزينا نداء استغاثة عاجل ويه موقعك لرقم الطوارئ مال الأهل: ${phone}`);
+        /* ---------------- التبديل بين فحص الأكل وقراءة التحاليل المختبرية ---------------- */
+        function switchCameraMode(mode) {
+            const mealSec = document.getElementById('mealScanSection');
+            const labSec = document.getElementById('labScanSection');
+            const mealBtn = document.getElementById('modeMealBtn');
+            const labBtn = document.getElementById('modeLabBtn');
+
+            if (mode === 'meal') {
+                mealSec.classList.remove('hidden');
+                labSec.classList.add('hidden');
+                mealBtn.className = 'py-2.5 rounded-xl bg-amber-500 text-white shadow transition';
+                labBtn.className = 'py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700 transition';
+            } else {
+                mealSec.classList.add('hidden');
+                labSec.classList.remove('hidden');
+                labBtn.className = 'py-2.5 rounded-xl bg-blue-600 text-white shadow transition';
+                mealBtn.className = 'py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700 transition';
+                loadPatientLabReports();
+            }
         }
 
         function previewMealImage(e) {
@@ -1230,7 +1894,21 @@
             }
         }
 
-        function compressImageFile(file, maxWidth = 800, quality = 0.8) {
+        function previewLabImage(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const box = document.getElementById('labPreviewBox');
+                    box.style.backgroundImage = `url('${evt.target.result}')`;
+                    document.getElementById('labUploadIcon').classList.add('hidden');
+                    document.getElementById('labUploadText').innerText = 'اختارينا ورقة التحليل - دوس إذا تريد تغيّرها';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function compressImageFile(file, maxWidth = 850, quality = 0.82) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = function(event) {
@@ -1285,27 +1963,27 @@
                     signal: controller.signal
                 });
                 clearTimeout(timer);
-                const text = await r.text();
+                const d = await r.json();
                 loader.classList.add('hidden');
 
-                let d;
-                try {
-                    d = JSON.parse(text);
-                } catch (e) {
-                    resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center"><i class="fa-solid fa-circle-exclamation ml-1"></i> خطأ بالسيرفر (${r.status}): تعذر قراءة رد الفحص.</p>`;
-                    resultBox.classList.remove('hidden');
-                    return;
-                }
-
                 if(d.success) {
+                    state.lastMealAnalysis = d;
                     resultBox.innerHTML = `
-                        <ul class="space-y-2.5">
+                        <ul class="space-y-2">
                             <li><i class="fa-solid fa-utensils text-amber-600 ml-1"></i> <strong>شنو الأكل:</strong> ${d.meal_name}</li>
                             <li><i class="fa-solid fa-wheat-awn text-amber-600 ml-1"></i> <strong>الكربوهيدرات:</strong> ${d.carbs}</li>
                             <li><i class="fa-solid fa-fire text-amber-600 ml-1"></i> <strong>السعرات الحرارية:</strong> ${d.calories}</li>
                             <li class="pt-2 border-t border-amber-200 dark:border-amber-800 text-red-600 dark:text-red-400 font-bold"><i class="fa-solid fa-syringe ml-1"></i> <strong>التوصية والجرعة:</strong> ${d.insulin_dose}</li>
                             <li class="text-slate-600 dark:text-slate-400 text-[11px]"><i class="fa-solid fa-lightbulb text-amber-500 ml-1"></i> ${d.tips}</li>
-                        </ul>`;
+                        </ul>
+                        <div class="pt-3 border-t border-amber-200 dark:border-amber-800 flex flex-wrap gap-2">
+                            <button type="button" onclick="saveAnalyzedMealToLog()" class="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-[11px] shadow transition">
+                                <i class="fa-solid fa-bookmark ml-1"></i> اعتمد الوجبة والجرعة بسجلي
+                            </button>
+                            <button type="button" onclick="startPostMealTimer()" class="py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] transition">
+                                <i class="fa-solid fa-stopwatch ml-1"></i> ذكّرني ورا ساعتين
+                            </button>
+                        </div>`;
                     resultBox.classList.remove('hidden');
                 } else {
                     resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center"><i class="fa-solid fa-circle-exclamation ml-1"></i> ${d.message || 'تعذر تحليل الصورة'}</p>`;
@@ -1314,14 +1992,130 @@
             } catch(e) {
                 clearTimeout(timer);
                 loader.classList.add('hidden');
-                const errMsg = e.name === 'AbortError'
-                    ? 'السيرفر تأخر بتحليل الصورة (انتهت المهلة). حاول مرة ثانية.'
-                    : `صار خلل أثناء فحص الصورة: ${e.message}`;
-                resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center"><i class="fa-solid fa-circle-exclamation ml-1"></i> ${errMsg}</p>`;
+                resultBox.innerHTML = `<p class="text-red-600 dark:text-red-400 font-bold text-center">صار خلل أثناء فحص الصورة: ${e.message}</p>`;
                 resultBox.classList.remove('hidden');
             } finally {
                 btn.disabled = false;
             }
+        }
+
+        async function saveAnalyzedMealToLog() {
+            const m = state.lastMealAnalysis;
+            if (!m) return;
+            const currentSugar = prompt('اكتب قياس سكرك الحالي (mg/dL) لحفظه ويه الوجبة (أو اتركه 120 إذا ما قست هسه):', '120');
+            if (currentSugar === null) return;
+            const valNum = parseInt(currentSugar, 10) || 120;
+            const summaryText = `وجبة: ${m.meal_name} (${m.carbs}) | ${m.insulin_dose}`;
+
+            await fetch('/api/logs', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    val: valNum,
+                    timing: 'ورا الأكل',
+                    meds: summaryText
+                })
+            });
+            await loadPatientData();
+            alert('✅ تم حفظ الوجبة والجرعة المقترحة بسجل قياساتك بنجاح!');
+        }
+
+        async function processLabImage() {
+            const input = document.getElementById('labImageInput');
+            if(!input.files[0]) { alert('عيني اختار صورة ورقة التحليل بالبداية!'); return; }
+
+            const btn = document.getElementById('btnAnalyzeLab');
+            const resultBox = document.getElementById('labAiResult');
+            const loader = document.getElementById('labAiLoader');
+
+            btn.disabled = true;
+            resultBox.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                const compressedBlob = await compressImageFile(input.files[0], 950, 0.85);
+                const formData = new FormData();
+                formData.append('image', compressedBlob, 'lab.jpg');
+
+                const r = await fetch('/api/ai/meal-analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                const d = await r.json();
+                loader.classList.add('hidden');
+
+                if (d.success) {
+                    const labEntry = {
+                        title: d.meal_name || 'تحليل مختبري',
+                        summary: `${d.carbs || ''} | ${d.calories || ''}`.replace(/^\|\s*|\s*\|$/g, ''),
+                        evaluation: d.insulin_dose || '',
+                        advice: d.tips || '',
+                        date: new Date().toLocaleDateString('ar-IQ')
+                    };
+                    state.lastLabAnalysis = labEntry;
+
+                    if (state.user) {
+                        const key = `labReports_${state.user.id}`;
+                        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                        existing.unshift(labEntry);
+                        localStorage.setItem(key, JSON.stringify(existing.slice(0, 15)));
+                    }
+
+                    resultBox.innerHTML = `
+                        <div class="font-black text-blue-900 dark:text-blue-300 text-sm">${labEntry.title}</div>
+                        <p class="leading-relaxed"><strong>القراءات المستخرجة:</strong> ${labEntry.summary}</p>
+                        <p class="text-red-600 dark:text-red-400 font-bold"><strong>التقييم الطبي:</strong> ${labEntry.evaluation}</p>
+                        <p class="text-emerald-700 dark:text-emerald-400"><strong>التوصية:</strong> ${labEntry.advice}</p>
+                        <button type="button" onclick="sendLabResultToDoctor()" class="mt-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-[11px] shadow transition">
+                            <i class="fa-solid fa-paper-plane ml-1"></i> دز نتيجة هذا التحليل للدكتور فوراً
+                        </button>
+                    `;
+                    resultBox.classList.remove('hidden');
+                    loadPatientLabReports();
+                } else {
+                    resultBox.innerHTML = `<p class="text-red-600 font-bold text-center">${d.message || 'تعذر قراءة التحليل'}</p>`;
+                    resultBox.classList.remove('hidden');
+                }
+            } catch (e) {
+                loader.classList.add('hidden');
+                resultBox.innerHTML = `<p class="text-red-600 font-bold text-center">خطأ أثناء قراءة التحليل: ${e.message}</p>`;
+                resultBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function sendLabResultToDoctor() {
+            const lb = state.lastLabAnalysis;
+            if (!lb || !state.user) return;
+            const msg = `📋 نتيجة تحليل مختبري جديد:\n• الفحص: ${lb.title}\n• القيم: ${lb.summary}\n• التقييم: ${lb.evaluation}`;
+            await fetch(`/api/chat/${state.user.id}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ text: msg })
+            });
+            await loadPatientChat();
+            alert('✅ تم إرسال ملخص التحليل إلى محادثة الدكتور بنجاح!');
+        }
+
+        function loadPatientLabReports() {
+            const container = document.getElementById('patientLabHistoryList');
+            if (!container || !state.user) return;
+            const labs = JSON.parse(localStorage.getItem(`labReports_${state.user.id}`) || '[]');
+            if (!labs.length) {
+                container.innerHTML = '<div class="text-slate-400 text-center py-2">ماكو تحاليل مختبرية مصورة لحد هسه.</div>';
+                return;
+            }
+            container.innerHTML = labs.map(lb => `
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">
+                    <div class="flex justify-between font-bold text-blue-700 dark:text-blue-400">
+                        <span>${lb.title}</span>
+                        <span class="text-[10px] text-slate-400">${lb.date}</span>
+                    </div>
+                    <p class="text-slate-700 dark:text-slate-300">${lb.summary}</p>
+                    <p class="text-[11px] text-red-600 dark:text-red-400 font-semibold">${lb.evaluation}</p>
+                </div>
+            `).join('');
         }
 
         async function askAiAssistant() {
@@ -1338,48 +2132,45 @@
             box.innerHTML += `<div id="${loadingId}" class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm text-purple-600 dark:text-purple-400 font-bold"><i class="fa-solid fa-spinner fa-spin ml-1"></i> لحظة.. دا أفكر بإجابتك...</div></div>`;
             box.scrollTop = box.scrollHeight;
             
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 45000);
-
             try {
                 const r = await fetch('/api/ai/assistant', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({question: q}),
-                    signal: controller.signal
+                    body: JSON.stringify({question: q})
                 });
-                clearTimeout(timer);
-                const text = await r.text();
-                let d;
-                try {
-                    d = JSON.parse(text);
-                } catch (e) {
-                    d = { answer: `⚠️ خطأ بالسيرفر (${r.status}): تعذر قراءة الرد.` };
-                }
+                const d = await r.json();
                 const loadEl = document.getElementById(loadingId);
                 if (loadEl) loadEl.remove();
                 box.innerHTML += `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm leading-relaxed">${d.answer || 'ما وصل رد من المساعد.'}</div></div>`;
             } catch (err) {
-                clearTimeout(timer);
                 const loadEl = document.getElementById(loadingId);
                 if (loadEl) loadEl.remove();
-                const errMsg = err.name === 'AbortError'
-                    ? '⚠️ السيرفر تأخر بالرد (انتهت المهلة). تأكد من الإنترنت أو مفتاح OpenRouter وحاول مرة ثانية.'
-                    : `⚠️ صار خلل بالاتصال بالسيرفر: ${err.message}`;
-                box.innerHTML += `<div class="flex justify-start"><div class="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[80%] shadow-sm">${errMsg}</div></div>`;
+                box.innerHTML += `<div class="flex justify-start"><div class="bg-red-50 text-red-600 p-3.5 rounded-2xl text-xs">صار خلل بالاتصال: ${err.message}</div></div>`;
             } finally {
                 btn.disabled = false;
                 box.scrollTop = box.scrollHeight;
             }
         }
 
+        /* ---------------- دوال الطبيب ---------------- */
         async function loadDoctorData() {
-            const r = await fetch('/api/doctor/patients'); state.patients = await r.json();
+            const r = await fetch('/api/doctor/patients');
+            const rawPatients = await r.json();
+
+            // تمييز وترتيب الحالات الحرجة بأعلى القائمة تلقائياً
+            state.patients = rawPatients.map(p => {
+                const logs = p.logs || [];
+                const latestVal = logs.length ? logs[0].val : null;
+                const isCritical = latestVal !== null && (latestVal < 70 || latestVal > 250);
+                return { ...p, latestVal, isCritical };
+            }).sort((a, b) => (a.isCritical === b.isCritical ? 0 : a.isCritical ? -1 : 1));
+
             document.getElementById('patientCountBadge').innerText = state.patients.length;
+            const criticalCount = state.patients.filter(p => p.isCritical).length;
             const docBadge = document.getElementById('docPatientsDockBadge');
             if (docBadge) {
-                if (state.patients.length > 0) {
-                    docBadge.innerText = state.patients.length;
+                if (criticalCount > 0) {
+                    docBadge.innerText = criticalCount;
                     docBadge.classList.remove('hidden');
                 } else {
                     docBadge.classList.add('hidden');
@@ -1392,15 +2183,23 @@
         }
 
         function renderDocSidebar() {
-            document.getElementById('docPatientList').innerHTML = state.patients.map(p => 
-                `<div onclick="selectDocPat(${p.id})" class="p-3.5 border rounded-2xl cursor-pointer transition ${state.selDocPatId==p.id ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-700':'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'}">
-                    <div class="flex justify-between items-center">
+            document.getElementById('docPatientList').innerHTML = state.patients.map(p => {
+                const critBadge = p.isCritical
+                    ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-red-600 text-white font-black animate-pulse">حالة حرجة (${p.latestVal})</span>`
+                    : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-bold">BMI: ${p.bmi}</span>`;
+
+                const cardBorder = p.isCritical
+                    ? 'border-red-400 dark:border-red-700 bg-red-50/60 dark:bg-red-950/30'
+                    : (state.selDocPatId==p.id ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-700':'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800');
+
+                return `<div onclick="selectDocPat(${p.id})" class="p-3.5 border rounded-2xl cursor-pointer transition ${cardBorder}">
+                    <div class="flex justify-between items-center gap-1">
                         <span class="font-bold text-xs">${p.name}</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-bold">BMI: ${p.bmi}</span>
+                        ${critBadge}
                     </div>
                     <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">${p.diabetesType} | طوارئ: ${p.emergencyPhone}</div>
-                </div>`
-            ).join('');
+                </div>`;
+            }).join('');
         }
 
         function selectDocPat(id) {
@@ -1409,8 +2208,12 @@
             if(!p) return;
             
             document.getElementById('dName').innerText = p.name;
-            document.getElementById('dMeta').innerText = `اليوزر: ${p.username} | العمر: ${p.age} سنة | الجنس: ${p.gender} | الوزن: ${p.weight} كغم | الطول: ${p.height} سم | فصيلة الدم: ${p.blood}`;
-            document.getElementById('dNotesInput').value = p.doctorNotes;
+            document.getElementById('dMeta').innerText = `اليوزر: ${p.username} | العمر: ${p.age} سنة | الوزن: ${p.weight} كغم | الطول: ${p.height} سم | الفصيلة: ${p.blood}`;
+
+            const parsedDoc = parseDoctorNotesAndDose(p.doctorNotes);
+            document.getElementById('dNotesInput').value = parsedDoc.cleanText;
+            document.getElementById('dTargetGlucose').value = parsedDoc.target;
+            document.getElementById('dCorrectionFactor').value = parsedDoc.factor;
             document.getElementById('docResetPatPass').value = '';
             
             const logs = p.logs || [];
@@ -1426,16 +2229,20 @@
 
             const docLogsBody = document.getElementById('docPatientLogsTable');
             if (logs.length === 0) {
-                docLogsBody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-slate-400">ماكو قياسات مسجلة لهذا المراجع</td></tr>';
+                docLogsBody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-slate-400">ماكو قياسات مسجلة لهذا المراجع</td></tr>';
             } else {
-                docLogsBody.innerHTML = logs.map(l => `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <td class="p-2 text-slate-500">${l.date}</td>
-                        <td class="p-2 font-bold ${l.val > 180 ? 'text-red-600' : (l.val < 70 ? 'text-amber-600' : 'text-emerald-600')}">${l.val}</td>
-                        <td class="p-2">${l.timing}</td>
-                        <td class="p-2 text-slate-500">${l.meds}</td>
-                    </tr>
-                `).join('');
+                docLogsBody.innerHTML = logs.map(l => {
+                    const parsedRow = parseMedsAndBp(l.meds);
+                    return `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <td class="p-2 text-slate-500">${l.date}</td>
+                            <td class="p-2 font-bold ${l.val > 180 ? 'text-red-600' : (l.val < 70 ? 'text-amber-600' : 'text-emerald-600')}">${l.val}</td>
+                            <td class="p-2">${l.timing}</td>
+                            <td class="p-2 text-slate-500">${parsedRow.bp}</td>
+                            <td class="p-2 text-slate-500">${parsedRow.cleanMeds}</td>
+                        </tr>
+                    `;
+                }).join('');
             }
             
             const isDark = document.documentElement.classList.contains('dark');
@@ -1476,24 +2283,34 @@
             });
         }
 
+        function appendTemplateNote(text) {
+            const area = document.getElementById('dNotesInput');
+            area.value = area.value.trim() ? `${area.value.trim()}\n• ${text}` : `• ${text}`;
+        }
+
         async function saveNotes() {
-            const notesVal = document.getElementById('dNotesInput').value;
-            await fetch('/api/doctor/update-notes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({patient_id:state.selDocPatId, notes:notesVal})});
-            alert('✅ عاشت ايدك دكتور، انحفظت الملاحظات بملف المراجع.');
+            const cleanNotes = document.getElementById('dNotesInput').value.trim();
+            const targetG = parseInt(document.getElementById('dTargetGlucose').value, 10) || 120;
+            const corrF = parseInt(document.getElementById('dCorrectionFactor').value, 10) || 40;
+            const combinedNotes = `${cleanNotes}\n[[DOSE:${targetG}:${corrF}]]`.trim();
+
+            await fetch('/api/doctor/update-notes', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    patient_id: state.selDocPatId,
+                    notes: combinedNotes
+                })
+            });
+            alert('✅ عاشت ايدك دكتور، انحفظت خطة العلاج وإعدادات الجرعة بملف المراجع.');
             loadDoctorData();
         }
 
         async function resetPatientPasswordByDoctor() {
-            if (!state.selDocPatId) {
-                alert('اختار مراجع بالبداية دكتور');
-                return;
-            }
+            if (!state.selDocPatId) { alert('اختار مراجع بالبداية دكتور'); return; }
             const passInput = document.getElementById('docResetPatPass');
             const newPass = passInput.value.trim();
-            if (!newPass) {
-                alert('اكتب الرمز السري الجديد للمراجع بالبداية');
-                return;
-            }
+            if (!newPass) { alert('اكتب الرمز السري الجديد للمراجع بالبداية'); return; }
 
             const btn = document.getElementById('btnResetPatPass');
             const origText = btn.innerText;
@@ -1504,10 +2321,7 @@
                 const r = await fetch('/api/doctor/reset-patient-password', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        patient_id: state.selDocPatId,
-                        new_password: newPass
-                    })
+                    body: JSON.stringify({ patient_id: state.selDocPatId, new_password: newPass })
                 });
                 const d = await r.json();
                 if (d.success) {
@@ -1573,6 +2387,7 @@
         function selectChatPat(id) {
             state.selChatPatId = id; renderDocChatSidebar();
             const p = state.patients.find(x=>x.id==id);
+            if (!p) return;
             document.getElementById('docChatHeader').innerText = `محادثة ويه المراجع: ${p.name}`;
             loadDoctorChat();
         }
@@ -1582,8 +2397,8 @@
             const r = await fetch(`/api/chat/${state.selChatPatId}`); const msgs = await r.json();
             const box = document.getElementById('docChatBox');
             box.innerHTML = msgs.map(m => m.sender=='doctor' 
-                ? `<div class="flex justify-end"><div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
-                : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
+                ? `<div class="flex justify-end"><div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm whitespace-pre-line">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
+                : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm whitespace-pre-line">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
             ).join('');
             box.scrollTop = box.scrollHeight;
         }
@@ -1609,10 +2424,19 @@
                 }
             }
             box.innerHTML = msgs.map(m => m.sender=='patient' 
-                ? `<div class="flex justify-end"><div class="bg-emerald-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
-                : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
+                ? `<div class="flex justify-end"><div class="bg-emerald-600 text-white p-3 rounded-2xl rounded-tl-none text-xs max-w-[75%] shadow-sm whitespace-pre-line">${m.text} <span class="text-[9px] block text-left mt-1 opacity-75">${m.time}</span></div></div>` 
+                : `<div class="flex justify-start"><div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl rounded-tr-none text-xs max-w-[75%] shadow-sm whitespace-pre-line">${m.text} <span class="text-[9px] block text-right mt-1 text-slate-400">${m.time}</span></div></div>`
             ).join('');
             box.scrollTop = box.scrollHeight;
+        }
+
+        async function sendQuickSymptom(msgText) {
+            await fetch(`/api/chat/${state.user.id}`, {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({text: msgText})
+            });
+            loadPatientChat();
         }
 
         async function sendMsgAsPatient() {
@@ -1654,7 +2478,6 @@
                 } catch (e) {}
             }
 
-            // بديل احتياطي في حال تعذر تحميل المكتبة الخارجية
             const img = document.createElement('img');
             img.crossOrigin = 'anonymous';
             img.width = size;
@@ -1664,13 +2487,13 @@
             container.appendChild(img);
         }
 
-        /* ---------------- بناء وعرض التقرير المصغر ---------------- */
         function renderCompactReportModal(patientObj, logsArr, docNameStr) {
             const p = patientObj;
             const logs = logsArr || [];
             const avg = logs.length ? Math.round(logs.reduce((s,l)=>s+l.val,0)/logs.length) : 0;
             const a1c = avg ? ((avg+46.7)/28.7).toFixed(1)+'%' : '-';
             const dateStr = new Date().toLocaleDateString('ar-IQ');
+            const parsedDoc = parseDoctorNotesAndDose(p.doctorNotes);
 
             document.getElementById('rName').innerText = p.name || '-';
             document.getElementById('rType').innerText = p.diabetesType || 'النوع الثاني';
@@ -1680,19 +2503,22 @@
             document.getElementById('rBmi').innerText = p.bmi || '-';
             document.getElementById('rAvg').innerText = avg ? `${avg} mg/dL` : '-';
             document.getElementById('rA1c').innerText = a1c;
-            document.getElementById('rNotes').innerText = p.doctorNotes || 'ماكو ملاحظات مسجلة.';
+            document.getElementById('rNotes').innerText = parsedDoc.cleanText || 'ماكو ملاحظات مسجلة.';
             document.getElementById('rDate').innerText = dateStr;
             document.getElementById('rDocName').innerText = docNameStr || 'د. خالد السامرائي';
 
             const tbody = document.getElementById('rLogsTable');
-            tbody.innerHTML = logs.slice(0, 5).map(l => `
-                <tr>
-                    <td class="border border-black p-1">${l.date}</td>
-                    <td class="border border-black p-1 font-bold">${l.val}</td>
-                    <td class="border border-black p-1">${l.timing}</td>
-                    <td class="border border-black p-1">${l.meds}</td>
-                </tr>
-            `).join('') || '<tr><td colspan="4" class="border border-black p-1.5 text-center">ماكو قياسات مسجلة</td></tr>';
+            tbody.innerHTML = logs.slice(0, 5).map(l => {
+                const parsedRow = parseMedsAndBp(l.meds);
+                return `
+                    <tr>
+                        <td class="border border-black p-1">${l.date}</td>
+                        <td class="border border-black p-1 font-bold">${l.val}</td>
+                        <td class="border border-black p-1">${l.timing}</td>
+                        <td class="border border-black p-1">${parsedRow.cleanMeds}</td>
+                    </tr>
+                `;
+            }).join('') || '<tr><td colspan="4" class="border border-black p-1.5 text-center">ماكو قياسات مسجلة</td></tr>';
 
             state.currentReportMeta = {
                 name: p.name || 'المراجع',
@@ -1701,7 +2527,7 @@
                 bmi: p.bmi || '-',
                 avg: avg ? `${avg} mg/dL` : '-',
                 a1c: a1c,
-                notes: p.doctorNotes || 'ماكو ملاحظات مسجلة.',
+                notes: parsedDoc.cleanText || 'ماكو ملاحظات مسجلة.',
                 date: dateStr
             };
 
@@ -1723,7 +2549,6 @@
             renderCompactReportModal(state.user, state.patientLogs || [], 'د. خالد السامرائي');
         }
 
-        /* ---------------- تصدير تقرير الباركود كملف صورة جاهز ---------------- */
         function exportBarcodeReport() {
             const meta = state.currentReportMeta;
             if (!meta) return;
@@ -1814,7 +2639,8 @@
 
             ctx.fillStyle = '#334155';
             ctx.font = '600 14px Cairo, sans-serif';
-            const shortNotes = meta.notes.length > 78 ? meta.notes.slice(0, 78) + '...' : meta.notes;
+            const cleanNotesLine = meta.notes.replace(/\n/g, ' ');
+            const shortNotes = cleanNotesLine.length > 78 ? cleanNotesLine.slice(0, 78) + '...' : cleanNotesLine;
             ctx.fillText(shortNotes, canvas.width - 48, 394);
 
             const link = document.createElement('a');
