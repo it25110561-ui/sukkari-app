@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 import time
+import json
 
 GENAI_IMPORT_ERROR = ""
 try:
@@ -38,6 +39,16 @@ DIABETES_SYSTEM_PROMPT = (
     "3. إذا سأل المريض عن أي موضوع خارج مرض السكري (مثل: برمجة، طبخ عام غير مرتبط بالسكري، رياضة عامة، سياسة، أسئلة ثقافية، أو أمراض أخرى لا علاقة لها بالسكري)، اعتذر بلطف باللهجة العراقية وقل له: عذراً عيني، أني مساعد مخصص فقط للإجابة عن الأسئلة المتعلقة بمرض السكري وتنظيمه. اسألني أي شي يخص السكر وأني حاضر!\n"
     "4. في حالات الطوارئ أو القراءات الخطيرة جداً (هبوط حاد أقل من 70 أو ارتفاع شديد فوق 250 مع أعراض)، نبه المريض فوراً للتصرف الآمن واستخدام زر الطوارئ SOS أو مراجعة الطبيب فوراً.\n"
     "5. لا تقم بتشخيص أمراض جديدة أو تغيير جرعات الأدوية بشكل نهائي، وذكّر المريض دائماً باستشارة دكتوره المشرف."
+)
+
+MEAL_ANALYSIS_PROMPT = (
+    "أنت خبير تغذية سريرية متخصص بمرض السكري ضمن منصة (سُكّري الذكي).\n"
+    "مهمتك تحليل صور الوجبات بدقة وتقدير قيمتها الغذائية لمساعدة مريض السكري:\n"
+    "1. تأكد أولاً هل الصورة تحتوي فعلاً على طعام أو مشروب أم لا (is_food).\n"
+    "2. اكتب جميع الإجابات باللهجة العراقية الودودة والواضحة.\n"
+    "3. قدّر كمية الكربوهيدرات الصافية بالغرام والسعرات الحرارية بشكل واقعي حسب حجم الحصة الظاهرة بالصورة.\n"
+    "4. في حقل (insulin_dose): إذا كان المريض من النوع الأول أو يأخذ أنسولين، اذكر التقدير التقريبي بناءً على معامل الكارب الشائع (1 وحدة لكل 15 غرام كارب) مع التنبيه بضرورة الالتزام بالمعامل الذي حدده دكتوره. وإذا كان من النوع الثاني أو سكري الحمل، وضح مدى ملاءمة الوجبة لمستوى سكره الحالي.\n"
+    "5. في حقل (tips): قدم نصيحة عملية لترتيب الأكل أو تقليل امتصاص السكر السريع."
 )
 
 # ---------------- نماذج قاعدة البيانات (Models) ----------------
@@ -451,27 +462,106 @@ def ai_assistant():
     first_err = errors[0] if errors else "غير معروف"
     return jsonify({'answer': f'⚠️ تعذر الاتصال بجمناي. السبب الأول: {first_err}'})
 
+# ---------------- تحليل صور الوجبات بالذكاء الاصطناعي (Gemini Vision) ----------------
 @app.route('/api/ai/meal-analyze', methods=['POST'])
 def analyze_meal():
+    if session.get('role') != 'patient' or not session.get('user_id'):
+        return jsonify({'success': False, 'message': 'عذراً، هذه الخدمة مخصصة فقط لحسابات المرضى المسجلين.'}), 403
+
+    if not HAS_GENAI:
+        return jsonify({'success': False, 'message': f'⚠️ مكتبة google-genai غير مثبتة بالسيرفر: {GENAI_IMPORT_ERROR}'})
+
+    api_key = os.environ.get('GEMINI_API_KEY', '').strip().strip('"').strip("'")
+    if not api_key:
+        return jsonify({'success': False, 'message': '⚠️ خدمة الذكاء الاصطناعي (Gemini) غير مفعلة حالياً. يرجى إضافة GEMINI_API_KEY.'})
+
     if 'image' not in request.files:
-        return jsonify({'error': 'ماكو صورة مرفوعة'}), 400
+        return jsonify({'success': False, 'message': 'ماكو صورة مرفوعة، اختار صورة وحاول مرة ثانية.'}), 400
+
     file = request.files['image']
     if file.filename == '':
-        return jsonify({'error': 'ما اختاريت أي ملف'}), 400
-    
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
-    time.sleep(1.2)
-    
-    return jsonify({
-        'success': True,
-        'meal_name': 'وجبة غداء رئيسية (تمن، بروتين، زلاطة)',
-        'carbs': '55 - 65 غرام كربوهيدرات',
-        'calories': '430 سعرة حرارية',
-        'insulin_dose': '4 وحدات أنسولين سريع (حسب معامل الكارب 1:15)',
-        'tips': 'نصيحة: ابدي بالزلاطة والخضروات كبل التمن حتى ما يصعد السكر عندك بسرعة ورا الأكل.'
-    })
+        return jsonify({'success': False, 'message': 'ما اختاريت أي ملف صورة.'}), 400
+
+    mime_type = file.mimetype or 'image/jpeg'
+    if not mime_type.startswith('image/'):
+        return jsonify({'success': False, 'message': 'الملف المرفوع مو صورة! يرجى اختيار صورة صحيحة للأكل.'}), 400
+
+    image_bytes = file.read()
+    if not image_bytes:
+        return jsonify({'success': False, 'message': 'ملف الصورة فارغ أو تالف.'}), 400
+
+    filename = secure_filename(file.filename) or 'meal.jpg'
+    saved_name = f"{int(time.time())}_{filename}"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], saved_name)
+    with open(filepath, 'wb') as f:
+        f.write(image_bytes)
+
+    user = User.query.get(session['user_id'])
+    latest_log = GlucoseLog.query.filter_by(user_id=user.id).order_by(GlucoseLog.created_at.desc()).first() if user else None
+
+    patient_context = "حلل هذه الوجبة لمريض سكري."
+    if user:
+        patient_context = f"بيانات المريض: نوع السكري ({user.diabetes_type})، العمر {user.age} سنة."
+        if latest_log:
+            patient_context += f" آخر قياس سكر مسجل: {latest_log.val} mg/dL ({latest_log.timing})."
+
+    meal_schema = types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "is_food": types.Schema(type=types.Type.BOOLEAN, description="هل تحتوي الصورة على طعام أو مشروب؟"),
+            "meal_name": types.Schema(type=types.Type.STRING, description="اسم الوجبة ومكوناتها الرئيسية باللهجة العراقية"),
+            "carbs": types.Schema(type=types.Type.STRING, description="كمية الكربوهيدرات التقديرية بالغرام، مثلاً: 55 - 65 غرام"),
+            "calories": types.Schema(type=types.Type.STRING, description="السعرات الحرارية التقديرية، مثلاً: 430 سعرة حرارية"),
+            "insulin_dose": types.Schema(type=types.Type.STRING, description="تقدير الجرعة أو التوصية العلاجية المناسبة لنوع سكري المريض"),
+            "tips": types.Schema(type=types.Type.STRING, description="نصيحة غذائية عملية لمرضى السكري باللهجة العراقية"),
+        },
+        required=["is_food", "meal_name", "carbs", "calories", "insulin_dose", "tips"],
+    )
+
+    image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    errors = []
+
+    for api_ver in ['v1beta', None]:
+        try:
+            client = genai.Client(api_key=api_key, http_options=types.HttpOptions(api_version=api_ver)) if api_ver else genai.Client(api_key=api_key)
+            candidate_models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+
+            for model_name in candidate_models:
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=[image_part, patient_context],
+                        config=types.GenerateContentConfig(
+                            system_instruction=MEAL_ANALYSIS_PROMPT,
+                            response_mime_type="application/json",
+                            response_schema=meal_schema,
+                            temperature=0.2,
+                        )
+                    )
+                    if response and response.text:
+                        result = json.loads(response.text)
+                        if not result.get('is_food', True):
+                            return jsonify({
+                                'success': False,
+                                'message': 'عذراً عيني، هذه الصورة ما مبين بيها أكل أو شرب! طك صورة واضحة للوجبة وحاول مرة ثانية.'
+                            })
+
+                        return jsonify({
+                            'success': True,
+                            'meal_name': result.get('meal_name', 'غير محدد'),
+                            'carbs': result.get('carbs', 'غير محدد'),
+                            'calories': result.get('calories', 'غير محدد'),
+                            'insulin_dose': result.get('insulin_dose', 'استشر طبيبك لتحديد الجرعة.'),
+                            'tips': result.get('tips', 'تناول الخضروات أولاً لتقليل ارتفاع السكر.')
+                        })
+                except Exception as e:
+                    errors.append(f"{model_name}({api_ver}): {e}")
+                    continue
+        except Exception as client_err:
+            errors.append(f"client({api_ver}): {client_err}")
+
+    first_err = errors[0] if errors else "غير معروف"
+    return jsonify({'success': False, 'message': f'⚠️ تعذر تحليل الصورة عبر جمناي. السبب: {first_err}'})
 
 if __name__ == '__main__':
     with app.app_context():
