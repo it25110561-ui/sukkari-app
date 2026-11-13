@@ -5,11 +5,11 @@ import sqlite3
 import urllib.request
 import urllib.error
 from datetime import datetime
-from functools import wraps
 from flask import Flask, render_template, request, jsonify, session, Response
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "sukkari_secret_key_2026_iraq")
+app.secret_key = os.environ.get("SECRET_KEY", "sukkari_smart_secret_key_2026")
+
 DB_PATH = os.environ.get("DB_PATH", "sukkari.db")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
 
@@ -20,114 +20,6 @@ def get_db():
     return conn
 
 
-def ensure_column(cursor, table_name, column_name, column_def):
-    cursor.execute(f"PRAGMA table_info({table_name})")
-    cols = [row[1] for row in cursor.fetchall()]
-    if column_name not in cols:
-        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}")
-
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            name TEXT NOT NULL,
-            role TEXT NOT NULL,
-            age INTEGER DEFAULT 40,
-            weight REAL DEFAULT 75,
-            height REAL DEFAULT 170,
-            bmi REAL DEFAULT 26.0,
-            diabetes_type TEXT DEFAULT 'النوع الثاني',
-            gender TEXT DEFAULT 'ذكر',
-            blood TEXT DEFAULT 'O+',
-            emergency_phone TEXT DEFAULT '07700000000',
-            doctor_notes TEXT DEFAULT '',
-            target_glucose INTEGER DEFAULT 110,
-            correction_factor REAL DEFAULT 50
-        )
-    """)
-
-    ensure_column(c, "users", "target_glucose", "INTEGER DEFAULT 110")
-    ensure_column(c, "users", "correction_factor", "REAL DEFAULT 50")
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            val INTEGER NOT NULL,
-            timing TEXT NOT NULL,
-            meds TEXT DEFAULT '-',
-            bp_sys INTEGER DEFAULT NULL,
-            bp_dia INTEGER DEFAULT NULL,
-            date TEXT NOT NULL,
-            FOREIGN KEY(patient_id) REFERENCES users(id)
-        )
-    """)
-
-    ensure_column(c, "logs", "bp_sys", "INTEGER DEFAULT NULL")
-    ensure_column(c, "logs", "bp_dia", "INTEGER DEFAULT NULL")
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            sender TEXT NOT NULL,
-            text TEXT NOT NULL,
-            time TEXT NOT NULL,
-            FOREIGN KEY(patient_id) REFERENCES users(id)
-        )
-    """)
-
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS lab_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            summary TEXT NOT NULL,
-            items_json TEXT NOT NULL,
-            advice TEXT DEFAULT '',
-            date TEXT NOT NULL,
-            FOREIGN KEY(patient_id) REFERENCES users(id)
-        )
-    """)
-
-    # حسابات تجريبية افتراضية إذا كانت القاعدة جديدة
-    c.execute("SELECT COUNT(*) FROM users")
-    if c.fetchone()[0] == 0:
-        c.execute("""
-            INSERT INTO users (username, password, name, role, age, weight, height, bmi, diabetes_type, gender, blood, emergency_phone, doctor_notes, target_glucose, correction_factor)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, ("doctor", "123", "د. خالد السامرائي", "doctor", 45, 80, 178, 25.2, "-", "ذكر", "A+", "07701110000", "", 110, 50))
-
-        c.execute("""
-            INSERT INTO users (username, password, name, role, age, weight, height, bmi, diabetes_type, gender, blood, emergency_phone, doctor_notes, target_glucose, correction_factor)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, ("patient", "123", "أحمد علي", "patient", 42, 75, 175, 24.5, "النوع الثاني", "ذكر", "O+", "07701112233", "الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.", 110, 50))
-        pat_id = c.lastrowid
-
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-        sample_logs = [
-            (pat_id, 140, "ورا الأكل", "-", 125, 80, now_str),
-            (pat_id, 122, "عشوائي", "-", 120, 78, now_str),
-            (pat_id, 115, "على الريك", "4 وحدات", 118, 76, now_str),
-        ]
-        c.executemany("INSERT INTO logs (patient_id, val, timing, meds, bp_sys, bp_dia, date) VALUES (?, ?, ?, ?, ?, ?, ?)", sample_logs)
-
-        c.execute("INSERT INTO messages (patient_id, sender, text, time) VALUES (?, ?, ?, ?)",
-                  (pat_id, "doctor", "هلا أحمد، قياساتك زينة بس حاول تقلل النشويات بالعشا.", "10:30 ص"))
-
-    conn.commit()
-    conn.close()
-
-
-init_db()
-
-
 def calc_bmi(weight, height):
     try:
         w = float(weight)
@@ -136,88 +28,211 @@ def calc_bmi(weight, height):
             return round(w / (h_m * h_m), 1)
     except Exception:
         pass
-    return 0.0
+    return 0
+
+
+def init_db():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'patient',
+            name TEXT NOT NULL,
+            age INTEGER DEFAULT 40,
+            gender TEXT DEFAULT 'ذكر',
+            weight REAL DEFAULT 75,
+            height REAL DEFAULT 170,
+            blood TEXT DEFAULT 'O+',
+            diabetesType TEXT DEFAULT 'النوع الثاني',
+            emergencyPhone TEXT DEFAULT '07700000000',
+            doctorNotes TEXT DEFAULT '',
+            targetGlucose INTEGER DEFAULT 120,
+            correctionFactor INTEGER DEFAULT 40,
+            lastFootCheck TEXT DEFAULT '',
+            medReminderTime TEXT DEFAULT ''
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            val INTEGER NOT NULL,
+            timing TEXT NOT NULL,
+            meds TEXT DEFAULT '-',
+            bp TEXT DEFAULT '',
+            date TEXT NOT NULL,
+            FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            sender TEXT NOT NULL,
+            text TEXT NOT NULL,
+            time TEXT NOT NULL,
+            FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS lab_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            abnormal TEXT DEFAULT '',
+            advice TEXT DEFAULT '',
+            date TEXT NOT NULL,
+            FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    # ترقية الجداول القديمة إذا كانت موجودة مسبقاً
+    existing_user_cols = [r[1] for r in cur.execute("PRAGMA table_info(users)").fetchall()]
+    for col_name, col_def in [
+        ("targetGlucose", "INTEGER DEFAULT 120"),
+        ("correctionFactor", "INTEGER DEFAULT 40"),
+        ("lastFootCheck", "TEXT DEFAULT ''"),
+        ("medReminderTime", "TEXT DEFAULT ''"),
+    ]:
+        if col_name not in existing_user_cols:
+            cur.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
+
+    existing_log_cols = [r[1] for r in cur.execute("PRAGMA table_info(logs)").fetchall()]
+    if "bp" not in existing_log_cols:
+        cur.execute("ALTER TABLE logs ADD COLUMN bp TEXT DEFAULT ''")
+
+    # إنشاء الحسابات الافتراضية إذا كانت قاعدة البيانات فارغة
+    count = cur.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    if count == 0:
+        cur.execute("""
+            INSERT INTO users (username, password, role, name, age, gender, weight, height, blood, diabetesType, emergencyPhone, doctorNotes)
+            VALUES (?, ?, 'doctor', ?, 45, 'ذكر', 80, 178, 'A+', '-', '07701234567', '')
+        """, ("doctor", "123", "د. خالد السامرائي"))
+
+        cur.execute("""
+            INSERT INTO users (username, password, role, name, age, gender, weight, height, blood, diabetesType, emergencyPhone, doctorNotes, targetGlucose, correctionFactor)
+            VALUES (?, ?, 'patient', ?, 42, 'ذكر', 75, 175, 'O+', 'النوع الثاني', '07701112233', 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.', 120, 40)
+        """, ("patient", "123", "أحمد علي"))
+        pat_id = cur.lastrowid
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        sample_logs = [
+            (pat_id, 140, "ورا الأكل", "-", "125/80", now_str),
+            (pat_id, 122, "عشوائي", "-", "120/78", now_str),
+            (pat_id, 115, "على الريك", "4 وحدات أنسولين", "118/75", now_str),
+        ]
+        cur.executemany("INSERT INTO logs (patient_id, val, timing, meds, bp, date) VALUES (?, ?, ?, ?, ?, ?)", sample_logs)
+
+        cur.execute("""
+            INSERT INTO messages (patient_id, sender, text, time)
+            VALUES (?, 'doctor', 'هلا بيك أخ أحمد، قياساتك هالأسبوع زينة، استمر على نفس العلاج وبلغني بأي طارئ.', ?)
+        """, (pat_id, datetime.now().strftime("%H:%M")))
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
 
 
 def serialize_user(row):
     if not row:
         return None
-    return {
-        "id": row["id"],
-        "username": row["username"],
-        "name": row["name"],
-        "role": row["role"],
-        "age": row["age"],
-        "weight": row["weight"],
-        "height": row["height"],
-        "bmi": row["bmi"],
-        "diabetesType": row["diabetes_type"],
-        "gender": row["gender"],
-        "blood": row["blood"],
-        "emergencyPhone": row["emergency_phone"],
-        "doctorNotes": row["doctor_notes"] or "",
-        "targetGlucose": row["target_glucose"] if row["target_glucose"] else 110,
-        "correctionFactor": row["correction_factor"] if row["correction_factor"] is not None else 50,
-    }
+    u = dict(row)
+    u.pop("password", None)
+    u["bmi"] = calc_bmi(u.get("weight", 0), u.get("height", 0))
+    return u
 
 
-def login_required(role=None):
-    def decorator(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            if "user_id" not in session:
-                return jsonify({"success": False, "message": "غير مصرح، سجل دخولك أولاً"}), 401
-            if role and session.get("role") != role:
-                return jsonify({"success": False, "message": "صلاحية غير كافية"}), 403
-            return f(*args, **kwargs)
-        return wrapped
-    return decorator
-
-
-def call_openrouter(messages, max_tokens=700, json_mode=False):
+def call_openrouter(messages, max_tokens=700, temperature=0.4):
     if not OPENROUTER_API_KEY:
-        return None, "مفتاح الذكاء الاصطناعي (OPENROUTER_API_KEY) غير مضاف بإعدادات السيرفر."
+        return None, "مفتاح الذكاء الاصطناعي (OPENROUTER_API_KEY) غير مضبوط بالسيرفر."
 
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    payload = {
-        "model": "google/gemini-2.0-flash-001",
-        "messages": messages,
-        "max_tokens": max_tokens,
-        "temperature": 0.3,
-    }
-    if json_mode:
-        payload["response_format"] = {"type": "json_object"}
+    models = ["google/gemini-2.0-flash-001", "openai/gpt-4o-mini"]
+    last_error = "تعذر الاتصال بخدمة الذكاء الاصطناعي."
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://sukkari.app",
-            "X-Title": "Sukkari Smart Platform",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=35) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            content = data["choices"][0]["message"]["content"]
-            return content, None
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8", errors="ignore")
-        return None, f"خطأ من خدمة الذكاء ({e.code}): {err_body[:140]}"
-    except Exception as e:
-        return None, f"تعذر الاتصال بخدمة الذكاء: {str(e)}"
+    for model in models:
+        payload = json.dumps({
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://sukkari-app.local",
+                "X-Title": "Sukkari Smart Health"
+            },
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=35) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+                content = body["choices"][0]["message"]["content"]
+                return content, None
+        except urllib.error.HTTPError as e:
+            last_error = f"خطأ من المزود ({e.code})"
+        except Exception as e:
+            last_error = str(e)
+
+    return None, last_error
 
 
-# ==================== PWA Routes ====================
+def extract_json_block(text):
+    cleaned = text.strip()
+    if "```json" in cleaned:
+        cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in cleaned:
+        cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1:
+        cleaned = cleaned[start:end + 1]
+    return json.loads(cleaned)
+
+
+# ================= مسارات الواجهة و PWA =================
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/icon.svg")
+def app_icon():
+    svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#10b981"/>
+          <stop offset="100%" stop-color="#0f766e"/>
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="115" fill="url(#g)"/>
+      <path d="M256 392s-124-78-124-174c0-46 36-82 80-82 26 0 44 14 44 14s18-14 44-14c44 0 80 36 80 82 0 96-124 174-124 174z" fill="#ffffff"/>
+      <polyline points="170,235 215,235 235,195 262,275 285,225 342,225" fill="none" stroke="#059669" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>"""
+    return Response(svg, mimetype="image/svg+xml")
+
+
 @app.route("/manifest.json")
-def pwa_manifest():
-    manifest = {
+def manifest():
+    data = {
         "name": "سُكّري الذكي - متابعة السكري",
         "short_name": "سُكّري",
-        "description": "منصتك الذكية لمتابعة السكر والتواصل ويه دكتورك",
+        "description": "منصة ذكية لمتابعة قياسات السكر والتواصل المباشر مع الطبيب",
         "start_url": "/",
         "display": "standalone",
         "background_color": "#0f172a",
@@ -227,50 +242,36 @@ def pwa_manifest():
         "icons": [
             {
                 "src": "/icon.svg",
-                "sizes": "any",
+                "sizes": "192x192 512x512",
                 "type": "image/svg+xml",
-                "purpose": "any maskable",
+                "purpose": "any maskable"
             }
-        ],
+        ]
     }
-    return jsonify(manifest)
-
-
-@app.route("/icon.svg")
-def pwa_icon():
-    svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-      <rect width="512" height="512" rx="112" fill="#059669"/>
-      <path d="M256 416s-144-92-144-200c0-53 43-96 96-96 31 0 58 15 76 38 18-23 45-38 76-38 53 0 96 43 96 96 0 108-144 200-144 200z" fill="#ffffff" opacity="0.2"/>
-      <polyline points="96,264 176,264 212,184 256,336 296,224 328,264 416,264" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>"""
-    return Response(svg, mimetype="image/svg+xml")
+    return jsonify(data)
 
 
 @app.route("/sw.js")
-def pwa_sw():
-    sw_code = """
-    const CACHE_NAME = 'sukkari-v1';
-    self.addEventListener('install', (e) => {
+def service_worker():
+    js = """
+    const CACHE_NAME = 'sukkari-pwa-v1';
+    self.addEventListener('install', (event) => {
         self.skipWaiting();
     });
-    self.addEventListener('activate', (e) => {
-        e.waitUntil(clients.claim());
+    self.addEventListener('activate', (event) => {
+        event.waitUntil(clients.claim());
     });
-    self.addEventListener('fetch', (e) => {
-        if (e.request.method !== 'GET') return;
-        e.respondWith(
-            fetch(e.request).catch(() => caches.match(e.request))
+    self.addEventListener('fetch', (event) => {
+        if (event.request.method !== 'GET') return;
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match(event.request))
         );
     });
     """
-    return Response(sw_code, mimetype="application/javascript")
+    return Response(js, mimetype="application/javascript")
 
 
-# ==================== Main & Auth Routes ====================
-@app.route("/")
-def index():
-    return render_template("index.html")
-
+# ================= مسارات المصادقة والحساب =================
 
 @app.route("/api/me")
 def api_me():
@@ -289,13 +290,19 @@ def api_me():
 @app.route("/api/login", methods=["POST"])
 def api_login():
     data = request.get_json(silent=True) or {}
-    username = (data.get("username") or "").strip()
-    password = (data.get("password") or "").strip()
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", "")).strip()
+
     conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password)).fetchone()
+    row = conn.execute(
+        "SELECT * FROM users WHERE username = ? AND password = ?",
+        (username, password)
+    ).fetchone()
     conn.close()
+
     if not row:
-        return jsonify({"success": False, "message": "اسم المستخدم أو الرمز السري غير صحيح"}), 401
+        return jsonify({"success": False, "message": "اليوزر أو الرمز السري غير صحيح"})
+
     session["user_id"] = row["id"]
     session["role"] = row["role"]
     return jsonify({"success": True, "user": serialize_user(row)})
@@ -307,360 +314,385 @@ def api_logout():
     return jsonify({"success": True})
 
 
-# ==================== Patient Routes ====================
-@app.route("/api/logs", methods=["GET"])
-@login_required()
-def get_logs():
-    uid = session["user_id"]
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM logs WHERE patient_id = ? ORDER BY id DESC", (uid,)).fetchall()
-    conn.close()
-    return jsonify([
-        {
-            "id": r["id"],
-            "val": r["val"],
-            "timing": r["timing"],
-            "meds": r["meds"],
-            "bp_sys": r["bp_sys"],
-            "bp_dia": r["bp_dia"],
-            "date": r["date"],
-        }
-        for r in rows
-    ])
-
-
-@app.route("/api/logs", methods=["POST"])
-@login_required()
-def add_log():
-    uid = session["user_id"]
-    data = request.get_json(silent=True) or {}
-    try:
-        val = int(float(data.get("val")))
-    except Exception:
-        return jsonify({"success": False, "message": "قيمة السكر غير صالحة"}), 400
-
-    timing = (data.get("timing") or "عشوائي").strip()
-    meds = (data.get("meds") or "-").strip() or "-"
-    bp_sys = data.get("bp_sys")
-    bp_dia = data.get("bp_dia")
-    try:
-        bp_sys = int(bp_sys) if bp_sys not in (None, "", 0, "0") else None
-        bp_dia = int(bp_dia) if bp_dia not in (None, "", 0, "0") else None
-    except Exception:
-        bp_sys, bp_dia = None, None
-
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO logs (patient_id, val, timing, meds, bp_sys, bp_dia, date) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (uid, val, timing, meds, bp_sys, bp_dia, now_str),
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True, "val": val})
-
-
 @app.route("/api/patient/update-profile", methods=["POST"])
-@login_required("patient")
 def update_patient_profile():
-    uid = session["user_id"]
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"success": False, "message": "غير مسجل الدخول"}), 401
+
     data = request.get_json(silent=True) or {}
+    age = int(data.get("age") or 40)
+    weight = float(data.get("weight") or 70)
+    height = float(data.get("height") or 170)
+    phone = str(data.get("emergencyPhone") or "").strip()
+    med_time = str(data.get("medReminderTime") or "").strip()
+
     conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
-    if not row:
-        conn.close()
-        return jsonify({"success": False, "message": "المستخدم غير موجود"}), 404
-
-    age = int(data.get("age") or row["age"])
-    weight = float(data.get("weight") or row["weight"])
-    height = float(data.get("height") or row["height"])
-    phone = (data.get("emergencyPhone") or row["emergency_phone"]).strip()
-    bmi = calc_bmi(weight, height)
-
-    conn.execute(
-        "UPDATE users SET age = ?, weight = ?, height = ?, bmi = ?, emergency_phone = ? WHERE id = ?",
-        (age, weight, height, bmi, phone, uid),
-    )
+    conn.execute("""
+        UPDATE users
+        SET age = ?, weight = ?, height = ?, emergencyPhone = ?, medReminderTime = ?
+        WHERE id = ?
+    """, (age, weight, height, phone, med_time, uid))
     conn.commit()
-    updated = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
     conn.close()
-    return jsonify({"success": True, "user": serialize_user(updated)})
+
+    return jsonify({"success": True, "user": serialize_user(row)})
 
 
-@app.route("/api/patient/lab-reports", methods=["GET"])
-@login_required()
-def get_patient_lab_reports():
-    uid = session["user_id"]
+@app.route("/api/patient/foot-check", methods=["POST"])
+def record_foot_check():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"success": False}), 401
+
+    today_str = datetime.now().strftime("%Y-%m-%d")
     conn = get_db()
-    rows = conn.execute("SELECT * FROM lab_reports WHERE patient_id = ? ORDER BY id DESC", (uid,)).fetchall()
+    conn.execute("UPDATE users SET lastFootCheck = ? WHERE id = ?", (today_str, uid))
+    conn.commit()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
     conn.close()
-    return jsonify([
-        {
-            "id": r["id"],
-            "title": r["title"],
-            "summary": r["summary"],
-            "items": json.loads(r["items_json"] or "[]"),
-            "advice": r["advice"],
-            "date": r["date"],
-        }
-        for r in rows
-    ])
+    return jsonify({"success": True, "lastFootCheck": today_str, "user": serialize_user(row)})
 
 
-# ==================== AI Routes ====================
+# ================= مسارات القياسات =================
+
+@app.route("/api/logs", methods=["GET", "POST"])
+def handle_logs():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify([]), 401
+
+    conn = get_db()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        val = int(float(data.get("val", 0)))
+        timing = str(data.get("timing", "عشوائي")).strip()
+        meds = str(data.get("meds", "-")).strip() or "-"
+        bp = str(data.get("bp", "")).strip()
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        conn.execute(
+            "INSERT INTO logs (patient_id, val, timing, meds, bp, date) VALUES (?, ?, ?, ?, ?, ?)",
+            (uid, val, timing, meds, bp, date_str)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+
+    rows = conn.execute(
+        "SELECT id, val, timing, meds, bp, date FROM logs WHERE patient_id = ? ORDER BY id DESC",
+        (uid,)
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+# ================= مسارات الذكاء الاصطناعي (أكل، تحاليل، مساعد) =================
+
 @app.route("/api/ai/meal-analyze", methods=["POST"])
-@login_required()
-def ai_meal_analyze():
+def analyze_meal():
     if "image" not in request.files:
-        return jsonify({"success": False, "message": "ما وصلت صورة للأكل"}), 400
+        return jsonify({"success": False, "message": "ما وصلت أي صورة للسيرفر."})
+
     img_bytes = request.files["image"].read()
-    b64 = base64.b64encode(img_bytes).decode("utf-8")
+    b64_img = base64.b64encode(img_bytes).decode("utf-8")
 
     prompt = (
-        "أنت أخصائي تغذية وطبيب سكري عراقي. حلل صورة الوجبة وأرجع النتيجة بصيغة JSON فقط بهذه الحقول بالضبط باللهجة العراقية الواضحة:\n"
-        '{"meal_name": "اسم الأكلة ومكوناتها", "carbs": "كمية الكربوهيدرات بالغرام", '
-        '"calories": "السعرات الحرارية التقريبية", "insulin_dose": "تقدير وحدات الأنسولين السريع المقترحة مع التنبيه لمراجعة الطبيب", '
-        '"tips": "نصيحة غذائية مختصرة لمريض السكري"}'
+        "أنت أخصائي تغذية وطبيب سكري عراقي. حلل صورة الوجبة الغذائية المرفقة لمريض سكري. "
+        "أجب بصيغة JSON فقط وبدون أي نص خارجي وباللهجة العراقية الواضحة بالمفاتيح التالية: "
+        '{"meal_name": "اسم الوجبة ومكوناتها", "carbs": "تقدير الكربوهيدرات بالغرام", '
+        '"calories": "تقدير السعرات الحرارية", "insulin_dose": "تقدير وحدات الأنسولين السريع المقترحة أو نصيحة الكمية", '
+        '"tips": "نصيحة غذائية مختصرة لتجنب صعود السكر"}'
     )
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
-            ],
-        }
-    ]
-    raw, err = call_openrouter(messages, max_tokens=500, json_mode=True)
+
+    messages = [{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}}
+        ]
+    }]
+
+    raw, err = call_openrouter(messages, max_tokens=500, temperature=0.3)
     if err:
         return jsonify({"success": False, "message": err})
+
     try:
-        parsed = json.loads(raw)
+        parsed = extract_json_block(raw)
         return jsonify({
             "success": True,
             "meal_name": parsed.get("meal_name", "وجبة غذائية"),
             "carbs": parsed.get("carbs", "غير محدد"),
             "calories": parsed.get("calories", "غير محدد"),
-            "insulin_dose": parsed.get("insulin_dose", "استشر طبيبك لتحديد الجرعة"),
-            "tips": parsed.get("tips", "يفضل قياس السكر بعد الأكل بساعتين."),
+            "insulin_dose": parsed.get("insulin_dose", "حسب جدول الطبيب"),
+            "tips": parsed.get("tips", "يفضل قياس السكر بعد الأكل بساعتين.")
         })
     except Exception:
-        return jsonify({"success": False, "message": "تعذر قراءة تحليل الوجبة، حاول مرة ثانية."})
+        return jsonify({
+            "success": True,
+            "meal_name": "نتيجة تحليل الوجبة",
+            "carbs": "موضح بالتفاصيل",
+            "calories": "-",
+            "insulin_dose": "راجع الطبيب لتحديد الجرعة الدقيقة",
+            "tips": raw
+        })
 
 
 @app.route("/api/ai/lab-analyze", methods=["POST"])
-@login_required()
-def ai_lab_analyze():
+def analyze_lab_report():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"success": False, "message": "يرجى تسجيل الدخول أولاً"}), 401
+
     if "image" not in request.files:
-        return jsonify({"success": False, "message": "اختار صورة ورقة التحليل بالبداية"}), 400
+        return jsonify({"success": False, "message": "اختار صورة ورقة التحليل المختبري أولاً."})
 
     img_bytes = request.files["image"].read()
-    b64 = base64.b64encode(img_bytes).decode("utf-8")
+    b64_img = base64.b64encode(img_bytes).decode("utf-8")
 
     prompt = (
-        "أنت طبيب عراقي متخصص بالسكري والباطنية. اقرأ ورقة التحاليل المختبرية في الصورة واشرحها للمراجع باللهجة العراقية البسيطة.\n"
-        "أرجع JSON فقط بهذا الشكل الدقيق:\n"
-        '{"title": "عنوان التحليل (مثلاً: فحص التراكمي ووظائف الكلى)", '
-        '"summary": "ملخص عام لحالة التحاليل بسطرين", '
-        '"items": [{"name": "اسم الفحص بالعربي والانكليزي", "value": "النتيجة الرقمية", "status": "طبيعي أو مرتفع أو منخفض", "note": "شرح مبسط"}], '
-        '"advice": "توصية طبية مختصرة للمراجع"}'
+        "أنت طبيب عراقي متخصص بالسكري والباطنية. اقرأ ورقة التحليل المختبري في الصورة واشرحها للمريض باللهجة العراقية البسيطة والمطمئنة. "
+        "أجب بصيغة JSON فقط بالمفاتيح التالية: "
+        '{"title": "نوع التحليل (مثلاً: تحليل السكر التراكمي HbA1c أو وظائف الكلى)", '
+        '"summary": "شرح مبسط لأهم الأرقام الموجودة بالتحليل", '
+        '"abnormal": "القيم الصاعدة أو النازلة عن الطبيعي إن وجدت أو اكتب: جميع القيم ضمن الحدود الطبيعية", '
+        '"advice": "نصيحة طبية مختصرة للمراجع"}'
     )
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
-            ],
-        }
-    ]
-    raw, err = call_openrouter(messages, max_tokens=800, json_mode=True)
+
+    messages = [{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}}
+        ]
+    }]
+
+    raw, err = call_openrouter(messages, max_tokens=650, temperature=0.3)
     if err:
         return jsonify({"success": False, "message": err})
 
     try:
-        parsed = json.loads(raw)
+        parsed = extract_json_block(raw)
         title = parsed.get("title", "تحليل مختبري")
-        summary = parsed.get("summary", "تمت قراءة التحليل.")
-        items = parsed.get("items", [])
-        advice = parsed.get("advice", "يرجى عرض التحليل على الدكتور المشرف.")
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        uid = session["user_id"]
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO lab_reports (patient_id, title, summary, items_json, advice, date) VALUES (?, ?, ?, ?, ?, ?)",
-            (uid, title, summary, json.dumps(items, ensure_ascii=False), advice, now_str),
-        )
-        rep_id = cur.lastrowid
-        conn.commit()
-        conn.close()
-
-        return jsonify({
-            "success": True,
-            "report": {
-                "id": rep_id,
-                "title": title,
-                "summary": summary,
-                "items": items,
-                "advice": advice,
-                "date": now_str,
-            },
-        })
+        summary = parsed.get("summary", raw)
+        abnormal = parsed.get("abnormal", "يرجى مراجعة الطبيب")
+        advice = parsed.get("advice", "اعرض التحليل على طبيبك المشرف.")
     except Exception:
-        return jsonify({"success": False, "message": "ما كدرنا نقرأ ورقة التحليل بوضوح، تأكد أن الصورة واضحة وحاول مرة ثانية."})
+        title = "قراءة تحليل مختبري"
+        summary = raw
+        abnormal = "-"
+        advice = "يفضل مناقشة النتيجة ويه دكتورك بالزيارة القادمة."
+
+    date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO lab_reports (patient_id, title, summary, abnormal, advice, date) VALUES (?, ?, ?, ?, ?, ?)",
+        (uid, title, summary, abnormal, advice, date_str)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "title": title,
+        "summary": summary,
+        "abnormal": abnormal,
+        "advice": advice,
+        "date": date_str
+    })
+
+
+@app.route("/api/lab-reports")
+def get_my_lab_reports():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify([]), 401
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, title, summary, abnormal, advice, date FROM lab_reports WHERE patient_id = ? ORDER BY id DESC",
+        (uid,)
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 
 @app.route("/api/ai/assistant", methods=["POST"])
-@login_required()
 def ai_assistant():
     data = request.get_json(silent=True) or {}
-    q = (data.get("question") or "").strip()
-    if not q:
+    question = str(data.get("question", "")).strip()
+    if not question:
         return jsonify({"answer": "اكتب سؤالك عيني حتى أجاوبك."})
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "أنت مساعد طبي ذكي متخصص بمرض السكري وتبعاته، تتحدث باللهجة العراقية الودودة والمحترمة. "
-                "إجاباتك دقيقة طبياً، مختصرة، ومرتبة بنقاط واضحة، وتنبه دائماً لمراجعة الطبيب في الحالات الطارئة."
-            ),
-        },
-        {"role": "user", "content": q},
-    ]
-    ans, err = call_openrouter(messages, max_tokens=550, json_mode=False)
+    system_msg = (
+        "أنت مساعد طبي ذكي متخصص بمرض السكري ومضاعفاته وتغذيته، تتحدث باللهجة العراقية المهذبة والواضحة والمطمئنة. "
+        "أعطِ إجابات عملية مختصرة ومنظمة، ونبّه المريض لمراجعة طبيبه في الحالات الطارئة."
+    )
+
+    answer, err = call_openrouter([
+        {"role": "system", "content": system_msg},
+        {"role": "user", "content": question}
+    ], max_tokens=550, temperature=0.45)
+
     if err:
-        return jsonify({"answer": f"⚠️ {err}"})
-    return jsonify({"answer": ans})
+        return jsonify({"answer": f"⚠️ تعذر الحصول على رد حالياً: {err}"})
+    return jsonify({"answer": answer})
 
 
-# ==================== Doctor Routes ====================
-@app.route("/api/doctor/patients", methods=["GET"])
-@login_required("doctor")
-def doctor_get_patients():
+# ================= مسارات الطبيب =================
+
+@app.route("/api/doctor/patients")
+def doctor_patients():
+    if session.get("role") != "doctor":
+        return jsonify([]), 403
+
     conn = get_db()
-    users = conn.execute("SELECT * FROM users WHERE role = 'patient' ORDER BY id DESC").fetchall()
-    result = []
-    for u in users:
-        pid = u["id"]
-        logs = conn.execute("SELECT * FROM logs WHERE patient_id = ? ORDER BY id DESC", (pid,)).fetchall()
-        labs = conn.execute("SELECT * FROM lab_reports WHERE patient_id = ? ORDER BY id DESC", (pid,)).fetchall()
+    pat_rows = conn.execute("SELECT * FROM users WHERE role = 'patient' ORDER BY id DESC").fetchall()
 
-        logs_list = [
-            {
-                "id": l["id"],
-                "val": l["val"],
-                "timing": l["timing"],
-                "meds": l["meds"],
-                "bp_sys": l["bp_sys"],
-                "bp_dia": l["bp_dia"],
-                "date": l["date"],
-            }
-            for l in logs
-        ]
+    patients_list = []
+    for r in pat_rows:
+        p = serialize_user(r)
+        logs = conn.execute(
+            "SELECT id, val, timing, meds, bp, date FROM logs WHERE patient_id = ? ORDER BY id DESC",
+            (p["id"],)
+        ).fetchall()
+        labs = conn.execute(
+            "SELECT id, title, summary, abnormal, advice, date FROM lab_reports WHERE patient_id = ? ORDER BY id DESC",
+            (p["id"],)
+        ).fetchall()
 
-        critical_alert = None
-        if logs_list:
-            latest_val = logs_list[0]["val"]
-            if latest_val < 70:
-                critical_alert = {"type": "low", "val": latest_val, "label": f"هبوط حاد ({latest_val})"}
-            elif latest_val >= 250:
-                critical_alert = {"type": "high", "val": latest_val, "label": f"ارتفاع خطر ({latest_val})"}
+        p["logs"] = [dict(l) for l in logs]
+        p["labReports"] = [dict(lb) for lb in labs]
 
-        p_obj = serialize_user(u)
-        p_obj["logs"] = logs_list
-        p_obj["criticalAlert"] = critical_alert
-        p_obj["labReports"] = [
-            {
-                "id": lb["id"],
-                "title": lb["title"],
-                "summary": lb["summary"],
-                "items": json.loads(lb["items_json"] or "[]"),
-                "advice": lb["advice"],
-                "date": lb["date"],
-            }
-            for lb in labs
-        ]
-        result.append(p_obj)
+        latest_val = p["logs"][0]["val"] if p["logs"] else None
+        p["isCritical"] = bool(latest_val is not None and (latest_val < 70 or latest_val > 250))
+        p["latestVal"] = latest_val
+        patients_list.append(p)
 
     conn.close()
+
     # ترتيب الحالات الحرجة بأعلى القائمة تلقائياً
-    result.sort(key=lambda x: 0 if x["criticalAlert"] else 1)
-    return jsonify(result)
+    patients_list.sort(key=lambda x: (0 if x["isCritical"] else 1, -x["id"]))
+    return jsonify(patients_list)
+
+
+@app.route("/api/doctor/create-patient", methods=["POST"])
+def doctor_create_patient():
+    if session.get("role") != "doctor":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "")).strip()
+    username = str(data.get("username", "")).strip()
+    password = str(data.get("password", "")).strip()
+    age = int(data.get("age") or 40)
+    weight = float(data.get("weight") or 70)
+    height = float(data.get("height") or 170)
+    d_type = str(data.get("diabetesType") or "النوع الثاني").strip()
+    phone = str(data.get("emergencyPhone") or "07700000000").strip()
+    target_g = int(data.get("targetGlucose") or 120)
+    corr_f = int(data.get("correctionFactor") or 40)
+
+    if not name or not username or not password:
+        return jsonify({"success": False, "message": "يرجى ملء الاسم واليوزر والرمز السري"})
+
+    conn = get_db()
+    exists = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if exists:
+        conn.close()
+        return jsonify({"success": False, "message": "هذا اليوزر مستخدم مسبقاً، اختار غيره"})
+
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO users (username, password, role, name, age, weight, height, diabetesType, emergencyPhone, targetGlucose, correctionFactor)
+        VALUES (?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (username, password, name, age, weight, height, d_type, phone, target_g, corr_f))
+    new_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "patient_id": new_id})
+
+
+@app.route("/api/doctor/update-patient", methods=["POST"])
+def doctor_update_patient():
+    if session.get("role") != "doctor":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
+
+    data = request.get_json(silent=True) or {}
+    pid = data.get("patient_id")
+    if not pid:
+        return jsonify({"success": False, "message": "معرف المراجع مفقود"})
+
+    conn = get_db()
+    conn.execute("""
+        UPDATE users
+        SET name = ?, age = ?, weight = ?, height = ?, diabetesType = ?, blood = ?, emergencyPhone = ?, targetGlucose = ?, correctionFactor = ?
+        WHERE id = ? AND role = 'patient'
+    """, (
+        str(data.get("name", "")).strip(),
+        int(data.get("age") or 40),
+        float(data.get("weight") or 70),
+        float(data.get("height") or 170),
+        str(data.get("diabetesType") or "النوع الثاني").strip(),
+        str(data.get("blood") or "O+").strip(),
+        str(data.get("emergencyPhone") or "").strip(),
+        int(data.get("targetGlucose") or 120),
+        int(data.get("correctionFactor") or 40),
+        pid
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route("/api/doctor/delete-patient/<int:patient_id>", methods=["DELETE"])
+def doctor_delete_patient(patient_id):
+    if session.get("role") != "doctor":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
+
+    conn = get_db()
+    conn.execute("DELETE FROM logs WHERE patient_id = ?", (patient_id,))
+    conn.execute("DELETE FROM messages WHERE patient_id = ?", (patient_id,))
+    conn.execute("DELETE FROM lab_reports WHERE patient_id = ?", (patient_id,))
+    conn.execute("DELETE FROM users WHERE id = ? AND role = 'patient'", (patient_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
 
 
 @app.route("/api/doctor/update-notes", methods=["POST"])
-@login_required("doctor")
 def doctor_update_notes():
+    if session.get("role") != "doctor":
+        return jsonify({"success": False}), 403
+
     data = request.get_json(silent=True) or {}
     pid = data.get("patient_id")
-    notes = data.get("notes", "")
+    notes = str(data.get("notes", ""))
+    target_g = int(data.get("targetGlucose") or 120)
+    corr_f = int(data.get("correctionFactor") or 40)
+
     conn = get_db()
-    conn.execute("UPDATE users SET doctor_notes = ? WHERE id = ? AND role = 'patient'", (notes, pid))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True})
-
-
-@app.route("/api/doctor/update-patient-info", methods=["POST"])
-@login_required("doctor")
-def doctor_update_patient_info():
-    data = request.get_json(silent=True) or {}
-    pid = data.get("patient_id")
-    conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'patient'", (pid,)).fetchone()
-    if not row:
-        conn.close()
-        return jsonify({"success": False, "message": "المراجع غير موجود"}), 404
-
-    name = (data.get("name") or row["name"]).strip()
-    age = int(data.get("age") or row["age"])
-    weight = float(data.get("weight") or row["weight"])
-    height = float(data.get("height") or row["height"])
-    bmi = calc_bmi(weight, height)
-    d_type = (data.get("diabetesType") or row["diabetes_type"]).strip()
-    gender = (data.get("gender") or row["gender"]).strip()
-    blood = (data.get("blood") or row["blood"]).strip()
-    phone = (data.get("emergencyPhone") or row["emergency_phone"]).strip()
-    target_g = int(data.get("targetGlucose") or 110)
-    corr_f = float(data.get("correctionFactor") or 50)
-
-    conn.execute("""
-        UPDATE users
-        SET name = ?, age = ?, weight = ?, height = ?, bmi = ?, diabetes_type = ?,
-            gender = ?, blood = ?, emergency_phone = ?, target_glucose = ?, correction_factor = ?
-        WHERE id = ?
-    """, (name, age, weight, height, bmi, d_type, gender, blood, phone, target_g, corr_f, pid))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True})
-
-
-@app.route("/api/doctor/delete-patient", methods=["POST"])
-@login_required("doctor")
-def doctor_delete_patient():
-    data = request.get_json(silent=True) or {}
-    pid = data.get("patient_id")
-    conn = get_db()
-    conn.execute("DELETE FROM logs WHERE patient_id = ?", (pid,))
-    conn.execute("DELETE FROM messages WHERE patient_id = ?", (pid,))
-    conn.execute("DELETE FROM lab_reports WHERE patient_id = ?", (pid,))
-    conn.execute("DELETE FROM users WHERE id = ? AND role = 'patient'", (pid,))
+    conn.execute(
+        "UPDATE users SET doctorNotes = ?, targetGlucose = ?, correctionFactor = ? WHERE id = ?",
+        (notes, target_g, corr_f, pid)
+    )
     conn.commit()
     conn.close()
     return jsonify({"success": True})
 
 
 @app.route("/api/doctor/reset-patient-password", methods=["POST"])
-@login_required("doctor")
-def doctor_reset_patient_password():
+def doctor_reset_password():
+    if session.get("role") != "doctor":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
+
     data = request.get_json(silent=True) or {}
     pid = data.get("patient_id")
-    new_pass = (data.get("new_password") or "").strip()
-    if not new_pass:
-        return jsonify({"success": False, "message": "اكتب الرمز السري الجديد"}), 400
+    new_pass = str(data.get("new_password", "")).strip()
+    if not pid or not new_pass:
+        return jsonify({"success": False, "message": "يرجى إدخال الرمز السري الجديد"})
+
     conn = get_db()
     conn.execute("UPDATE users SET password = ? WHERE id = ? AND role = 'patient'", (new_pass, pid))
     conn.commit()
@@ -668,73 +700,38 @@ def doctor_reset_patient_password():
     return jsonify({"success": True, "message": "تم تحديث الرمز السري للمراجع بنجاح"})
 
 
-@app.route("/api/doctor/create-patient", methods=["POST"])
-@login_required("doctor")
-def doctor_create_patient():
-    data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "").strip()
-    username = (data.get("username") or "").strip()
-    password = (data.get("password") or "").strip()
-    if not name or not username or not password:
-        return jsonify({"success": False, "message": "املأ الاسم واليوزر والرمز السري"}), 400
+# ================= مسارات المحادثة =================
 
-    age = int(data.get("age") or 40)
-    weight = float(data.get("weight") or 70)
-    height = float(data.get("height") or 170)
-    bmi = calc_bmi(weight, height)
-    d_type = (data.get("diabetesType") or "النوع الثاني").strip()
-    phone = (data.get("emergencyPhone") or "07700000000").strip()
-    gender = (data.get("gender") or "ذكر").strip()
-    blood = (data.get("blood") or "O+").strip()
-    target_g = int(data.get("targetGlucose") or 110)
-    corr_f = float(data.get("correctionFactor") or 50)
+@app.route("/api/chat/<int:patient_id>", methods=["GET", "POST"])
+def handle_chat(patient_id):
+    uid = session.get("user_id")
+    role = session.get("role")
+    if not uid:
+        return jsonify([]), 401
 
     conn = get_db()
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO users (username, password, name, role, age, weight, height, bmi, diabetes_type, gender, blood, emergency_phone, doctor_notes, target_glucose, correction_factor)
-            VALUES (?, ?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
-        """, (username, password, name, age, weight, height, bmi, d_type, gender, blood, phone, target_g, corr_f))
-        pid = cur.lastrowid
-        conn.commit()
-        return jsonify({"success": True, "patient_id": pid})
-    except sqlite3.IntegrityError:
-        return jsonify({"success": False, "message": "اسم المستخدم موجود مسبقاً، اختار غيره"}), 400
-    finally:
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        text = str(data.get("text", "")).strip()
+        if text:
+            sender = "doctor" if role == "doctor" else "patient"
+            time_str = datetime.now().strftime("%H:%M")
+            conn.execute(
+                "INSERT INTO messages (patient_id, sender, text, time) VALUES (?, ?, ?, ?)",
+                (patient_id, sender, text, time_str)
+            )
+            conn.commit()
         conn.close()
+        return jsonify({"success": True})
 
-
-# ==================== Chat Routes ====================
-@app.route("/api/chat/<int:patient_id>", methods=["GET"])
-@login_required()
-def get_chat(patient_id):
-    if session.get("role") == "patient" and session.get("user_id") != patient_id:
-        return jsonify([]), 403
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM messages WHERE patient_id = ? ORDER BY id ASC", (patient_id,)).fetchall()
+    rows = conn.execute(
+        "SELECT id, sender, text, time FROM messages WHERE patient_id = ? ORDER BY id ASC",
+        (patient_id,)
+    ).fetchall()
     conn.close()
-    return jsonify([{"sender": r["sender"], "text": r["text"], "time": r["time"]} for r in rows])
-
-
-@app.route("/api/chat/<int:patient_id>", methods=["POST"])
-@login_required()
-def post_chat(patient_id):
-    if session.get("role") == "patient" and session.get("user_id") != patient_id:
-        return jsonify({"success": False}), 403
-    data = request.get_json(silent=True) or {}
-    text = (data.get("text") or "").strip()
-    if not text:
-        return jsonify({"success": False}), 400
-    sender = session.get("role", "patient")
-    time_str = datetime.now().strftime("%I:%M %p")
-    conn = get_db()
-    conn.execute("INSERT INTO messages (patient_id, sender, text, time) VALUES (?, ?, ?, ?)", (patient_id, sender, text, time_str))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True})
+    return jsonify([dict(r) for r in rows])
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=True)
