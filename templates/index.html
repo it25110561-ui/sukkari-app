@@ -1046,3 +1046,58 @@
     </div>
 
   </div>
+  <script>
+    function quickFill(userType, pass) {
+      document.getElementById('login-username').value = userType;
+      document.getElementById('login-password').value = pass;
+    }
+    
+    function handleLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('login-username').value.toLowerCase();
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+      
+      if (user.includes('doc')) {
+        document.getElementById('doctor-view').classList.remove('hidden');
+        document.getElementById('doctor-floating-dock').classList.remove('hidden');
+        document.getElementById('doctor-sidebar-nav').classList.remove('hidden');
+        document.getElementById('header-role-badge').innerText = 'دكتور';
+        document.getElementById('header-role-badge').className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-sky-500/15 border border-sky-400/25 text-sky-300 shrink-0 hidden sm:inline-block';
+        document.getElementById('header-user-name').innerText = 'د. أحمد';
+      } else {
+        document.getElementById('patient-view').classList.remove('hidden');
+        document.getElementById('patient-floating-dock').classList.remove('hidden');
+        document.getElementById('patient-sidebar-nav').classList.remove('hidden');
+        document.getElementById('header-role-badge').innerText = 'مراجع';
+        document.getElementById('header-role-badge').className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 shrink-0 hidden sm:inline-block';
+        document.getElementById('header-user-name').innerText = 'محمد العراقي';
+      }
+    }
+
+    function logout() {
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('patient-view').classList.add('hidden');
+      document.getElementById('doctor-view').classList.add('hidden');
+      document.getElementById('patient-floating-dock').classList.add('hidden');
+      document.getElementById('doctor-floating-dock').classList.add('hidden');
+      document.getElementById('patient-sidebar-nav').classList.add('hidden');
+      document.getElementById('doctor-sidebar-nav').classList.add('hidden');
+      document.getElementById('login-form').reset();
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('unified-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if(sidebar.classList.contains('translate-x-full')) {
+        sidebar.classList.remove('translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
