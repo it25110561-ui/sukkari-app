@@ -368,7 +368,7 @@ def init_db():
                 age, gender, weight, height, blood, diabetesType, emergencyPhone, doctorNotes,
                 targetGlucose, correctionFactor, carbRatio, nextVisitDate
             )
-            VALUES (?, ?, 'patient', ?, '+9647701112233', '+964', 'العراق', 'iraqi', 42, 'ذكر', 75, 175, 'O+', 'النوع الثاني', '07701112233', 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.', 120, 40, 15, ?)
+            VALUES (?, ?, 'patient', ?, '+9647830406791', '+964', 'العراق', 'iraqi', 42, 'ذكر', 75, 175, 'O+', 'النوع الثاني', '07830406791', 'الالتزام بالمشي نص ساعة يومياً وتقليل الخبز والتمن.', 120, 40, 15, ?)
         """, ("patient", "123", "أحمد علي", (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d")))
         pat_id = cur.lastrowid
 
@@ -887,6 +887,7 @@ def api_verify_register():
     height = float(data.get("height") or 170)
     blood = str(data.get("blood") or "O+").strip()
     d_type = str(data.get("diabetesType") or "النوع الثاني").strip()
+    blood = str(data.get("blood") or "O+").strip()
     emerg_phone = str(data.get("emergencyPhone") or norm_phone).strip()
 
     cur = conn.cursor()
@@ -1629,6 +1630,7 @@ def doctor_create_patient():
     weight = float(data.get("weight") or 70)
     height = float(data.get("height") or 170)
     d_type = str(data.get("diabetesType") or "النوع الثاني").strip()
+    blood = str(data.get("blood") or "O+").strip()
     country_code = str(data.get("countryCode") or "+964").strip()
     raw_phone = str(data.get("emergencyPhone") or "07700000000").strip()
     norm_phone, cc = normalize_phone(raw_phone, country_code)
@@ -1651,12 +1653,12 @@ def doctor_create_patient():
     cur.execute("""
         INSERT INTO users (
             username, password, role, name, phone, countryCode, countryName, dialect,
-            age, weight, height, diabetesType, emergencyPhone, targetGlucose, correctionFactor, carbRatio
+            age, weight, height, blood, diabetesType, emergencyPhone, targetGlucose, correctionFactor, carbRatio
         )
         VALUES (?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         username, password, name, norm_phone, cc, c_info["countryName"], c_info["dialect"],
-        age, weight, height, d_type, raw_phone, target_g, corr_f, carb_r,
+        age, weight, height, blood, d_type, raw_phone, target_g, corr_f, carb_r,
     ))
     new_id = cur.lastrowid
     conn.commit()
