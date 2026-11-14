@@ -28,7 +28,6 @@
       transition: border-color 0.2s;
     }
     .input-dark:focus { border-color: #10b981; }
-    /* وضع كبار السن */
     body.senior-mode { font-size: 1.22rem; }
     body.senior-mode .text-xs { font-size: 0.95rem !important; }
     body.senior-mode .text-sm { font-size: 1.08rem !important; }
@@ -36,7 +35,6 @@
       min-height: 48px;
       font-size: 1.05rem !important;
     }
-    /* شريط التمرير */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0b1120; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
@@ -55,7 +53,6 @@
         </div>
       </div>
 
-      <!-- تبويبات الدخول / التسجيل -->
       <div class="grid grid-cols-2 gap-2 bg-slate-950/70 p-1.5 rounded-xl mb-6">
         <button id="tab-login-btn" onclick="switchAuthTab('login')" class="py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition">
           تسجيل الدخول
@@ -65,7 +62,6 @@
         </button>
       </div>
 
-      <!-- نموذج تسجيل الدخول -->
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs text-slate-400 mb-1">اسم المستخدم أو رقم الهاتف</label>
@@ -87,7 +83,6 @@
         </div>
       </form>
 
-      <!-- نموذج التسجيل برقم الهاتف + رمز التحقق OTP -->
       <form id="register-form" onsubmit="handleVerifyRegister(event)" class="space-y-3 hidden">
         <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between">
           <span>🌍 اللهجة التلقائية حسب مفتاح الدولة:</span>
@@ -192,13 +187,12 @@
     </div>
   </div>
 
-  <!-- ==================== التطبيق الرئيسي (بعد تسجيل الدخول) ==================== -->
+  <!-- ==================== التطبيق الرئيسي ==================== -->
   <div id="app-shell" class="hidden min-h-screen flex flex-col">
 
     <!-- الشريط العلوي الموحد (بدون زر كل الأدوات وبدون زر أدوات الطبيب) -->
     <header class="sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <!-- زر فتح الشريط الجانبي على الموبايل فقط -->
         <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200" title="القائمة الجانبية">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -225,20 +219,17 @@
       </div>
     </header>
 
-    <!-- حاوية الشريط الجانبي + المحتوى -->
     <div class="flex-1 flex relative">
-
-      <!-- خلفية التعتيم للموبايل عند فتح الشريط الجانبي -->
       <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
 
-      <!-- ==================== الشريط الجانبي الموحّد التصميم للمريض والطبيب ==================== -->
-      <aside id="unified-sidebar" class="fixed lg:sticky top-[57px] right-0 z-30 h-[calc(100vh-57px)] w-72 bg-[#0f172a] border-l border-slate-800 flex flex-col transition-transform duration-200 translate-x-full lg:translate-x-0 overflow-y-auto">
+      <!-- ==================== الشريط الجانبي الموحّد للمريض والطبيب ==================== -->
+      <aside id="unified-sidebar" class="fixed lg:sticky top-[57px] right-0 z-30 h-[calc(100vh-57px)] w-72 bg-[#0f172a] border-l border-slate-800 flex flex-col transition-transform duration-200 translate-x-full lg:translate-x-0 overflow-y-auto pb-24">
         <div class="p-3 border-b border-slate-800/80 flex items-center justify-between">
           <span id="sidebar-role-title" class="text-xs font-extrabold text-emerald-400 tracking-wide">الشريط الجانبي للأدوات</span>
           <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white text-sm px-2">✕</button>
         </div>
 
-        <!-- قائمة الشريط الجانبي للمراجع -->
+        <!-- الشريط الجانبي للمراجع -->
         <nav id="patient-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
           <button onclick="scrollToPatientSection('pat-overview')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-600/20 text-emerald-300 font-bold flex items-center gap-2.5 hover:bg-emerald-600/30">
             <span>📊</span><span>الرئيسية وتسجيل القياس</span>
@@ -258,6 +249,23 @@
             <span id="sb-senior-state" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400">مغلق</span>
           </button>
 
+          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">الذكاء الاصطناعي وتحليل الصور</div>
+          <button onclick="openToolModal('modal-ai-chat')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/25 hover:bg-emerald-900/50 flex items-center gap-2.5 text-emerald-300 font-bold">
+            <span>🤖</span><span>المساعد الطبي الذكي (محادثة)</span>
+          </button>
+          <button onclick="openToolModal('modal-meal-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
+            <span>📸</span><span>تحليل الوجبة بالصورة</span>
+          </button>
+          <button onclick="openToolModal('modal-label-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
+            <span>🏷️</span><span>قارئ ملصقات المعلّبات</span>
+          </button>
+          <button onclick="openToolModal('modal-lab-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
+            <span>🧪</span><span>قراءة التحاليل المختبرية</span>
+          </button>
+          <button onclick="openToolModal('modal-med-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-sky-300">
+            <span>💊</span><span>التعرف على علبة الدواء بالصورة</span>
+          </button>
+
           <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">الطوارئ والأمان</div>
           <button onclick="openToolModal('modal-hypo15')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-rose-300">
             <span>⏱️</span><span>مؤقت قاعدة (15-15) للهبوط</span>
@@ -275,15 +283,9 @@
             <span>🪪</span><span>بطاقة المدرسة / العمل / الأسنان</span>
           </button>
 
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">التغذية والذكاء الاصطناعي</div>
+          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">التغذية والأدلة</div>
           <button onclick="openToolModal('modal-bolus')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
             <span>🧮</span><span>حاسبة الكارب والوجبة قبل الأكل</span>
-          </button>
-          <button onclick="openToolModal('modal-meal-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📸</span><span>تحليل الوجبة بالكاميرا</span>
-          </button>
-          <button onclick="openToolModal('modal-label-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🏷️</span><span>قارئ ملصقات المعلّبات</span>
           </button>
           <button onclick="openToolModal('modal-iraqi-food')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
             <span>🍲</span><span>دليل الأكلات العراقية والبدائل</span>
@@ -293,12 +295,6 @@
           </button>
           <button onclick="openToolModal('modal-herbs')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
             <span>🌿</span><span>دليل الأعشاب وتداخلها مع الأدوية</span>
-          </button>
-          <button onclick="openToolModal('modal-lab-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🧪</span><span>قراءة التحاليل المختبرية</span>
-          </button>
-          <button onclick="openToolModal('modal-ai-chat')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-emerald-300">
-            <span>🤖</span><span>المساعد الطبي الذكي</span>
           </button>
 
           <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">المتابعة العلاجية والفحوصات</div>
@@ -339,7 +335,7 @@
           </button>
         </nav>
 
-        <!-- قائمة الشريط الجانبي للطبيب (نفس التصميم الموحد بدون زر أدوات الطبيب) -->
+        <!-- الشريط الجانبي للطبيب -->
         <nav id="doctor-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
           <button onclick="scrollToDoctorSection('doc-overview')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-600/20 text-emerald-300 font-bold flex items-center gap-2.5 hover:bg-emerald-600/30">
             <span>🏥</span><span>لوحة العيادة وملف المراجع</span>
@@ -379,13 +375,32 @@
       </aside>
 
       <!-- ==================== المحتوى الرئيسي للمراجع ==================== -->
-      <main id="patient-view" class="hidden flex-1 p-4 sm:p-6 space-y-5 max-w-7xl mx-auto w-full">
+      <main id="patient-view" class="hidden flex-1 p-4 sm:p-6 pb-28 space-y-5 max-w-7xl mx-auto w-full">
         <div id="pat-overview"></div>
 
         <!-- شريط التنبيهات السريرية الذكية -->
         <div id="patient-alerts-area" class="space-y-2"></div>
 
-        <!-- شريط الحالة السريع: النطاق الآمن + سلسلة الالتزام + موعد المراجعة -->
+        <!-- بطاقة الاختصار السريع للذكاء الاصطناعي وتحليل الصور -->
+        <div class="card p-4 bg-gradient-to-l from-emerald-950/40 via-[#131c31] to-sky-950/40 border-emerald-500/25 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="text-sm font-black text-emerald-300">🤖 مساعدك الذكي ومحلل الصور الطبي</div>
+            <div class="text-xs text-slate-400">مربوط بقياساتك ومعامل الكارب الخاص بك — اسأله أو صوّر وجبتك وتحاليلك</div>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <button onclick="openToolModal('modal-ai-chat')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+              💬 اسأل المساعد الذكي
+            </button>
+            <button onclick="openToolModal('modal-meal-ai')" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black">
+              📸 صوّر وجبتك
+            </button>
+            <button onclick="openToolModal('modal-lab-ai')" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold">
+              🧪 اقرأ تحليلك
+            </button>
+          </div>
+        </div>
+
+        <!-- شريط الحالة السريع -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="card p-4">
             <div class="flex items-center justify-between mb-2">
@@ -486,9 +501,8 @@
           </form>
         </div>
 
-        <!-- شبكة البطاقات التفاعلية اليومية (مطابقة للتصميم الظاهر في لقطة الشاشة) -->
+        <!-- شبكة البطاقات التفاعلية اليومية -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <!-- 1. عداد شرب الماء والمشي اليومي -->
           <div class="card p-5 space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-extrabold text-sky-400">💧 عدّاد شرب الماء والمشي اليومي</h3>
@@ -513,7 +527,6 @@
             </div>
           </div>
 
-          <!-- 2. الالتزام بالعلاج والأعراض الجانبية -->
           <div class="card p-5 space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-extrabold text-purple-400">💊 الالتزام بالعلاج والأعراض الجانبية</h3>
@@ -544,7 +557,6 @@
             </div>
           </div>
 
-          <!-- 3. حاسبة الجرعة التصحيحية للأنسولين -->
           <div class="card p-5 space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-extrabold text-sky-400">🧮 حاسبة الجرعة التصحيحية للأنسولين</h3>
@@ -559,7 +571,6 @@
             <div id="corr-result-box" class="text-xs text-emerald-300 font-bold"></div>
           </div>
 
-          <!-- 4. مؤقت القياس بعد الأكل (ساعتين / 4 ساعات دسم) + فحص القدمين -->
           <div class="card p-5 space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-extrabold text-amber-400">⏳ مؤقت القياس بعد الأكل (ساعتين / 4 ساعات دسم)</h3>
@@ -582,7 +593,6 @@
             </div>
           </div>
 
-          <!-- 5. مكتشف استجابة جسمك الشخصية للأكل -->
           <div class="card p-5 space-y-3">
             <h3 class="text-sm font-extrabold text-emerald-400">🍽️ مكتشف استجابة جسمك الشخصية للأكل</h3>
             <div class="grid grid-cols-2 gap-3 text-xs">
@@ -597,7 +607,6 @@
             </div>
           </div>
 
-          <!-- 6. محاكي السكر التراكمي التفاعلي (eA1c) -->
           <div class="card p-5 space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-extrabold text-sky-400">🎚️ محاكي السكر التراكمي التفاعلي (eA1c)</h3>
@@ -612,7 +621,7 @@
           </div>
         </div>
 
-        <!-- ملاحظات الدكتور المشرف مع زر القراءة الصوتية لكبار السن -->
+        <!-- ملاحظات الدكتور المشرف -->
         <div class="card p-5">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-extrabold text-emerald-400">🩺 توجيهات وملاحظات الدكتور المشرف</h3>
@@ -641,10 +650,9 @@
       </main>
 
       <!-- ==================== المحتوى الرئيسي للطبيب (بدون زر أدوات الطبيب) ==================== -->
-      <main id="doctor-view" class="hidden flex-1 p-4 sm:p-6 space-y-5 max-w-7xl mx-auto w-full">
+      <main id="doctor-view" class="hidden flex-1 p-4 sm:p-6 pb-28 space-y-5 max-w-7xl mx-auto w-full">
         <div id="doc-overview"></div>
 
-        <!-- لوحة إحصائيات العيادة العلوية -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="card p-4 text-center">
             <div class="text-xs text-slate-400">إجمالي المراجعين</div>
@@ -665,7 +673,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <!-- قائمة المراجعين والبحث والفلترة -->
           <div class="card p-4 lg:col-span-4 space-y-3 h-fit">
             <div class="flex items-center justify-between">
               <h2 class="text-sm font-extrabold text-sky-400">👥 قائمة المراجعين</h2>
@@ -682,9 +689,7 @@
             <div id="doc-patients-list" class="space-y-2 max-h-[520px] overflow-y-auto"></div>
           </div>
 
-          <!-- ملف المراجع المحدد -->
           <div id="doc-patient-detail" class="lg:col-span-8 space-y-4">
-            <!-- بطاقة رأس المراجع (تحتوي Excel والباركود فقط — بدون زر أدوات الطبيب) -->
             <div class="card p-5">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -704,7 +709,6 @@
                 </div>
               </div>
 
-              <!-- ملخص الـ 5 ثواني قبل دخول المراجع لغرفة الفحص -->
               <div class="mt-4 p-4 rounded-xl bg-amber-950/25 border border-amber-500/30">
                 <div class="text-xs font-extrabold text-amber-400 mb-2.5">⚡ ملخص الـ 5 ثواني قبل دخول المراجع لغرفة الفحص:</div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
@@ -727,11 +731,9 @@
                 </div>
               </div>
 
-              <!-- تنبيهات الطبيب السريرية لهذا المراجع -->
               <div id="dp-clinical-alerts" class="mt-3 space-y-1.5"></div>
             </div>
 
-            <!-- مقارنة الأداء الأسبوعي + تحليل أوقات اليوم -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="card p-4">
                 <h3 class="text-xs font-extrabold text-emerald-400 mb-3">📊 مقارنة الأداء الأسبوعي (Before & After)</h3>
@@ -753,7 +755,6 @@
               </div>
             </div>
 
-            <!-- توجيهات الطبيب + الإملاء الصوتي السريع + تحديد موعد المراجعة القادمة -->
             <div id="doc-notes-section" class="card p-5 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h3 class="text-sm font-extrabold text-emerald-400">📝 خطة العلاج وتوجيهات الطبيب</h3>
@@ -785,7 +786,6 @@
               </button>
             </div>
 
-            <!-- الرسم البياني وسجل قياسات المراجع للطبيب -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="card p-4">
                 <h3 class="text-xs font-extrabold text-slate-200 mb-2">📈 منحنى سكر المراجع</h3>
@@ -800,11 +800,174 @@
         </div>
       </main>
     </div>
+
+    <!-- ==================== الشريط العائم السفلي للمراجع (بدون زر كل الأدوات) ==================== -->
+    <div id="patient-floating-dock" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-xl bg-[#0f172a]/95 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl px-2 py-1.5">
+      <div class="grid grid-cols-5 gap-1 text-center text-[11px] font-bold">
+        <button onclick="scrollToPatientSection('pat-overview')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-emerald-400 transition">
+          <span class="text-base leading-none mb-1">📊</span>
+          <span>قياساتي</span>
+        </button>
+        <button onclick="openToolModal('modal-ai-chat')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-emerald-300 transition">
+          <span class="text-base leading-none mb-1">🤖</span>
+          <span>المساعد الذكي</span>
+        </button>
+        <button onclick="openToolModal('modal-meal-ai')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-amber-300 transition">
+          <span class="text-base leading-none mb-1">📸</span>
+          <span>صوّر وجبتك</span>
+        </button>
+        <button onclick="openToolModal('modal-hypo15')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-rose-400 transition">
+          <span class="text-base leading-none mb-1">⏱️</span>
+          <span>طوارئ 15-15</span>
+        </button>
+        <button onclick="openToolModal('modal-doc-chat')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-sky-400 transition">
+          <span class="text-base leading-none mb-1">💬</span>
+          <span>الدكتور</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== الشريط العائم السفلي للطبيب (بدون زر أدوات الطبيب) ==================== -->
+    <div id="doctor-floating-dock" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-xl bg-[#0f172a]/95 backdrop-blur-md border border-slate-700/80 shadow-2xl rounded-2xl px-2 py-1.5">
+      <div class="grid grid-cols-5 gap-1 text-center text-[11px] font-bold">
+        <button onclick="scrollToDoctorSection('doc-overview')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-sky-400 transition">
+          <span class="text-base leading-none mb-1">🏥</span>
+          <span>العيادة</span>
+        </button>
+        <button onclick="openToolModal('modal-doc-create-patient')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-emerald-400 transition">
+          <span class="text-base leading-none mb-1">➕</span>
+          <span>مراجع جديد</span>
+        </button>
+        <button onclick="scrollToDoctorSection('doc-notes-section')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-amber-300 transition">
+          <span class="text-base leading-none mb-1">📝</span>
+          <span>التوجيهات</span>
+        </button>
+        <button onclick="openToolModal('modal-doc-chat-panel')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-sky-300 transition">
+          <span class="text-base leading-none mb-1">💬</span>
+          <span>المحادثة</span>
+        </button>
+        <button onclick="openToolModal('modal-doc-labs-panel')" class="flex flex-col items-center justify-center py-1.5 rounded-xl hover:bg-slate-800 text-purple-300 transition">
+          <span class="text-base leading-none mb-1">🧪</span>
+          <span>التحاليل</span>
+        </button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- ==================== النوافذ المنبثقة لجميع الأدوات التفاعلية ==================== -->
+  <!-- ==================== النوافذ المنبثقة للذكاء الاصطناعي وتحليل الصور ==================== -->
 
-  <!-- 1. مؤقت قاعدة (15-15) لعلاج الهبوط -->
+  <!-- المساعد الطبي الذكي -->
+  <div id="modal-ai-chat" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="card w-full max-w-xl p-5 space-y-3">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 class="text-base font-black text-emerald-400">🤖 المساعد الطبي الذكي</h3>
+          <p class="text-[11px] text-slate-400">مرتبط بملفك الطبي وقياساتك الأخيرة</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="clearAiChatHistory()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 text-[11px]">
+            🗑️ مسح المحادثة
+          </button>
+          <button onclick="closeAllModals()" class="text-slate-400 hover:text-white px-2">✕</button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5 text-[11px]">
+        <button type="button" onclick="sendQuickAiPrompt('حلّل لي آخر قياساتي ونصيحتك إلي شنو؟')" class="px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/60">
+          📊 حلّل آخر قياساتي
+        </button>
+        <button type="button" onclick="sendQuickAiPrompt('شنو أتعشى اليوم بدون ما يصعد سكري؟')" class="px-2.5 py-1 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-300 hover:bg-sky-900/60">
+          🥗 اقتراح وجبة خفيفة
+        </button>
+        <button type="button" onclick="sendQuickAiPrompt('شلون أتعامل إذا حسيت برجفة وهبوط مفاجئ؟')" class="px-2.5 py-1 rounded-full bg-rose-950/60 border border-rose-500/30 text-rose-300 hover:bg-rose-900/60">
+          🚨 تصرف الهبوط المفاجئ
+        </button>
+      </div>
+
+      <div id="ai-chat-history" class="h-72 overflow-y-auto p-3 rounded-xl bg-slate-900 space-y-2.5 text-xs leading-relaxed">
+        <div class="text-slate-400">هلا بيك! اسألني أي سؤال عن قياساتك، أكلك، أو علاجك...</div>
+      </div>
+
+      <form onsubmit="askAiAssistant(event)" class="flex gap-2">
+        <button type="button" onclick="startPatientVoiceQuestion()" id="btn-pat-voice" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs" title="تحدث بصوتك">
+          🎤
+        </button>
+        <input id="ai-question-input" type="text" required placeholder="اكتب سؤالك أو اضغط المايكروفون..." class="input-dark w-full text-xs" />
+        <button type="submit" id="btn-ask-ai" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+          إرسال
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- تحليل الوجبة بالكاميرا -->
+  <div id="modal-meal-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black text-amber-400">📸 تحليل الوجبة بالذكاء الاصطناعي</h3>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <input id="meal-img-input" type="file" accept="image/*" onchange="previewSelectedImage('meal-img-input','meal-img-preview')" class="input-dark w-full text-xs" />
+      <img id="meal-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <input id="meal-note-input" type="text" placeholder="ملاحظة اختيارية (مثلاً: وجبة غدا / صايم)" class="input-dark w-full text-xs" />
+      <button onclick="analyzeMealImage()" id="btn-meal-ai" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">
+        تحليل الصورة الآن
+      </button>
+      <div id="meal-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- قارئ ملصقات المعلّبات -->
+  <div id="modal-label-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black text-sky-400">🏷️ قارئ جدول القيم الغذائية للمعلّبات</h3>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <input id="label-img-input" type="file" accept="image/*" onchange="previewSelectedImage('label-img-input','label-img-preview')" class="input-dark w-full text-xs" />
+      <img id="label-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <button onclick="analyzeNutritionLabel()" id="btn-label-ai" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs">
+        فحص العلبة والسكريات المخفية
+      </button>
+      <div id="label-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- قراءة التحاليل المختبرية بالكاميرا -->
+  <div id="modal-lab-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black text-sky-400">🧪 قراءة التحاليل المختبرية</h3>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <input id="lab-img-input" type="file" accept="image/*" onchange="previewSelectedImage('lab-img-input','lab-img-preview')" class="input-dark w-full text-xs" />
+      <img id="lab-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <button onclick="analyzeLabImage()" id="btn-lab-ai" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs">
+        قراءة وشرح التحليل وحفظه للدكتور
+      </button>
+      <div id="lab-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- التعرف على علبة الدواء والأنسولين بالصورة -->
+  <div id="modal-med-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black text-emerald-400">💊 التعرف على علبة الدواء بالصورة</h3>
+        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <input id="med-img-input" type="file" accept="image/*" onchange="previewSelectedImage('med-img-input','med-img-preview')" class="input-dark w-full text-xs" />
+      <img id="med-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <button onclick="analyzeMedicationImage()" id="btn-med-ai" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+        تعرّف على العلاج
+      </button>
+      <div id="med-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- ==================== بقية النوافذ التفاعلية للمراجع والطبيب ==================== -->
+
   <div id="modal-hypo15" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -825,7 +988,6 @@
     </div>
   </div>
 
-  <!-- 2. فحص الأمان قبل النوم -->
   <div id="modal-bedtime" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -842,7 +1004,6 @@
     </div>
   </div>
 
-  <!-- 3. فحص الأمان قبل الرياضة -->
   <div id="modal-workout" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -855,7 +1016,6 @@
     </div>
   </div>
 
-  <!-- 4. توليد خلفية طوارئ لشاشة القفل -->
   <div id="modal-lockscreen" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4 text-center">
       <div class="flex justify-between items-center">
@@ -869,7 +1029,6 @@
     </div>
   </div>
 
-  <!-- 5. بطاقات المدرسة / العمل / طبيب الأسنان -->
   <div id="modal-cards" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -887,7 +1046,6 @@
     </div>
   </div>
 
-  <!-- 6. حاسبة الكارب للوجبات قبل الأكل -->
   <div id="modal-bolus" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -909,33 +1067,6 @@
     </div>
   </div>
 
-  <!-- 7. تحليل الوجبة بالكاميرا -->
-  <div id="modal-meal-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">📸 تحليل الوجبة بالذكاء الاصطناعي</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <input id="meal-img-input" type="file" accept="image/*" class="input-dark w-full text-xs" />
-      <button onclick="analyzeMealImage()" id="btn-meal-ai" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs">تحليل الصورة</button>
-      <div id="meal-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-1.5 hidden"></div>
-    </div>
-  </div>
-
-  <!-- 8. قارئ ملصقات المعلّبات -->
-  <div id="modal-label-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">🏷️ قارئ جدول القيم الغذائية للمعلّبات</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <input id="label-img-input" type="file" accept="image/*" class="input-dark w-full text-xs" />
-      <button onclick="analyzeNutritionLabel()" id="btn-label-ai" class="w-full py-2.5 rounded-xl bg-sky-600 text-white font-bold text-xs">فحص العلبة</button>
-      <div id="label-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-1.5 hidden"></div>
-    </div>
-  </div>
-
-  <!-- 9. دليل الأكلات العراقية والبدائل الذكية -->
   <div id="modal-iraqi-food" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -947,7 +1078,6 @@
     </div>
   </div>
 
-  <!-- 10. وضع العزايم والمناسبات -->
   <div id="modal-feast" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -962,7 +1092,6 @@
     </div>
   </div>
 
-  <!-- 11. دليل الأعشاب وتداخلها مع الأدوية -->
   <div id="modal-herbs" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -986,38 +1115,6 @@
     </div>
   </div>
 
-  <!-- 12. قراءة التحاليل المختبرية بالكاميرا -->
-  <div id="modal-lab-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">🧪 قراءة التحاليل المختبرية بالذكاء الاصطناعي</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <input id="lab-img-input" type="file" accept="image/*" class="input-dark w-full text-xs" />
-      <button onclick="analyzeLabImage()" id="btn-lab-ai" class="w-full py-2.5 rounded-xl bg-sky-600 text-white font-bold text-xs">قراءة وشرح التحليل</button>
-      <div id="lab-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-1.5 hidden"></div>
-      <div id="saved-labs-list" class="space-y-2 text-xs"></div>
-    </div>
-  </div>
-
-  <!-- 13. المساعد الطبي الذكي -->
-  <div id="modal-ai-chat" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">🤖 المساعد الطبي الذكي</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <div id="ai-chat-history" class="h-60 overflow-y-auto p-3 rounded-xl bg-slate-900 space-y-2 text-xs">
-        <div class="text-slate-400">اسألني أي سؤال عن السكري، الأكل، أو القياسات...</div>
-      </div>
-      <form onsubmit="askAiAssistant(event)" class="flex gap-2">
-        <input id="ai-question-input" type="text" required placeholder="اكتب سؤالك هنا..." class="input-dark w-full text-xs" />
-        <button type="submit" id="btn-ask-ai" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs">إرسال</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- 14. خريطة تدوير أماكن حقن الأنسولين -->
   <div id="modal-injection" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -1036,7 +1133,6 @@
     </div>
   </div>
 
-  <!-- 15. مخزون الأشرطة وأقلام الأنسولين -->
   <div id="modal-inventory" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -1057,7 +1153,6 @@
     </div>
   </div>
 
-  <!-- 16. جدول الفحوصات الدورية وخطة التدرج بالمشي -->
   <div id="modal-periodic" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-4 text-xs max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -1086,7 +1181,6 @@
     </div>
   </div>
 
-  <!-- 17. مقياس فحص الأعصاب الطرفية وصحة اللثة والجلد -->
   <div id="modal-neuropathy" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -1102,7 +1196,6 @@
     </div>
   </div>
 
-  <!-- 18. معايرة دقة الجهاز المنزلي -->
   <div id="modal-calibration" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4 text-xs">
       <div class="flex justify-between items-center">
@@ -1116,7 +1209,6 @@
     </div>
   </div>
 
-  <!-- 19. حقيبة السفر والتحضير لموعد العيادة -->
   <div id="modal-travel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -1132,7 +1224,6 @@
     </div>
   </div>
 
-  <!-- 20. محادثة الدكتور (للمريض) -->
   <div id="modal-doc-chat" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -1147,7 +1238,6 @@
     </div>
   </div>
 
-  <!-- 21. إعدادات الملف واللهجة (للمريض) -->
   <div id="modal-profile" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -1178,9 +1268,7 @@
     </div>
   </div>
 
-  <!-- ==================== نوافذ الطبيب المنبثقة ==================== -->
-
-  <!-- إضافة مراجع جديد (للدكتور) -->
+  <!-- نوافذ الطبيب -->
   <div id="modal-doc-create-patient" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -1217,7 +1305,6 @@
     </div>
   </div>
 
-  <!-- تعديل بيانات المراجع (للدكتور) -->
   <div id="modal-doc-edit-patient" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -1242,7 +1329,6 @@
     </div>
   </div>
 
-  <!-- إعادة تعيين رمز المراجع (للدكتور) -->
   <div id="modal-doc-reset-pass" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-sm p-6 space-y-3 text-xs">
       <div class="flex justify-between items-center">
@@ -1254,7 +1340,6 @@
     </div>
   </div>
 
-  <!-- محادثة المراجع (للدكتور) -->
   <div id="modal-doc-chat-panel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-4">
       <div class="flex justify-between items-center">
@@ -1269,7 +1354,6 @@
     </div>
   </div>
 
-  <!-- تحاليل المراجع المختبرية (للدكتور) -->
   <div id="modal-doc-labs-panel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center">
@@ -1280,7 +1364,6 @@
     </div>
   </div>
 
-  <!-- بطاقة باركود المراجع (للدكتور) -->
   <div id="modal-doc-qr-panel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
     <div class="card w-full max-w-sm p-6 space-y-3 text-center text-xs">
       <div class="flex justify-between items-center">
@@ -1305,18 +1388,17 @@
     let postMealTimeout = null;
 
     const IRAQI_FOODS = [
-      { name: "تمن ومرك فاصوليا / بامية", color: "yellow", tag: "🟡 باعتدال", tip: "اكتفِ بـ 6 إلى 8 ملاعق تمن مع الإكثار من المرك والزلاطة." },
-      { name: "خبز تنور أبيض حار", color: "red", tag: "🔴 يرفع السكر بسرعة", tip: "استبدله بربع رغيف خبز شعير أو شوفان محمّص." },
-      { name: "كبة حلب / كبة برغل مقلية", color: "yellow", tag: "🟡 باعتدال", tip: "تناول حبة أو حبتين مشوية أو مسلوقة بدل المقلية مع سلطة." },
-      { name: "دولمة عراقية", color: "yellow", tag: "🟡 باعتدال", tip: "السلق والباذنجان ممتازان، قلل من التمن داخل الحشوة." },
-      { name: "تشريب لحم أو دجاج", color: "red", tag: "🔴 يرفع السكر بسرعة", tip: "الخبز المنقوع يمتص بسرعة؛ تناول اللحم والمرق مع خبز شعير قليل." },
-      { name: "تمر (خستاوي / زهدي)", color: "yellow", tag: "🟡 باعتدال", tip: "حبتان إلى 3 حبات كحد أقصى ويفضل مع لبن أو جوز لإبطاء الامتصاص." },
-      { name: "كاهي وكيمر", color: "red", tag: "🔴 يرفع السكر والدسم", tip: "يرفع السكر بقوة ولفترة طويلة؛ تجنبه قدر الإمكان." },
-      { name: "سمك مسكوف مع زلاطة", color: "green", tag: "🟢 آمن وممتاز", tip: "وجبة بروتينية ممتازة لا ترفع السكر إذا قُلّل الخبز معها." },
-      { name: "شنينة / لبن أربيل بارد", color: "green", tag: "🟢 آمن ومفيد", tip: "بديل رائع للمشروبات الغازية والعصائر الصناعية." }
+      { name: "تمن ومرك فاصوليا / بامية", tag: "🟡 باعتدال", tip: "اكتفِ بـ 6 إلى 8 ملاعق تمن مع الإكثار من المرك والزلاطة." },
+      { name: "خبز تنور أبيض حار", tag: "🔴 يرفع السكر بسرعة", tip: "استبدله بربع رغيف خبز شعير أو شوفان محمّص." },
+      { name: "كبة حلب / كبة برغل مقلية", tag: "🟡 باعتدال", tip: "تناول حبة أو حبتين مشوية أو مسلوقة بدل المقلية مع سلطة." },
+      { name: "دولمة عراقية", tag: "🟡 باعتدال", tip: "السلق والباذنجان ممتازان، قلل من التمن داخل الحشوة." },
+      { name: "تشريب لحم أو دجاج", tag: "🔴 يرفع السكر بسرعة", tip: "الخبز المنقوع يمتص بسرعة؛ تناول اللحم والمرق مع خبز شعير قليل." },
+      { name: "تمر (خستاوي / زهدي)", tag: "🟡 باعتدال", tip: "حبتان إلى 3 حبات كحد أقصى ويفضل مع لبن أو جوز لإبطاء الامتصاص." },
+      { name: "كاهي وكيمر", tag: "🔴 يرفع السكر والدسم", tip: "يرفع السكر بقوة ولفترة طويلة؛ تجنبه قدر الإمكان." },
+      { name: "سمك مسكوف مع زلاطة", tag: "🟢 آمن وممتاز", tip: "وجبة بروتينية ممتازة لا ترفع السكر إذا قُلّل الخبز معها." },
+      { name: "شنينة / لبن أربيل بارد", tag: "🟢 آمن ومفيد", tip: "بديل رائع للمشروبات الغازية والعصائر الصناعية." }
     ];
 
-    // تحديث الساعة الحية
     setInterval(() => {
       const el = document.getElementById('live-clock');
       if (el) el.textContent = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
@@ -1413,7 +1495,7 @@
       location.reload();
     }
 
-    // ================= تهيئة الواجهة والشريط الجانبي =================
+    // ================= تهيئة الواجهة والشريط الجانبي والشريط العائم =================
     function toggleSidebar() {
       const sb = document.getElementById('unified-sidebar');
       const bd = document.getElementById('sidebar-backdrop');
@@ -1429,6 +1511,7 @@
         document.getElementById('unified-sidebar').classList.add('translate-x-full');
         document.getElementById('sidebar-backdrop').classList.add('hidden');
       }
+      if (id === 'modal-ai-chat') loadAiChatHistory();
       if (id === 'modal-lockscreen') drawLockScreenCard();
       if (id === 'modal-iraqi-food') filterIraqiFoods();
       if (id === 'modal-doc-chat') loadPatientChat();
@@ -1455,6 +1538,8 @@
         document.getElementById('patient-sidebar-nav').classList.add('hidden');
         document.getElementById('doctor-view').classList.remove('hidden');
         document.getElementById('patient-view').classList.add('hidden');
+        document.getElementById('doctor-floating-dock').classList.remove('hidden');
+        document.getElementById('patient-floating-dock').classList.add('hidden');
         await loadDoctorDashboard();
       } else {
         document.getElementById('header-section-title').textContent = 'قياساتي';
@@ -1464,7 +1549,331 @@
         document.getElementById('doctor-sidebar-nav').classList.add('hidden');
         document.getElementById('patient-view').classList.remove('hidden');
         document.getElementById('doctor-view').classList.add('hidden');
+        document.getElementById('patient-floating-dock').classList.remove('hidden');
+        document.getElementById('doctor-floating-dock').classList.add('hidden');
         await loadPatientDashboard();
+      }
+    }
+
+    // ================= الذكاء الاصطناعي (المحادثة + ضغط وتحليل الصور) =================
+    function formatAiText(str) {
+      const escaped = String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return escaped
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300">$1</strong>')
+        .replace(/
+/g, '<br/>');
+    }
+
+    function previewSelectedImage(inputId, previewId) {
+      const file = document.getElementById(inputId).files[0];
+      const imgEl = document.getElementById(previewId);
+      if (!file || !imgEl) return;
+      imgEl.src = URL.createObjectURL(file);
+      imgEl.classList.remove('hidden');
+    }
+
+    function compressImageFile(file, maxDim = 1024, quality = 0.82) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob((blob) => {
+              resolve(blob || file);
+            }, 'image/jpeg', quality);
+          };
+          img.onerror = () => resolve(file);
+          img.src = ev.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function loadAiChatHistory() {
+      const res = await fetch('/api/ai/history');
+      const data = await res.json();
+      const box = document.getElementById('ai-chat-history');
+      if (!data.success || !data.messages.length) {
+        box.innerHTML = `<div class="text-slate-400">هلا بيك ${currentUser.name}! أنا مرتبط بملفك الطبي وقياساتك، اسألني أي سؤال...</div>`;
+        return;
+      }
+      box.innerHTML = data.messages.map(m => renderAiBubble(m.role, m.content, m.time)).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function renderAiBubble(role, content, timeStr = '') {
+      if (role === 'user') {
+        return `
+          <div class="p-2.5 rounded-xl bg-emerald-900/40 border border-emerald-500/20 text-emerald-100 mr-8">
+            <div class="text-[10px] text-emerald-400 font-bold mb-0.5">أنت ${timeStr ? '• ' + timeStr : ''}</div>
+            <div>${formatAiText(content)}</div>
+          </div>
+        `;
+      }
+      const plain = String(content).replace(/[`*"'\]/g, ' ');
+      return `
+        <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700/70 text-slate-200 ml-6 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] text-sky-400 font-bold">
+            <span>🤖 المساعد الذكي ${timeStr ? '• ' + timeStr : ''}</span>
+            <button type="button" onclick="speakText('${plain}')" class="text-amber-300 hover:underline">🔊 اسمع الرد</button>
+          </div>
+          <div>${formatAiText(content)}</div>
+        </div>
+      `;
+    }
+
+    async function clearAiChatHistory() {
+      await fetch('/api/ai/history', { method: 'DELETE' });
+      await loadAiChatHistory();
+    }
+
+    function sendQuickAiPrompt(text) {
+      document.getElementById('ai-question-input').value = text;
+      askAiAssistant(new Event('submit'));
+    }
+
+    async function askAiAssistant(e) {
+      if (e) e.preventDefault();
+      const inp = document.getElementById('ai-question-input');
+      const btn = document.getElementById('btn-ask-ai');
+      const q = inp.value.trim();
+      if (!q) return;
+
+      inp.value = '';
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      const box = document.getElementById('ai-chat-history');
+      box.innerHTML += renderAiBubble('user', q);
+      const typingId = 'typing-' + Date.now();
+      box.innerHTML += `<div id="${typingId}" class="p-2.5 rounded-xl bg-slate-800/60 text-slate-400 ml-12 animate-pulse">🤖 جاري تحليل ملفك وكتابة الإجابة...</div>`;
+      box.scrollTop = box.scrollHeight;
+
+      try {
+        const res = await fetch('/api/ai/assistant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json();
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        box.innerHTML += renderAiBubble('assistant', data.answer);
+        box.scrollTop = box.scrollHeight;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'إرسال';
+      }
+    }
+
+    function startPatientVoiceQuestion() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return alert('متصفحك لا يدعم الإدخال الصوتي، استخدم متصفح Chrome.');
+      const rec = new SR();
+      rec.lang = (currentUser && currentUser.lang === 'en') ? 'en-US' : 'ar-IQ';
+      const btn = document.getElementById('btn-pat-voice');
+      btn.textContent = '🔴';
+      rec.onresult = (ev) => {
+        document.getElementById('ai-question-input').value = ev.results[0][0].transcript;
+      };
+      rec.onend = () => {
+        btn.textContent = '🎤';
+      };
+      rec.start();
+    }
+
+    async function analyzeMealImage() {
+      const file = document.getElementById('meal-img-input').files[0];
+      if (!file) return alert('اختر صورة الوجبة أولاً');
+
+      const btn = document.getElementById('btn-meal-ai');
+      btn.disabled = true;
+      btn.textContent = 'جاري ضغط وتحليل الصورة...';
+
+      try {
+        const compressed = await compressImageFile(file);
+        const fd = new FormData();
+        fd.append('image', compressed, 'meal.jpg');
+        fd.append('note', document.getElementById('meal-note-input').value.trim());
+
+        const res = await fetch('/api/ai/meal-analyze', { method: 'POST', body: fd });
+        const data = await res.json();
+        const box = document.getElementById('meal-ai-result');
+        box.classList.remove('hidden');
+
+        if (!data.success) {
+          box.textContent = data.message;
+          return;
+        }
+
+        const safeSummary = `${data.meal_name}. الكربوهيدرات ${data.carbs}. ${data.tips}`.replace(/[`*"'\]/g, ' ');
+        const safeMealName = String(data.meal_name).replace(/'/g, '');
+        const timerMins = data.is_heavy_fat ? 240 : 120;
+
+        box.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-black text-amber-300 text-sm">🍽️ ${data.meal_name}</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 font-bold">${data.glycemic_impact}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-950/70">
+            <div>الكربوهيدرات: <strong class="text-white">${data.carbs}</strong></div>
+            <div>السعرات: <strong class="text-white">${data.calories}</strong></div>
+          </div>
+          <div class="text-slate-300">🥩 الدهون والبروتين: <strong>${data.protein_fat}</strong></div>
+          <div class="text-sky-300">💉 الجرعة / الحصة المقترحة: <strong>${data.insulin_dose}</strong></div>
+          <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-200">${data.tips}</div>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button type="button" onclick="speakText('${safeSummary}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع النتيجة</button>
+            <button type="button" onclick="startPostMealTimer(${timerMins}); closeAllModals();" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold">
+              ⏳ منبّه الفحص (${timerMins === 240 ? '4 ساعات للدسم' : 'ساعتين'})
+            </button>
+            <button type="button" onclick="document.getElementById('log-meal').value='${safeMealName}'; closeAllModals(); scrollToPatientSection('pat-overview');" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold">
+              ➕ سجلها بقياساتي
+            </button>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'تحليل الصورة الآن';
+      }
+    }
+
+    async function analyzeNutritionLabel() {
+      const file = document.getElementById('label-img-input').files[0];
+      if (!file) return alert('اختر صورة جدول القيم الغذائية أولاً');
+
+      const btn = document.getElementById('btn-label-ai');
+      btn.disabled = true;
+      btn.textContent = 'جاري فحص المكونات...';
+
+      try {
+        const compressed = await compressImageFile(file);
+        const fd = new FormData();
+        fd.append('image', compressed, 'label.jpg');
+
+        const res = await fetch('/api/ai/nutrition-label', { method: 'POST', body: fd });
+        const data = await res.json();
+        const box = document.getElementById('label-ai-result');
+        box.classList.remove('hidden');
+
+        if (!data.success) {
+          box.textContent = data.message;
+          return;
+        }
+
+        const safeTxt = `${data.product_name}. الحكم: ${data.verdict}. ${data.advice}`.replace(/[`*"'\]/g, ' ');
+        box.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-black text-sky-300 text-sm">🏷️ ${data.product_name}</span>
+            <span class="px-2 py-0.5 rounded bg-slate-800 font-bold">${data.verdict}</span>
+          </div>
+          <div>حجم الحصة: <strong>${data.serving_size}</strong></div>
+          <div>الكربوهيدرات: <strong>${data.carbs}</strong> | السكريات: <strong>${data.sugars}</strong></div>
+          <div class="text-amber-300">🔍 السكريات المخفية: <strong>${data.hidden_sugars}</strong></div>
+          <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-200">${data.advice}</div>
+          <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع النتيجة</button>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'فحص العلبة والسكريات المخفية';
+      }
+    }
+
+    async function analyzeLabImage() {
+      const file = document.getElementById('lab-img-input').files[0];
+      if (!file) return alert('اختر صورة التحليل أولاً');
+
+      const btn = document.getElementById('btn-lab-ai');
+      btn.disabled = true;
+      btn.textContent = 'جاري قراءة التحليل...';
+
+      try {
+        const compressed = await compressImageFile(file, 1200, 0.85);
+        const fd = new FormData();
+        fd.append('image', compressed, 'lab.jpg');
+
+        const res = await fetch('/api/ai/lab-analyze', { method: 'POST', body: fd });
+        const data = await res.json();
+        const box = document.getElementById('lab-ai-result');
+        box.classList.remove('hidden');
+
+        if (!data.success) {
+          box.textContent = data.message;
+          return;
+        }
+
+        const safeTxt = `${data.title}. ${data.summary}. ${data.advice}`.replace(/[`*"'\]/g, ' ');
+        box.innerHTML = `
+          <div class="font-black text-sky-300 text-sm">🧪 ${data.title}</div>
+          <div class="leading-relaxed">${data.summary}</div>
+          <div class="p-2 rounded-lg bg-amber-950/40 border border-amber-500/25 text-amber-300">⚠️ القيم غير الطبيعية: ${data.abnormal}</div>
+          <div class="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-200">🩺 ${data.advice}</div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] text-slate-400">✓ تم حفظ التقرير بملف الدكتور</span>
+            <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع الشرح</button>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'قراءة وشرح التحليل وحفظه للدكتور';
+      }
+    }
+
+    async function analyzeMedicationImage() {
+      const file = document.getElementById('med-img-input').files[0];
+      if (!file) return alert('اختر صورة علبة الدواء أولاً');
+
+      const btn = document.getElementById('btn-med-ai');
+      btn.disabled = true;
+      btn.textContent = 'جاري التعرف على العلاج...';
+
+      try {
+        const compressed = await compressImageFile(file);
+        const fd = new FormData();
+        fd.append('image', compressed, 'med.jpg');
+
+        const res = await fetch('/api/ai/med-analyze', { method: 'POST', body: fd });
+        const data = await res.json();
+        const box = document.getElementById('med-ai-result');
+        box.classList.remove('hidden');
+
+        if (!data.success) {
+          box.textContent = data.message;
+          return;
+        }
+
+        const safeTxt = `${data.med_name}. ${data.usage}. ${data.advice}`.replace(/[`*"'\]/g, ' ');
+        box.innerHTML = `
+          <div class="font-black text-emerald-300 text-sm">💊 ${data.med_name}</div>
+          <div>المادة الفعالة: <strong>${data.active_ingredient}</strong></div>
+          <div>طريقة الاستخدام: <strong>${data.usage}</strong></div>
+          <div class="text-amber-300">⚠️ خطر الهبوط: <strong>${data.hypo_risk}</strong></div>
+          <div class="p-2.5 rounded-lg bg-slate-950/70 text-slate-200">${data.advice}</div>
+          <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع الشرح</button>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'تعرّف على العلاج';
       }
     }
 
@@ -1472,7 +1881,10 @@
     function scrollToPatientSection(id) {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
-      if (window.innerWidth < 1024) toggleSidebar();
+      if (window.innerWidth < 1024) {
+        document.getElementById('unified-sidebar').classList.add('translate-x-full');
+        document.getElementById('sidebar-backdrop').classList.add('hidden');
+      }
     }
 
     async function loadPatientDashboard() {
@@ -1498,14 +1910,12 @@
       const u = data.user;
       const a = data.analytics;
 
-      // تفعيل الأوضاع
       document.body.classList.toggle('senior-mode', Boolean(u.seniorMode));
       document.getElementById('sb-ramadan-state').textContent = u.ramadanMode ? 'مفعّل' : 'مغلق';
       document.getElementById('sb-sick-state').textContent = u.sickDayMode ? 'مفعّل' : 'مغلق';
       document.getElementById('sb-senior-state').textContent = u.seniorMode ? 'مفعّل' : 'مغلق';
       document.getElementById('ramadan-indicator-badge').classList.toggle('hidden', !u.ramadanMode);
 
-      // تحديث خيارات توقيت القياس حسب وضع الصيام
       const timingSel = document.getElementById('log-timing');
       if (u.ramadanMode) {
         timingSel.innerHTML = `
@@ -1522,29 +1932,18 @@
         `;
       }
 
-      // التنبيهات السريرية
       const alertsBox = document.getElementById('patient-alerts-area');
       const alerts = [];
-      if (u.sickDayMode) {
-        alerts.push('🤒 <strong>بروتوكول أيام المرض مفعّل:</strong> اشرب كوب ماء كل ساعة وقس سكرك كل 3 ساعات.');
-      }
-      if (a.dawnPhenomenon) {
-        alerts.push(`🌅 <strong>كاشف ظاهرة الفجر:</strong> ${a.dawnMsg}`);
-      }
-      if (a.basalTitrationAlert) {
-        alerts.push(`💉 <strong>مساعد ضبط الجرعة الصباحية:</strong> قياسك الصائم أعلى من الهدف (${u.targetGlucose}) لـ 3 أيام متتالية، استشر طبيبك لتعديل الجرعة.`);
-      }
-      if (a.hasDangerousSwing) {
-        alerts.push(`⚡ <strong>تنبيه تذبذب سكري:</strong> الفرق بين أعلى وأقل قراءة وصل إلى ${a.swingDiff} درجة.`);
-      }
-      if ((u.stripsCount || 0) <= 10) {
-        alerts.push(`📦 <strong>تنبيه المخزون:</strong> تبقّى لديك ${u.stripsCount} أشرطة فحص فقط!`);
-      }
+      if (u.sickDayMode) alerts.push('🤒 <strong>بروتوكول أيام المرض مفعّل:</strong> اشرب كوب ماء كل ساعة وقس سكرك كل 3 ساعات.');
+      if (a.dawnPhenomenon) alerts.push(`🌅 <strong>كاشف ظاهرة الفجر:</strong> ${a.dawnMsg}`);
+      if (a.basalTitrationAlert) alerts.push(`💉 <strong>مساعد ضبط الجرعة الصباحية:</strong> قياسك الصائم أعلى من الهدف (${u.targetGlucose}) لـ 3 أيام متتالية، استشر طبيبك لتعديل الجرعة.`);
+      if (a.hasDangerousSwing) alerts.push(`⚡ <strong>تنبيه تذبذب سكري:</strong> الفرق بين أعلى وأقل قراءة وصل إلى ${a.swingDiff} درجة.`);
+      if ((u.stripsCount || 0) <= 10) alerts.push(`📦 <strong>تنبيه المخزون:</strong> تبقّى لديك ${u.stripsCount} أشرطة فحص فقط!`);
+
       alertsBox.innerHTML = alerts.map(msg => `
         <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200">${msg}</div>
       `).join('');
 
-      // مؤشر النطاق الآمن
       document.getElementById('tir-in-pct').textContent = `${a.tir.inRangePct}%`;
       document.getElementById('tir-bar-low').style.width = `${a.tir.lowPct}%`;
       document.getElementById('tir-bar-in').style.width = `${a.tir.inRangePct}%`;
@@ -1552,7 +1951,6 @@
       document.getElementById('tir-low-lbl').textContent = `هبوط: ${a.tir.lowPct}%`;
       document.getElementById('tir-high-lbl').textContent = `ارتفاع: ${a.tir.highPct}%`;
 
-      // الأوسمة والمراجعة والمخزون
       document.getElementById('pat-streak-val').textContent = `${a.streak} يوم`;
       document.getElementById('pat-badges-list').innerHTML = a.badges.length
         ? a.badges.map(b => `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold">${b}</span>`).join('')
@@ -1565,23 +1963,19 @@
       document.getElementById('inv-strips-input').value = u.stripsCount ?? 50;
       document.getElementById('inv-pens-input').value = u.insulinPensCount ?? 5;
 
-      // استجابة الجسم للأكل
       document.getElementById('safe-foods-list').textContent = a.safeFoods.length ? a.safeFoods.join('، ') : 'لا توجد بيانات بعد';
       document.getElementById('spike-foods-list').textContent = a.spikeFoods.length ? a.spikeFoods.join('، ') : 'لا توجد طفرات مسجلة';
 
-      // ملاحظات الدكتور
       document.getElementById('pat-doctor-notes').textContent = u.doctorNotes || 'لا توجد ملاحظات مسجلة حالياً من الطبيب.';
       document.getElementById('corr-params-lbl').textContent = `المستهدف: ${u.targetGlucose || 120} | المعامل: ${u.correctionFactor || 40}`;
       document.getElementById('adherence-badge').textContent = `الالتزام: ${a.adherencePct}%`;
 
-      // تعبئة حقول الإعدادات
       document.getElementById('prof-dialect').value = u.dialect || 'iraqi';
       document.getElementById('prof-age').value = u.age || 40;
       document.getElementById('prof-weight').value = u.weight || 75;
       document.getElementById('prof-height').value = u.height || 170;
       document.getElementById('prof-emerg').value = u.emergencyPhone || '';
 
-      // قائمة القياسات والرسم البياني
       renderPatientLogsAndChart(patientLogs);
     }
 
@@ -1748,7 +2142,6 @@
       document.getElementById('ea1c-sim-comment').textContent = comment;
     }
 
-    // قراءة النصوص بالصوت لكبار السن
     function speakText(text) {
       if (!('speechSynthesis' in window)) return alert('متصفحك لا يدعم القراءة الصوتية');
       window.speechSynthesis.cancel();
@@ -1758,7 +2151,6 @@
       window.speechSynthesis.speak(u);
     }
 
-    // مؤقت قاعدة 15-15
     function startHypo15Timer() {
       if (hypo15Interval) clearInterval(hypo15Interval);
       hypo15Seconds = 900;
@@ -1779,7 +2171,6 @@
       document.getElementById('hypo15-timer-lbl').textContent = '15:00';
     }
 
-    // فحص النوم والرياضة
     function checkBedtimeSafety() {
       const g = parseFloat(document.getElementById('bed-glucose').value);
       const ex = document.getElementById('bed-exercised').checked;
@@ -1801,7 +2192,6 @@
       else box.textContent = '✅ قراءتك ممتازة ومناسبة للمشي والرياضة بأمان!';
     }
 
-    // توليد خلفية طوارئ لشاشة القفل
     function drawLockScreenCard() {
       const c = document.getElementById('lockscreen-canvas');
       const ctx = c.getContext('2d');
@@ -1836,7 +2226,6 @@
       link.click();
     }
 
-    // حاسبة الكارب قبل الأكل
     function calculateMealBolus() {
       const rice = parseFloat(document.getElementById('bolus-rice').value || 0);
       const bread = parseFloat(document.getElementById('bolus-bread').value || 0);
@@ -1855,7 +2244,6 @@
       box.textContent = `مجموع الكارب التقديري: ${Math.round(carbs)} غرام • الجرعة المقترحة: ${units.toFixed(1)} وحدة أنسولين سريع.`;
     }
 
-    // دليل الأكلات العراقية
     function filterIraqiFoods() {
       const q = (document.getElementById('iraqi-food-search').value || '').trim();
       const filtered = IRAQI_FOODS.filter(f => f.name.includes(q) || f.tip.includes(q));
@@ -1870,91 +2258,6 @@
       `).join('');
     }
 
-    // الذكاء الاصطناعي (الوجبة، الملصق، التحاليل، المساعد)
-    async function analyzeMealImage() {
-      const file = document.getElementById('meal-img-input').files[0];
-      if (!file) return alert('اختر صورة الوجبة أولاً');
-      const fd = new FormData();
-      fd.append('image', file);
-      document.getElementById('btn-meal-ai').textContent = 'جاري التحليل...';
-      const res = await fetch('/api/ai/meal-analyze', { method: 'POST', body: fd });
-      const data = await res.json();
-      document.getElementById('btn-meal-ai').textContent = 'تحليل الصورة';
-      const box = document.getElementById('meal-ai-result');
-      box.classList.remove('hidden');
-      if (!data.success) { box.textContent = data.message; return; }
-      box.innerHTML = `
-        <div class="font-bold text-amber-300">🍽️ ${data.meal_name}</div>
-        <div>الكارب: <strong>${data.carbs}</strong> | السعرات: <strong>${data.calories}</strong></div>
-        <div>الأنسولين المقترح: <strong>${data.insulin_dose}</strong></div>
-        <div class="text-emerald-300">${data.tips}</div>
-      `;
-    }
-
-    async function analyzeNutritionLabel() {
-      const file = document.getElementById('label-img-input').files[0];
-      if (!file) return alert('اختر صورة جدول القيم الغذائية أولاً');
-      const fd = new FormData();
-      fd.append('image', file);
-      document.getElementById('btn-label-ai').textContent = 'جاري الفحص...';
-      const res = await fetch('/api/ai/nutrition-label', { method: 'POST', body: fd });
-      const data = await res.json();
-      document.getElementById('btn-label-ai').textContent = 'فحص العلبة';
-      const box = document.getElementById('label-ai-result');
-      box.classList.remove('hidden');
-      if (!data.success) { box.textContent = data.message; return; }
-      box.innerHTML = `
-        <div class="font-bold text-sky-300">🏷️ ${data.product_name} (${data.verdict})</div>
-        <div>الكربوهيدرات: <strong>${data.carbs}</strong> | السكريات: <strong>${data.sugars}</strong></div>
-        <div class="text-emerald-300">${data.advice}</div>
-      `;
-    }
-
-    async function analyzeLabImage() {
-      const file = document.getElementById('lab-img-input').files[0];
-      if (!file) return alert('اختر صورة التحليل أولاً');
-      const fd = new FormData();
-      fd.append('image', file);
-      document.getElementById('btn-lab-ai').textContent = 'جاري القراءة...';
-      const res = await fetch('/api/ai/lab-analyze', { method: 'POST', body: fd });
-      const data = await res.json();
-      document.getElementById('btn-lab-ai').textContent = 'قراءة وشرح التحليل';
-      const box = document.getElementById('lab-ai-result');
-      box.classList.remove('hidden');
-      if (!data.success) { box.textContent = data.message; return; }
-      box.innerHTML = `
-        <div class="font-bold text-sky-300">🧪 ${data.title}</div>
-        <div>${data.summary}</div>
-        <div class="text-amber-300">ملاحظات: ${data.abnormal}</div>
-        <div class="text-emerald-300">${data.advice}</div>
-      `;
-    }
-
-    async function askAiAssistant(e) {
-      e.preventDefault();
-      const inp = document.getElementById('ai-question-input');
-      const q = inp.value.trim();
-      if (!q) return;
-      inp.value = '';
-      const box = document.getElementById('ai-chat-history');
-      box.innerHTML += `<div class="p-2 rounded-lg bg-emerald-900/40 text-emerald-200 text-left">أنت: ${q}</div>`;
-      const res = await fetch('/api/ai/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q })
-      });
-      const data = await res.json();
-      const safeAns = data.answer.replace(/"/g, '&quot;');
-      box.innerHTML += `
-        <div class="p-2.5 rounded-lg bg-slate-800 text-slate-200 space-y-1">
-          <div>${data.answer}</div>
-          <button onclick="speakText('${safeAns.replace(/'/g, '')}')" class="text-[11px] text-amber-300 font-bold">🔊 اسمع الرد</button>
-        </div>
-      `;
-      box.scrollTop = box.scrollHeight;
-    }
-
-    // تدوير أماكن الحقن + المخزون + الفحوصات + الأعصاب + المعايرة
     async function saveInjectionSite(site) {
       const res = await fetch('/api/patient/update-profile', {
         method: 'POST',
@@ -2050,7 +2353,6 @@
       }
     }
 
-    // محادثة الدكتور والمشاركة
     async function loadPatientChat() {
       const res = await fetch(`/api/chat/${currentUser.id}`);
       const msgs = await res.json();
@@ -2080,20 +2382,20 @@
 
     async function sendWeeklySummaryToDoctor() {
       if (!patientAnalytics) return;
-      const summary = `📊 ملخص الأسبوع (${currentUser.name}): النطاق الآمن ${patientAnalytics.tir.inRangePct}%، متوسط الصائم ${patientAnalytics.fiveSecondSummary.fastingAvg}، أقل/أعلى قراءة ${patientAnalytics.fiveSecondSummary.minMax}، الالتزام بالعلاج ${patientAnalytics.adherencePct}%.`;
+      const s = patientAnalytics.fiveSecondSummary;
+      const msg = `📊 ملخص الأسبوع التلقائي: النطاق الآمن ${patientAnalytics.tir.inRangePct}% | متوسط الصائم: ${s.fastingAvg} | متوسط بعد الأكل: ${s.postMealAvg} | الالتزام: ${s.adherencePct}%`;
       await fetch(`/api/chat/${currentUser.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: summary })
+        body: JSON.stringify({ text: msg })
       });
       alert('تم إرسال ملخص الأسبوع إلى محادثة الدكتور بنجاح ✓');
     }
 
     function shareCaregiverWhatsApp() {
-      if (!patientAnalytics) return;
-      const text = encodeURIComponent(`تقرير سُكّري اليومي للمراجع ${currentUser.name}: النطاق الآمن ${patientAnalytics.tir.inRangePct}%، آخر قراءة ${patientLogs[0]?.val || '-'} mg/dL.`);
-      const phone = (currentUser.emergencyPhone || '').replace(/\D/g, '');
-      window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+      const s = patientAnalytics ? patientAnalytics.fiveSecondSummary : {};
+      const txt = `تقرير متابعة السكر (${currentUser.name}): النطاق الآمن ${patientAnalytics?.tir?.inRangePct || 0}%، متوسط الصائم ${s.fastingAvg || '-'}، الالتزام بالعلاج ${s.adherencePct || 100}%.`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
     }
 
     function exportExcel() {
@@ -2104,7 +2406,10 @@
     function scrollToDoctorSection(id) {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
-      if (window.innerWidth < 1024) toggleSidebar();
+      if (window.innerWidth < 1024) {
+        document.getElementById('unified-sidebar').classList.add('translate-x-full');
+        document.getElementById('sidebar-backdrop').classList.add('hidden');
+      }
     }
 
     async function loadDoctorDashboard() {
@@ -2114,17 +2419,18 @@
       const total = doctorPatients.length;
       const critical = doctorPatients.filter(p => p.isCritical).length;
       const inactive = doctorPatients.filter(p => p.analytics?.isInactive).length;
-      const controlled = total ? Math.round(((total - critical) / total) * 100) : 0;
+      const controlled = doctorPatients.filter(p => (p.analytics?.tir?.inRangePct || 0) >= 60).length;
+      const ctrlPct = total ? Math.round((controlled / total) * 100) : 0;
 
       document.getElementById('clinic-total-count').textContent = total;
       document.getElementById('clinic-critical-count').textContent = critical;
       document.getElementById('clinic-inactive-count').textContent = inactive;
-      document.getElementById('clinic-controlled-pct').textContent = `${controlled}%`;
+      document.getElementById('clinic-controlled-pct').textContent = `${ctrlPct}%`;
 
       renderDoctorPatientsList();
       if (doctorPatients.length > 0) {
-        const keep = selectedPatient && doctorPatients.find(p => p.id === selectedPatient.id);
-        selectDoctorPatient(keep ? keep.id : doctorPatients[0].id);
+        const stillExists = selectedPatient && doctorPatients.find(p => p.id === selectedPatient.id);
+        selectDoctorPatient(stillExists || doctorPatients[0]);
       }
     }
 
@@ -2140,10 +2446,10 @@
     }
 
     function renderDoctorPatientsList() {
-      const q = (document.getElementById('doc-search-input').value || '').trim();
+      const q = (document.getElementById('doc-search-input').value || '').trim().toLowerCase();
       const filtered = doctorPatients.filter(p => {
-        const matchQ = !q || p.name.includes(q) || (p.phone || '').includes(q) || (p.emergencyPhone || '').includes(q);
-        if (!matchQ) return false;
+        const matchText = p.name.toLowerCase().includes(q) || (p.phone || '').includes(q) || (p.username || '').toLowerCase().includes(q);
+        if (!matchText) return false;
         if (currentDocFilter === 'critical') return p.isCritical;
         if (currentDocFilter === 'inactive') return p.analytics?.isInactive;
         if (currentDocFilter === 'type1') return p.diabetesType === 'النوع الأول';
@@ -2152,55 +2458,64 @@
       });
 
       document.getElementById('doc-filtered-badge').textContent = filtered.length;
-      document.getElementById('doc-patients-list').innerHTML = filtered.map(p => {
-        const isSel = selectedPatient && selectedPatient.id === p.id;
+      const listEl = document.getElementById('doc-patients-list');
+      listEl.innerHTML = filtered.map(p => {
+        const active = selectedPatient && selectedPatient.id === p.id;
         return `
-          <div onclick="selectDoctorPatient(${p.id})" class="p-3 rounded-xl cursor-pointer border transition ${isSel ? 'bg-sky-950/50 border-sky-500' : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'}">
+          <div onclick="selectDoctorPatientById(${p.id})" class="p-3 rounded-xl cursor-pointer border transition ${active ? 'bg-sky-950/50 border-sky-500' : 'bg-slate-900/80 border-transparent hover:border-slate-700'}">
             <div class="flex items-center justify-between">
               <span class="font-bold text-sm text-white">${p.name}</span>
-              ${p.isCritical ? '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-bold">حرجة</span>' : ''}
+              <span class="text-xs font-black ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">${p.latestVal ?? '-'}</span>
             </div>
-            <div class="text-[11px] text-slate-400 mt-1">${p.diabetesType} • ${p.countryName || 'العراق'}</div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+              <span>${p.diabetesType} • ${p.countryName || 'العراق'}</span>
+              <span>${p.isCritical ? '🔴 حالة حرجة' : '🟢 مستقر'}</span>
+            </div>
           </div>
         `;
-      }).join('');
+      }).join('') || '<div class="text-xs text-slate-500 text-center py-4">لا يوجد مراجعين مطابقين للبحث</div>';
     }
 
-    function selectDoctorPatient(pid) {
-      selectedPatient = doctorPatients.find(p => p.id === pid);
-      if (!selectedPatient) return;
-      renderDoctorPatientsList();
+    function selectDoctorPatientById(pid) {
+      const p = doctorPatients.find(x => x.id === pid);
+      if (p) {
+        selectDoctorPatient(p);
+        renderDoctorPatientsList();
+      }
+    }
 
-      const p = selectedPatient;
-      const a = p.analytics;
+    function selectDoctorPatient(p) {
+      selectedPatient = p;
+      const a = p.analytics || {};
+      const s5 = a.fiveSecondSummary || {};
+
       document.getElementById('dp-name').textContent = p.name;
-      document.getElementById('dp-country-badge').textContent = `${p.countryName || 'العراق'} (${p.dialectLabel || 'اللهجة العراقية'})`;
-      document.getElementById('dp-meta').textContent = `${p.diabetesType} | العمر: ${p.age} | الفصيلة: ${p.blood} | الطوارئ: ${p.emergencyPhone || p.phone}`;
+      document.getElementById('dp-country-badge').textContent = `${p.countryName || 'العراق'} (${p.phone || p.username})`;
+      document.getElementById('dp-meta').textContent = `${p.diabetesType} | العمر: ${p.age} | الوزن: ${p.weight} كغم | الطول: ${p.height} سم | BMI: ${p.bmi} | فصيلة: ${p.blood} | طوارئ: ${p.emergencyPhone}`;
 
-      document.getElementById('dp-5s-fasting').textContent = `${a.fiveSecondSummary.fastingAvg} mg/dL`;
-      document.getElementById('dp-5s-post').textContent = `${a.fiveSecondSummary.postMealAvg} mg/dL`;
-      document.getElementById('dp-5s-minmax').textContent = a.fiveSecondSummary.minMax;
-      document.getElementById('dp-5s-adh').textContent = `${a.fiveSecondSummary.adherencePct}%`;
+      document.getElementById('dp-5s-fasting').textContent = s5.fastingAvg || '-';
+      document.getElementById('dp-5s-post').textContent = s5.postMealAvg || '-';
+      document.getElementById('dp-5s-minmax').textContent = s5.minMax || '-';
+      document.getElementById('dp-5s-adh').textContent = `${s5.adherencePct ?? 100}%`;
 
-      const docAlerts = [];
-      if (a.dawnPhenomenon) docAlerts.push(`🌅 ${a.dawnMsg}`);
-      if (a.basalTitrationAlert) docAlerts.push('💉 3 قياسات صائمة متتالية فوق الهدف — قد يحتاج تعديل الجرعة القاعدية.');
-      if (a.hasDangerousSwing) docAlerts.push(`⚡ تذبذب سكري عالي (${a.swingDiff} درجة).`);
-      if (a.latestSideEffects) docAlerts.push(`💊 عرض جانبي مسجل من المراجع: ${a.latestSideEffects}`);
-      if (p.latestNeuropathy && p.latestNeuropathy.score > 0) docAlerts.push(`🦶 فحص الأعصاب: ${p.latestNeuropathy.score}/4 (${p.latestNeuropathy.risk_level})`);
-      document.getElementById('dp-clinical-alerts').innerHTML = docAlerts.map(al => `
-        <div class="p-2.5 rounded-lg bg-rose-950/35 border border-rose-500/30 text-xs text-rose-200">${al}</div>
+      const alerts = [];
+      if (a.dawnPhenomenon) alerts.push(`🌅 ${a.dawnMsg}`);
+      if (a.basalTitrationAlert) alerts.push(`💉 السكر الصائم أعلى من الهدف (${p.targetGlucose}) لـ 3 أيام متتالية.`);
+      if (a.latestSideEffects) alerts.push(`⚠️ شكوى المراجع من العلاج: ${a.latestSideEffects}`);
+      if (p.latestNeuropathy && p.latestNeuropathy.score >= 2) alerts.push(`🦶 فحص الأعصاب: ${p.latestNeuropathy.risk_level} (${p.latestNeuropathy.score}/4)`);
+
+      document.getElementById('dp-clinical-alerts').innerHTML = alerts.map(txt => `
+        <div class="p-2.5 rounded-xl bg-rose-950/35 border border-rose-500/30 text-xs text-rose-200">${txt}</div>
       `).join('');
 
-      document.getElementById('dp-last-week-avg').textContent = a.weeklyComparison.lastWeekAvg ? `${a.weeklyComparison.lastWeekAvg} mg/dL` : 'لا توجد بيانات';
-      document.getElementById('dp-this-week-avg').textContent = a.weeklyComparison.thisWeekAvg ? `${a.weeklyComparison.thisWeekAvg} mg/dL` : 'لا توجد بيانات';
+      const wc = a.weeklyComparison || {};
+      document.getElementById('dp-last-week-avg').textContent = wc.lastWeekAvg ? `${wc.lastWeekAvg} mg/dL` : 'لا توجد بيانات';
+      document.getElementById('dp-this-week-avg').textContent = wc.thisWeekAvg ? `${wc.thisWeekAvg} mg/dL` : 'لا توجد بيانات';
 
-      document.getElementById('dp-time-of-day').innerHTML = a.timeOfDay.map(t => `
-        <div class="flex justify-between p-2 rounded-lg bg-slate-900">
-          <span class="text-slate-300">${t.timing} (${t.count})</span>
-          <strong class="text-emerald-400">${t.avg} mg/dL</strong>
-        </div>
-      `).join('') || '<div class="text-slate-500">لا توجد قياسات</div>';
+      const tod = a.timeOfDay || [];
+      document.getElementById('dp-time-of-day').innerHTML = tod.length
+        ? tod.map(t => `<div class="flex justify-between p-2 rounded-lg bg-slate-900"><span>${t.timing} (${t.count} قياس)</span><strong class="text-sky-400">${t.avg} mg/dL</strong></div>`).join('')
+        : '<div class="text-slate-500">لا توجد قياسات مصنفة بعد.</div>';
 
       document.getElementById('dp-notes-input').value = p.doctorNotes || '';
       document.getElementById('dp-target-g').value = p.targetGlucose || 120;
@@ -2208,22 +2523,27 @@
       document.getElementById('dp-carb-r').value = p.carbRatio || 15;
       document.getElementById('dp-next-visit').value = p.nextVisitDate || '';
 
-      document.getElementById('dp-logs-list').innerHTML = (p.logs || []).map(l => `
-        <div class="p-2 rounded-lg bg-slate-900 flex justify-between">
-          <span><strong class="text-sky-400">${l.val}</strong> (${l.timing})</span>
-          <span class="text-slate-500">${l.date}</span>
+      const logs = p.logs || [];
+      document.getElementById('dp-logs-list').innerHTML = logs.map(l => `
+        <div class="p-2 rounded-xl bg-slate-900 flex justify-between items-center">
+          <div>
+            <strong class="${l.val < 70 ? 'text-rose-400' : (l.val > 180 ? 'text-amber-400' : 'text-emerald-400')}">${l.val}</strong>
+            <span class="text-slate-400">(${l.timing})</span>
+            <div class="text-[10px] text-slate-500">${l.date} ${l.bp ? '• ضغط: ' + l.bp : ''}</div>
+          </div>
+          <span class="text-[11px] text-slate-400">${l.meds || '-'}</span>
         </div>
-      `).join('');
+      `).join('') || '<div class="text-slate-500">لا توجد قياسات مسجلة.</div>';
 
       const ctx = document.getElementById('doctor-chart');
       if (doctorChart) doctorChart.destroy();
-      const rev = [...(p.logs || [])].slice(0, 12).reverse();
+      const rev = [...logs].slice(0, 12).reverse();
       doctorChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: rev.map(x => x.date.slice(5)),
           datasets: [{
-            label: 'mg/dL',
+            label: 'قياس السكر',
             data: rev.map(x => x.val),
             borderColor: '#38bdf8',
             backgroundColor: 'rgba(56,189,248,0.15)',
@@ -2235,40 +2555,43 @@
       });
     }
 
-    // الإملاء الصوتي السريع للدكتور
     function startDoctorVoiceDictation() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) return alert('متصفحك لا يدعم الإملاء الصوتي، يرجى استخدام Chrome.');
-      const rec = new SR();
-      rec.lang = 'ar-IQ';
+      const recognition = new SR();
+      recognition.lang = 'ar-IQ';
       document.getElementById('voice-dict-btn-lbl').textContent = 'جاري الاستماع... تكلّم الآن';
-      rec.onresult = (ev) => {
-        const transcript = ev.results[0][0].transcript;
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
         const ta = document.getElementById('dp-notes-input');
         ta.value = (ta.value ? ta.value + ' ' : '') + transcript;
       };
-      rec.onend = () => {
+      recognition.onend = () => {
         document.getElementById('voice-dict-btn-lbl').textContent = 'إملاء صوتي للملاحظات';
       };
-      rec.start();
+      recognition.start();
     }
 
     async function saveDoctorNotes() {
       if (!selectedPatient) return;
-      await fetch('/api/doctor/update-notes', {
+      const payload = {
+        patient_id: selectedPatient.id,
+        notes: document.getElementById('dp-notes-input').value,
+        targetGlucose: document.getElementById('dp-target-g').value,
+        correctionFactor: document.getElementById('dp-corr-f').value,
+        carbRatio: document.getElementById('dp-carb-r').value,
+        nextVisitDate: document.getElementById('dp-next-visit').value
+      };
+      const res = await fetch('/api/doctor/update-notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patient_id: selectedPatient.id,
-          notes: document.getElementById('dp-notes-input').value,
-          targetGlucose: document.getElementById('dp-target-g').value,
-          correctionFactor: document.getElementById('dp-corr-f').value,
-          carbRatio: document.getElementById('dp-carb-r').value,
-          nextVisitDate: document.getElementById('dp-next-visit').value
-        })
+        body: JSON.stringify(payload)
       });
-      alert('تم حفظ الخطة العلاجية وموعد المراجعة بنجاح ✓');
-      await loadDoctorDashboard();
+      const data = await res.json();
+      if (data.success) {
+        alert('تم حفظ خطة العلاج والموعد بنجاح ✓');
+        await loadDoctorDashboard();
+      }
     }
 
     async function doctorCreatePatient() {
@@ -2306,18 +2629,21 @@
 
     async function doctorUpdatePatient() {
       if (!selectedPatient) return;
+      const payload = {
+        patient_id: selectedPatient.id,
+        name: document.getElementById('editp-name').value,
+        age: document.getElementById('editp-age').value,
+        weight: document.getElementById('editp-weight').value,
+        height: document.getElementById('editp-height').value,
+        diabetesType: document.getElementById('editp-dtype').value,
+        emergencyPhone: document.getElementById('editp-phone').value,
+        countryCode: selectedPatient.countryCode || '+964',
+        blood: selectedPatient.blood || 'O+'
+      };
       await fetch('/api/doctor/update-patient', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patient_id: selectedPatient.id,
-          name: document.getElementById('editp-name').value,
-          age: document.getElementById('editp-age').value,
-          weight: document.getElementById('editp-weight').value,
-          height: document.getElementById('editp-height').value,
-          diabetesType: document.getElementById('editp-dtype').value,
-          emergencyPhone: document.getElementById('editp-phone').value
-        })
+        body: JSON.stringify(payload)
       });
       closeAllModals();
       await loadDoctorDashboard();
@@ -2332,8 +2658,8 @@
         body: JSON.stringify({ patient_id: selectedPatient.id, new_password })
       });
       const data = await res.json();
-      alert(data.message);
-      if (data.success) closeAllModals();
+      alert(data.message || 'تم التحديث');
+      closeAllModals();
     }
 
     async function deleteSelectedPatient() {
@@ -2377,23 +2703,24 @@
     function renderDoctorLabsModal() {
       if (!selectedPatient) return;
       const labs = selectedPatient.labReports || [];
-      document.getElementById('doc-labs-container').innerHTML = labs.map(lb => `
-        <div class="p-3 rounded-xl bg-slate-900 space-y-1">
-          <div class="font-bold text-purple-300">${lb.title} (${lb.date})</div>
-          <div>${lb.summary}</div>
-          <div class="text-amber-300">${lb.abnormal}</div>
-        </div>
-      `).join('') || '<div class="text-slate-500">لا توجد تحاليل مرفوعة لهذا المراجع.</div>';
+      document.getElementById('doc-labs-container').innerHTML = labs.length
+        ? labs.map(l => `
+          <div class="p-3 rounded-xl bg-slate-900 space-y-1">
+            <div class="flex justify-between font-bold text-purple-300"><span>${l.title}</span><span>${l.date}</span></div>
+            <p class="text-slate-200">${l.summary}</p>
+            <div class="text-amber-300">⚠️ ${l.abnormal}</div>
+          </div>
+        `).join('')
+        : '<div class="text-slate-500">لم يرفع هذا المراجع أي تحليل مختبري بعد.</div>';
     }
 
     function renderDoctorQrModal() {
       if (!selectedPatient) return;
-      const p = selectedPatient;
+      const qrData = encodeURIComponent(`SukkariPatient:${selectedPatient.id}|Name:${selectedPatient.name}|Phone:${selectedPatient.phone}`);
       document.getElementById('doc-qr-box').innerHTML = `
-        <div class="text-base font-black text-white">${p.name}</div>
-        <div class="text-emerald-400 font-bold">رقم الملف: #${p.id} • ${p.diabetesType}</div>
-        <div class="text-slate-300">الهاتف: ${p.phone || p.emergencyPhone}</div>
-        <div class="text-slate-400">الدولة واللهجة: ${p.countryName} (${p.dialectLabel})</div>
+        <div class="font-black text-base text-white">${selectedPatient.name}</div>
+        <div class="text-slate-400">اليوزر: ${selectedPatient.username} | الهاتف: ${selectedPatient.phone}</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}" alt="QR" class="mx-auto rounded-xl border border-slate-700 p-1 bg-white" />
       `;
     }
 
@@ -2402,13 +2729,15 @@
       window.location.href = `/api/export/excel/${selectedPatient.id}`;
     }
 
-    // التحقق من الجلسة الحالية عند فتح الصفحة
-    (async function boot() {
+    (async () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
       const res = await fetch('/api/me');
       const data = await res.json();
-      if (data.logged_in && data.user) {
+      if (data.logged_in) {
         currentUser = data.user;
-        initAppShell();
+        await initAppShell();
       }
     })();
   </script>
