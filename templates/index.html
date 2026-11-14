@@ -1563,8 +1563,7 @@
         .replace(/>/g, '&gt;');
       return escaped
         .replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300">$1</strong>')
-        .replace(/
-/g, '<br/>');
+        .replace(/\n/g, '<br/>');
     }
 
     function previewSelectedImage(inputId, previewId) {
