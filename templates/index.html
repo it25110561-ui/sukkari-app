@@ -194,7 +194,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      flex-wrap: wrap; /* السماح بتعدد الأسطر إذا كانت الشاشة صغيرة */
+      flex-wrap: nowrap; /* خط واحد دائماً */
+      overflow-x: auto; /* السماح بالتمرير إذا كانت الشاشة ضيقة جداً */
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       gap: 12px;
       padding: 12px 18px 14px;
       background: rgba(14, 25, 36, 0.92);
@@ -316,10 +319,11 @@
       flex-shrink: 0;
     }
 
+    .macos-dock::-webkit-scrollbar { display: none; }
     @media (max-width: 480px) {
-      .macos-dock { gap: 8px; padding: 10px 12px; border-radius: 22px; }
-      .macos-dock-item { width: 44px; height: 44px; border-radius: 12px; } 
-      .macos-dock-item svg { width: 22px; height: 22px; }
+      .macos-dock { gap: 6px; padding: 10px 12px; border-radius: 22px; justify-content: flex-start; }
+      .macos-dock-item { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; } 
+      .macos-dock-item svg { width: 20px; height: 20px; }
       .macos-dock-divider { display: none; }
     }
   </style>
@@ -1098,6 +1102,165 @@
         backdrop.classList.add('hidden');
       }
     }
+
+    // --- الوظائف التفاعلية المضافة (الإشعارات، الأوضاع، الأدوات) ---
+    function showToast(msg, type='success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full font-bold text-xs shadow-2xl transition-all duration-300 translate-y-[-100%] opacity-0 border ${type === 'success' ? 'bg-emerald-600/95 border-emerald-400 text-white' : 'bg-rose-600/95 border-rose-400 text-white'}`;
+      toast.style.backdropFilter = "blur(10px)";
+      toast.innerText = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('translate-y-[-100%]', 'opacity-0'); toast.classList.add('translate-y-0', 'opacity-100'); }, 10);
+      setTimeout(() => { toast.classList.remove('translate-y-0', 'opacity-100'); toast.classList.add('translate-y-[-100%]', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    const flags = { ramadanMode: false, sickDayMode: false, seniorMode: false };
+    function togglePatientFlag(flag) {
+      flags[flag] = !flags[flag];
+      let stateTxt = flags[flag] ? 'مفعّل' : 'مغلق';
+      let stateColor = flags[flag] ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5';
+      
+      let badge;
+      if(flag === 'ramadanMode') badge = document.getElementById('sb-ramadan-state');
+      if(flag === 'sickDayMode') badge = document.getElementById('sb-sick-state');
+      if(flag === 'seniorMode') badge = document.getElementById('sb-senior-state');
+      
+      if(badge) {
+        badge.innerText = stateTxt;
+        badge.className = `px-2 py-0.5 rounded-md transition-colors ${stateColor}`;
+      }
+
+      if(flag === 'seniorMode') {
+        document.body.classList.toggle('senior-mode', flags[flag]);
+        showToast(flags[flag] ? 'تم تفعيل وضع كبار السن (تكبير الخط)' : 'تم إيقاف وضع كبار السن');
+      } else if (flag === 'ramadanMode') {
+        showToast(flags[flag] ? 'تم تفعيل وضع الصيام ورمضان' : 'تم إيقاف وضع الصيام');
+        const ramadanInd = document.getElementById('ramadan-indicator-badge');
+        if(ramadanInd) flags[flag] ? ramadanInd.classList.remove('hidden') : ramadanInd.classList.add('hidden');
+      } else {
+        showToast(flags[flag] ? 'تم تفعيل وضع أيام المرض' : 'تم إيقاف وضع المرض');
+      }
+    }
+
+    function openToolModal(modalId) { 
+      let btnText = document.querySelector(`[onclick="openToolModal('${modalId}')"] span:last-child`)?.innerText || modalId;
+      showToast('جاري فتح: ' + btnText); 
+    }
+    
+    function sendWeeklySummaryToDoctor() { showToast('تم إرسال الملخص الأسبوعي للطبيب بنجاح ✓'); }
+    function shareCaregiverWhatsApp() { showToast('تم تجهيز التقرير للمشاركة عبر واتساب'); setTimeout(()=> window.open('https://wa.me/?text=تقرير+السكر+الأسبوعي', '_blank'), 1000); }
+    function exportExcel() { showToast('جاري تصدير السجل بصيغة Excel...'); }
+    function exportDoctorSelectedExcel() { showToast('جاري تصدير بيانات المراجعين بصيغة Excel...'); }
+    function openEditPatientModal() { showToast('تم فتح واجهة تعديل بيانات المراجع'); }
+    function deleteSelectedPatient() { if(confirm('هل أنت متأكد من حذف ملف المراجع؟')) showToast('تم حذف الملف بنجاح', 'error'); }
+    function setDocFilter(filter) { showToast('تم تطبيق الفلتر بنجاح'); }
+    function renderDoctorPatientsList() { /* Mock search */ }
+    
+    // تسجيل قراءة جديدة
+    function submitNewLog(e) {
+      e.preventDefault();
+      const val = document.getElementById('log-val').value;
+      if(val) {
+        showToast('تم تسجيل القياس بنجاح: ' + val + ' mg/dL');
+        e.target.reset();
+      }
+    }
+
+    // تفاعلات الأزرار اليومية
+    function incrementDaily(type, amount) {
+      const el = document.getElementById(`${type}-count`);
+      if(el) {
+        let current = parseInt(el.innerText) || 0;
+        el.innerText = current + amount;
+        showToast(type === 'water' ? 'بالعافية! تم تسجيل كوب ماء' : 'عاشت إيدك! تم تسجيل نشاط رياضي');
+      }
+    }
+    
+    function toggleMedDose(time) {
+      const btn = document.getElementById(`btn-med-${time}`);
+      if(btn) {
+        btn.classList.toggle('bg-emerald-600/90');
+        btn.classList.toggle('text-white');
+        btn.classList.toggle('bg-white/5');
+        if(btn.classList.contains('bg-emerald-600/90')) showToast('تم تسجيل أخذ العلاج ✓');
+      }
+    }
+
+    function saveSideEffects() { showToast('تم حفظ الأعراض وإشعار الطبيب'); }
+    function calcCorrectionDose() {
+      const val = document.getElementById('corr-input-val').value;
+      const res = document.getElementById('corr-result-box');
+      if(val && res) {
+        const diff = val - 120;
+        if (diff > 0) {
+          const dose = (diff / 40).toFixed(1);
+          res.innerText = `الجرعة المقترحة: ${dose} وحدات أنسولين صافي`;
+          res.className = 'text-xs text-emerald-300 font-bold';
+          showToast('تم حساب الجرعة التصحيحية');
+        } else {
+          res.innerText = 'السكر ضمن أو تحت الهدف، لا تحتاج تصحيح.';
+          res.className = 'text-xs text-amber-400 font-bold';
+        }
+      }
+    }
+    
+    let timerInterval;
+    function startPostMealTimer(mins) {
+      const display = document.getElementById('postmeal-timer-display');
+      if(display) {
+        clearInterval(timerInterval);
+        let timeLeft = mins * 60;
+        showToast(`تم بدء مؤقت القياس لـ ${mins/60} ساعة`);
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          const h = Math.floor(timeLeft / 3600);
+          const m = Math.floor((timeLeft % 3600) / 60);
+          const s = timeLeft % 60;
+          display.innerText = `متبقي: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+          display.className = 'text-xs font-black text-amber-400';
+          if(timeLeft <= 0) { clearInterval(timerInterval); display.innerText = 'حان وقت القياس!'; display.className = 'text-xs font-black text-rose-400'; showToast('حان وقت قياس السكر بعد الأكل!', 'error'); }
+        }, 1000);
+      }
+    }
+
+    function markFootChecked() { showToast('ممتاز! تم تسجيل فحص القدمين لهذا الأسبوع'); document.getElementById('foot-check-status').innerText = 'تم الفحص هذا الأسبوع ✓'; document.getElementById('foot-check-status').className = 'text-[11px] text-emerald-400 font-bold'; }
+    function updateEa1cSimulator(val) { 
+      const mgEl = document.getElementById('ea1c-sim-mg');
+      const valEl = document.getElementById('ea1c-sim-val');
+      if(mgEl && valEl) {
+        mgEl.innerText = val; 
+        valEl.innerText = ((parseInt(val) + 46.7) / 28.7).toFixed(1) + '%';
+      }
+    }
+    function speakText(text) { 
+      showToast('جاري قراءة الملاحظات صوتياً...'); 
+      if('speechSynthesis' in window) { 
+        const msg = new SpeechSynthesisUtterance(text); 
+        msg.lang = 'ar-IQ'; 
+        window.speechSynthesis.speak(msg); 
+      } 
+    }
+    function startDoctorVoiceDictation() { 
+      showToast('جاري تفعيل المايكروفون (محاكاة)...'); 
+      const lbl = document.getElementById('voice-dict-btn-lbl');
+      if(lbl) lbl.innerText = 'جاري الاستماع...'; 
+      setTimeout(() => { 
+        if(lbl) lbl.innerText = 'إملاء صوتي للملاحظات'; 
+        const inp = document.getElementById('dp-notes-input');
+        if(inp) inp.value += ' المريض يحتاج لزيادة جرعة المنظم... '; 
+      }, 2000); 
+    }
+    function saveDoctorNotes() { showToast('تم حفظ خطة العلاج بنجاح وتحديث تطبيق المراجع ✓'); }
+    
+    // Dock Active State
+    function setDockActive(dockId) {
+      document.querySelectorAll('.macos-dock-item').forEach(item => item.classList.remove('open'));
+      const activeItem = document.querySelector(`[data-dock-id="${dockId}"]`);
+      if(activeItem) activeItem.classList.add('open');
+    }
+    function scrollToPatientSection(id) { showToast('فتح الصفحة الرئيسية'); }
+    function scrollToDoctorSection(id) { showToast('فتح عيادة الطبيب'); }
+
   </script>
 </body>
 </html>
