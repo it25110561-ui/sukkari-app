@@ -4,6 +4,7 @@ import io
 import json
 import os
 import random
+import secrets
 import sqlite3
 import urllib.error
 import urllib.request
@@ -23,6 +24,7 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "").strip()
 SMS_WEBHOOK_URL = os.environ.get("SMS_WEBHOOK_URL", "").strip()
 
 COUNTRY_DIALECT_MAP = {
+    # الدول العربية
     "+964": {"country": "العراق", "dialect": "iraqi", "lang": "ar", "label": "اللهجة العراقية"},
     "+966": {"country": "السعودية", "dialect": "gulf", "lang": "ar", "label": "اللهجة الخليجية (السعودية)"},
     "+971": {"country": "الإمارات", "dialect": "gulf", "lang": "ar", "label": "اللهجة الخليجية (الإمارات)"},
@@ -35,13 +37,34 @@ COUNTRY_DIALECT_MAP = {
     "+961": {"country": "لبنان", "dialect": "levantine", "lang": "ar", "label": "اللهجة الشامية (لبنان)"},
     "+963": {"country": "سوريا", "dialect": "levantine", "lang": "ar", "label": "اللهجة الشامية (سوريا)"},
     "+970": {"country": "فلسطين", "dialect": "levantine", "lang": "ar", "label": "اللهجة الشامية (فلسطين)"},
-    "+212": {"country": "المغرب", "dialect": "msa", "lang": "ar", "label": "العربية الفصحى المبسطة"},
-    "+213": {"country": "الجزائر", "dialect": "msa", "lang": "ar", "label": "العربية الفصحى المبسطة"},
-    "+216": {"country": "تونس", "dialect": "msa", "lang": "ar", "label": "العربية الفصحى المبسطة"},
-    "+1":   {"country": "أمريكا / كندا", "dialect": "english", "lang": "en", "label": "English (International)"},
+    "+218": {"country": "ليبيا", "dialect": "maghrebi", "lang": "ar", "label": "اللهجة الليبية"},
+    "+249": {"country": "السودان", "dialect": "sudanese", "lang": "ar", "label": "اللهجة السودانية"},
+    "+212": {"country": "المغرب", "dialect": "maghrebi", "lang": "ar", "label": "الدارجة المغربية"},
+    "+213": {"country": "الجزائر", "dialect": "maghrebi", "lang": "ar", "label": "الدارجة الجزائرية"},
+    "+216": {"country": "تونس", "dialect": "maghrebi", "lang": "ar", "label": "الدارجة التونسية"},
+    "+222": {"country": "موريتانيا", "dialect": "maghrebi", "lang": "ar", "label": "الحسانية"},
+    # دول ولغات أخرى شائعة
+    "+1":   {"country": "الولايات المتحدة / كندا", "dialect": "english", "lang": "en", "label": "English (US/Canada)"},
     "+44":  {"country": "بريطانيا", "dialect": "english", "lang": "en", "label": "English (UK)"},
-    "+49":  {"country": "ألمانيا", "dialect": "english", "lang": "en", "label": "English (International)"},
-    "+90":  {"country": "تركيا", "dialect": "english", "lang": "en", "label": "English (International)"},
+    "+353": {"country": "أيرلندا", "dialect": "english", "lang": "en", "label": "English (Ireland)"},
+    "+61":  {"country": "أستراليا", "dialect": "english", "lang": "en", "label": "English (Australia)"},
+    "+64":  {"country": "نيوزيلندا", "dialect": "english", "lang": "en", "label": "English (New Zealand)"},
+    "+49":  {"country": "ألمانيا", "dialect": "german", "lang": "de", "label": "Deutsch"},
+    "+33":  {"country": "فرنسا", "dialect": "french", "lang": "fr", "label": "Français"},
+    "+90":  {"country": "تركيا", "dialect": "turkish", "lang": "tr", "label": "Türkçe"},
+    "+34":  {"country": "إسبانيا", "dialect": "spanish", "lang": "es", "label": "Español"},
+    "+52":  {"country": "المكسيك", "dialect": "spanish", "lang": "es", "label": "Español (México)"},
+    "+39":  {"country": "إيطاليا", "dialect": "italian", "lang": "it", "label": "Italiano"},
+    "+31":  {"country": "هولندا", "dialect": "dutch", "lang": "nl", "label": "Nederlands"},
+    "+46":  {"country": "السويد", "dialect": "english", "lang": "en", "label": "English / Svenska"},
+    "+55":  {"country": "البرازيل", "dialect": "portuguese", "lang": "pt", "label": "Português"},
+    "+7":   {"country": "روسيا / كازاخستان", "dialect": "russian", "lang": "ru", "label": "Русский"},
+    "+91":  {"country": "الهند", "dialect": "hindi", "lang": "hi", "label": "हिन्दी"},
+    "+92":  {"country": "باكستان", "dialect": "urdu", "lang": "ur", "label": "اردو"},
+    "+81":  {"country": "اليابان", "dialect": "japanese", "lang": "ja", "label": "日本語"},
+    "+82":  {"country": "كوريا الجنوبية", "dialect": "korean", "lang": "ko", "label": "한국어"},
+    "+86":  {"country": "الصين", "dialect": "chinese", "lang": "zh", "label": "中文"},
+    "+27":  {"country": "جنوب أفريقيا", "dialect": "english", "lang": "en", "label": "English"},
 }
 
 
@@ -67,20 +90,28 @@ def calc_bmi(weight, height):
 
 
 def normalize_phone(raw_phone, country_code="+964"):
+    raw = str(raw_phone or "").strip()
     cc = str(country_code or "+964").strip()
     if not cc.startswith("+"):
         cc = "+" + cc.lstrip("0")
 
-    digits = "".join(ch for ch in str(raw_phone or "") if ch.isdigit())
-    cc_digits = cc.lstrip("+")
+    # Accept both Arabic-Indic and Persian digits in phone fields.
+    digit_map = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+    raw = raw.translate(digit_map)
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if raw.startswith("+") or raw.startswith("00"):
+        if digits.startswith("00"):
+            digits = digits[2:]
+        full_number = f"+{digits}"
+        matched_code = next((prefix for prefix in sorted(COUNTRY_DIALECT_MAP, key=len, reverse=True)
+                             if full_number.startswith(prefix)), cc)
+        return full_number, matched_code
 
-    if digits.startswith("00"):
-        digits = digits[2:]
+    cc_digits = cc.lstrip("+")
     if digits.startswith(cc_digits):
         local = digits[len(cc_digits):]
     else:
         local = digits.lstrip("0")
-
     return f"+{cc_digits}{local}", cc
 
 
@@ -111,6 +142,20 @@ def detect_country_info(country_code="+964", full_phone=""):
     }
 
 
+def get_dialect_label(dialect, lang="ar"):
+    labels = {
+        "iraqi": "اللهجة العراقية", "gulf": "اللهجة الخليجية",
+        "egyptian": "اللهجة المصرية", "levantine": "اللهجة الشامية",
+        "maghrebi": "اللهجة المغاربية", "sudanese": "اللهجة السودانية",
+        "msa": "العربية الفصحى المبسطة", "english": "English",
+        "german": "Deutsch", "french": "Français", "turkish": "Türkçe",
+        "spanish": "Español", "italian": "Italiano", "dutch": "Nederlands",
+        "portuguese": "Português", "russian": "Русский", "hindi": "हिन्दी",
+        "urdu": "اردو", "japanese": "日本語", "korean": "한국어", "chinese": "中文",
+    }
+    return labels.get(str(dialect or ""), "English" if lang != "ar" else "العربية")
+
+
 def get_ai_dialect_instruction(dialect):
     mapping = {
         "iraqi": "تحدث باللهجة العراقية الدارجة المهذبة والواضحة والمطمئنة (مثل: عيني، شلونك، هسه، زين، ماكو شي، تكدر).",
@@ -118,7 +163,22 @@ def get_ai_dialect_instruction(dialect):
         "egyptian": "تحدث باللهجة المصرية البسيطة والودودة والمطمئنة (مثل: أهلاً بيك، إزيك، دلوقتي، كويس، ألف سلامة).",
         "levantine": "تحدث باللهجة الشامية اللطيفة والمطمئنة (مثل: أهلاً فيك، كيفك، هلق، منيح، سلامتك).",
         "msa": "تحدث باللغة العربية الفصحى المبسطة والواضحة والمطمئنة.",
+        "maghrebi": "تحدث بعربية مغاربية واضحة ومهذبة، وابتعد عن الكلمات المحلية غير المفهومة خارج البلد.",
+        "sudanese": "تحدث بلهجة سودانية بسيطة ومهذبة ومطمئنة.",
         "english": "Respond in clear, warm, empathetic, easy-to-understand English suitable for a diabetes patient.",
+        "german": "Antworte in klarem, freundlichem und leicht verständlichem Deutsch.",
+        "french": "Répondez en français clair, chaleureux et facile à comprendre.",
+        "turkish": "Sade, nazik ve kolay anlaşılır Türkçe kullan.",
+        "spanish": "Responde en español claro, cálido y fácil de entender.",
+        "italian": "Rispondi in italiano chiaro, cordiale e semplice.",
+        "dutch": "Antwoord in duidelijk en vriendelijk Nederlands.",
+        "portuguese": "Responda em português claro, acolhedor e fácil de entender.",
+        "russian": "Отвечайте на ясном, доброжелательном и понятном русском языке.",
+        "hindi": "सरल, स्पष्ट और विनम्र हिन्दी में जवाब दें।",
+        "urdu": "سادہ، واضح اور دوستانہ اردو میں جواب دیں۔",
+        "japanese": "わかりやすく丁寧な日本語で回答してください。",
+        "korean": "쉽고 친절하며 명확한 한국어로 답변하세요.",
+        "chinese": "请使用清晰、友好、易懂的中文回答。",
     }
     return mapping.get(dialect, mapping["iraqi"])
 
@@ -132,8 +192,10 @@ def serialize_user(row):
     u["bmi"] = calc_bmi(u.get("weight", 0), u.get("height", 0))
 
     c_info = detect_country_info(u.get("countryCode", "+964"), u.get("phone", ""))
-    u["dialectLabel"] = c_info["dialectLabel"]
-    u["lang"] = c_info["lang"]
+    u["countryName"] = u.get("countryName") or c_info["countryName"]
+    u["dialect"] = u.get("dialect") or c_info["dialect"]
+    u["lang"] = u.get("lang") or c_info["lang"]
+    u["dialectLabel"] = get_dialect_label(u["dialect"], u["lang"])
 
     json_fields = [
         ("periodicChecksJson", {}),
@@ -190,6 +252,9 @@ def init_db():
             diabetesType TEXT DEFAULT 'النوع الثاني',
             emergencyPhone TEXT DEFAULT '07700000000',
             doctorNotes TEXT DEFAULT '',
+            medication TEXT DEFAULT '',
+            lang TEXT DEFAULT 'ar',
+            qrToken TEXT DEFAULT '',
             targetGlucose INTEGER DEFAULT 120,
             correctionFactor INTEGER DEFAULT 40,
             carbRatio INTEGER DEFAULT 15,
@@ -315,6 +380,11 @@ def init_db():
     existing_user_cols = [r[1] for r in cur.execute("PRAGMA table_info(users)").fetchall()]
     user_migrations = [
         ("phone", "TEXT DEFAULT ''"),
+        ("gender", "TEXT DEFAULT 'ذكر'"),
+        ("blood", "TEXT DEFAULT 'O+'"),
+        ("medication", "TEXT DEFAULT ''"),
+        ("lang", "TEXT DEFAULT 'ar'"),
+        ("qrToken", "TEXT DEFAULT ''"),
         ("countryCode", "TEXT DEFAULT '+964'"),
         ("countryName", "TEXT DEFAULT 'العراق'"),
         ("dialect", "TEXT DEFAULT 'iraqi'"),
@@ -352,6 +422,11 @@ def init_db():
         if col_name not in existing_log_cols:
             cur.execute(f"ALTER TABLE logs ADD COLUMN {col_name} {col_def}")
 
+    # A unique random identifier powers the real QR and Code-128 patient card.
+    rows_without_tokens = cur.execute("SELECT id FROM users WHERE qrToken IS NULL OR qrToken = ''").fetchall()
+    for token_row in rows_without_tokens:
+        cur.execute("UPDATE users SET qrToken = ? WHERE id = ?", (secrets.token_urlsafe(24), token_row["id"]))
+
     count = cur.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
         cur.execute("""
@@ -388,6 +463,12 @@ def init_db():
             INSERT INTO messages (patient_id, sender, text, time)
             VALUES (?, 'doctor', 'هلا بيك أخ أحمد، قياساتك هالأسبوع زينة، استمر على نفس العلاج وبلغني بأي طارئ.', ?)
         """, (pat_id, now_dt.strftime("%H:%M")))
+
+    # Seeded demo records are inserted after the first migration pass, so ensure
+    # that they also receive a unique card token before closing the database.
+    rows_without_tokens = cur.execute("SELECT id FROM users WHERE qrToken IS NULL OR qrToken = ''").fetchall()
+    for token_row in rows_without_tokens:
+        cur.execute("UPDATE users SET qrToken = ? WHERE id = ?", (secrets.token_urlsafe(24), token_row["id"]))
 
     conn.commit()
     conn.close()
@@ -748,6 +829,20 @@ def api_me():
     return jsonify({"logged_in": True, "user": serialize_user(row)})
 
 
+@app.route("/api/countries")
+def api_countries():
+    items = []
+    for code, info in sorted(COUNTRY_DIALECT_MAP.items(), key=lambda item: item[1]["country"]):
+        items.append({
+            "countryCode": code,
+            "countryName": info["country"],
+            "lang": info["lang"],
+            "dialect": info["dialect"],
+            "dialectLabel": info["label"],
+        })
+    return jsonify(items)
+
+
 @app.route("/api/login", methods=["POST"])
 def api_login():
     data = request.get_json(silent=True) or {}
@@ -887,19 +982,21 @@ def api_verify_register():
     height = float(data.get("height") or 170)
     blood = str(data.get("blood") or "O+").strip()
     d_type = str(data.get("diabetesType") or "النوع الثاني").strip()
-    blood = str(data.get("blood") or "O+").strip()
-    emerg_phone = str(data.get("emergencyPhone") or norm_phone).strip()
+    lang = str(data.get("lang") or c_info["lang"]).strip().lower()
+    dialect = str(data.get("dialect") or c_info["dialect"]).strip().lower()
+    emerg_raw = str(data.get("emergencyPhone") or "").strip()
+    emerg_phone = normalize_phone(emerg_raw, cc)[0] if emerg_raw else ""
 
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO users (
-            username, password, role, name, phone, countryCode, countryName, dialect, isVerified,
+            username, password, role, name, phone, countryCode, countryName, dialect, lang, qrToken, isVerified,
             age, gender, weight, height, blood, diabetesType, emergencyPhone
         )
-        VALUES (?, ?, 'patient', ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        norm_phone, password, name, norm_phone, cc, c_info["countryName"], c_info["dialect"],
-        age, gender, weight, height, blood, d_type, emerg_phone,
+        norm_phone, password, name, norm_phone, cc, c_info["countryName"], dialect, lang,
+        secrets.token_urlsafe(24), age, gender, weight, height, blood, d_type, emerg_phone,
     ))
     new_uid = cur.lastrowid
 
@@ -929,6 +1026,33 @@ def api_logout():
     return jsonify({"success": True})
 
 
+@app.route("/api/patient/emergency-sms", methods=["POST"])
+def patient_emergency_sms():
+    uid = session.get("user_id")
+    if not uid or session.get("role") != "patient":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
+    conn = get_db()
+    patient = conn.execute("SELECT name, emergencyPhone FROM users WHERE id = ? AND role = 'patient'", (uid,)).fetchone()
+    conn.close()
+    if not patient or not patient["emergencyPhone"]:
+        return jsonify({"success": False, "code": "no_emergency_contact", "message": "لا يوجد رقم طوارئ محفوظ في الملف"}), 400
+    if not SMS_WEBHOOK_URL:
+        return jsonify({"success": False, "code": "sms_provider_not_configured", "message": "خدمة SMS غير مربوطة بمزود إرسال. استخدم تطبيق الرسائل من جهازك."}), 503
+    message = str((request.get_json(silent=True) or {}).get("message") or
+                  f"طلب طوارئ من {patient['name']}. أحتاج المساعدة الآن. Emergency assistance requested.")
+    payload = json.dumps({"phone": patient["emergencyPhone"], "message": message, "type": "emergency"}).encode("utf-8")
+    req = urllib.request.Request(SMS_WEBHOOK_URL, data=payload,
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            if resp.status < 200 or resp.status >= 300:
+                raise RuntimeError(f"SMS gateway returned HTTP {resp.status}")
+        return jsonify({"success": True, "message": "تم إرسال رسالة الطوارئ عبر مزود SMS"})
+    except Exception:
+        app.logger.exception("Emergency SMS gateway failed")
+        return jsonify({"success": False, "code": "sms_gateway_error", "message": "تعذر إرسال SMS من الخادم. جرّب تطبيق الرسائل في جهازك."}), 502
+
+
 # ==============================================================================
 # 8. مسارات ملف المريض والأدوات التفاعلية اليومية
 # ==============================================================================
@@ -936,81 +1060,47 @@ def api_logout():
 @app.route("/api/patient/update-profile", methods=["POST"])
 def update_patient_profile():
     uid = session.get("user_id")
-    if not uid:
-        return jsonify({"success": False, "message": "غير مسجل الدخول"}), 401
+    if not uid or session.get("role") != "patient":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
 
     data = request.get_json(silent=True) or {}
     conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    row = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'patient'", (uid,)).fetchone()
     if not row:
         conn.close()
-        return jsonify({"success": False}), 404
-
+        return jsonify({"success": False, "message": "ملف المراجع غير موجود"}), 404
     cur_u = dict(row)
-    cc = str(data.get("countryCode") or cur_u.get("countryCode") or "+964").strip()
-    c_info = detect_country_info(cc)
-    dialect_override = str(data.get("dialect") or "").strip()
-    final_dialect = dialect_override if dialect_override else c_info["dialect"]
 
-    age = int(data.get("age") if data.get("age") is not None else cur_u.get("age", 40))
-    weight = float(data.get("weight") if data.get("weight") is not None else cur_u.get("weight", 70))
-    height = float(data.get("height") if data.get("height") is not None else cur_u.get("height", 170))
-    phone = str(data.get("emergencyPhone") if data.get("emergencyPhone") is not None else cur_u.get("emergencyPhone", "")).strip()
-    med_time = str(data.get("medReminderTime") if data.get("medReminderTime") is not None else cur_u.get("medReminderTime", "")).strip()
-
+    # Patients may change daily-use preferences only. Identity, phone, demographics,
+    # blood group, gender and clinical profile are exclusively doctor-managed.
+    med_time = str(data.get("medReminderTime", cur_u.get("medReminderTime") or "")).strip()
     ramadan_mode = int(bool(data["ramadanMode"])) if "ramadanMode" in data else int(cur_u.get("ramadanMode") or 0)
     sick_day_mode = int(bool(data["sickDayMode"])) if "sickDayMode" in data else int(cur_u.get("sickDayMode") or 0)
     senior_mode = int(bool(data["seniorMode"])) if "seniorMode" in data else int(cur_u.get("seniorMode") or 0)
+    strips_count = max(0, int(data["stripsCount"])) if "stripsCount" in data else int(cur_u.get("stripsCount") or 50)
+    pens_count = max(0, int(data["insulinPensCount"])) if "insulinPensCount" in data else int(cur_u.get("insulinPensCount") or 5)
+    inj_site = str(data.get("lastInjectionSite", cur_u.get("lastInjectionSite") or ""))
+    last_foot = str(cur_u.get("lastFootCheck") or "")
+    last_oral = str(cur_u.get("lastOralSkinCheck") or "")
 
-    strips_count = int(data["stripsCount"]) if "stripsCount" in data else int(cur_u.get("stripsCount") or 50)
-    pens_count = int(data["insulinPensCount"]) if "insulinPensCount" in data else int(cur_u.get("insulinPensCount") or 5)
-    inj_site = str(data["lastInjectionSite"]) if "lastInjectionSite" in data else str(cur_u.get("lastInjectionSite") or "")
-    last_foot = str(data["lastFootCheck"]) if "lastFootCheck" in data else str(cur_u.get("lastFootCheck") or "")
-    last_oral = str(data["lastOralSkinCheck"]) if "lastOralSkinCheck" in data else str(cur_u.get("lastOralSkinCheck") or "")
-
-    periodic_json = (
-        json.dumps(data["periodicChecks"], ensure_ascii=False)
-        if "periodicChecks" in data
-        else cur_u.get("periodicChecksJson", "{}")
-    )
-    travel_json = (
-        json.dumps(data["travelChecklist"], ensure_ascii=False)
-        if "travelChecklist" in data
-        else cur_u.get("travelChecklistJson", "{}")
-    )
-    previsit_json = (
-        json.dumps(data["preVisitChecklist"], ensure_ascii=False)
-        if "preVisitChecklist" in data
-        else cur_u.get("preVisitChecklistJson", "{}")
-    )
-    walking_json = (
-        json.dumps(data["walkingPlan"], ensure_ascii=False)
-        if "walkingPlan" in data
-        else cur_u.get("walkingPlanJson", '{"week":1,"completedDays":0}')
-    )
+    periodic_json = json.dumps(data["periodicChecks"], ensure_ascii=False) if "periodicChecks" in data else cur_u.get("periodicChecksJson", "{}")
+    travel_json = json.dumps(data["travelChecklist"], ensure_ascii=False) if "travelChecklist" in data else cur_u.get("travelChecklistJson", "{}")
+    previsit_json = json.dumps(data["preVisitChecklist"], ensure_ascii=False) if "preVisitChecklist" in data else cur_u.get("preVisitChecklistJson", "{}")
+    walking_json = json.dumps(data["walkingPlan"], ensure_ascii=False) if "walkingPlan" in data else cur_u.get("walkingPlanJson", '{"week":1,"completedDays":0}')
 
     conn.execute("""
-        UPDATE users SET
-            age = ?, weight = ?, height = ?, emergencyPhone = ?, medReminderTime = ?,
-            countryCode = ?, countryName = ?, dialect = ?,
-            ramadanMode = ?, sickDayMode = ?, seniorMode = ?,
-            stripsCount = ?, insulinPensCount = ?, lastInjectionSite = ?,
-            lastFootCheck = ?, lastOralSkinCheck = ?,
-            periodicChecksJson = ?, travelChecklistJson = ?, preVisitChecklistJson = ?, walkingPlanJson = ?
-        WHERE id = ?
-    """, (
-        age, weight, height, phone, med_time,
-        cc, c_info["countryName"], final_dialect,
-        ramadan_mode, sick_day_mode, senior_mode,
-        strips_count, pens_count, inj_site,
-        last_foot, last_oral,
-        periodic_json, travel_json, previsit_json, walking_json,
-        uid,
-    ))
+        UPDATE users SET medReminderTime = ?, ramadanMode = ?, sickDayMode = ?, seniorMode = ?,
+            stripsCount = ?, insulinPensCount = ?, lastInjectionSite = ?, lastFootCheck = ?,
+            lastOralSkinCheck = ?, periodicChecksJson = ?, travelChecklistJson = ?,
+            preVisitChecklistJson = ?, walkingPlanJson = ?
+        WHERE id = ? AND role = 'patient'
+    """, (med_time, ramadan_mode, sick_day_mode, senior_mode, strips_count, pens_count,
+          inj_site, last_foot, last_oral, periodic_json, travel_json, previsit_json, walking_json, uid))
     conn.commit()
     updated = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
     conn.close()
-    return jsonify({"success": True, "user": serialize_user(updated)})
+    return jsonify({"success": True, "user": serialize_user(updated),
+                    "message": "تم حفظ إعدادات الاستخدام. تعديل البيانات الشخصية والطبية متاح للطبيب فقط."})
 
 
 @app.route("/api/patient/foot-check", methods=["POST"])
@@ -1624,47 +1714,64 @@ def doctor_create_patient():
 
     data = request.get_json(silent=True) or {}
     name = str(data.get("name", "")).strip()
-    username = str(data.get("username", "")).strip()
-    password = str(data.get("password", "")).strip()
-    age = int(data.get("age") or 40)
-    weight = float(data.get("weight") or 70)
-    height = float(data.get("height") or 170)
-    d_type = str(data.get("diabetesType") or "النوع الثاني").strip()
-    blood = str(data.get("blood") or "O+").strip()
     country_code = str(data.get("countryCode") or "+964").strip()
-    raw_phone = str(data.get("emergencyPhone") or "07700000000").strip()
+    raw_phone = str(data.get("phone") or data.get("emergencyPhone") or "").strip()
+    if not name or not raw_phone:
+        return jsonify({"success": False, "message": "يرجى إدخال اسم المراجع ورقم هاتفه"}), 400
+
     norm_phone, cc = normalize_phone(raw_phone, country_code)
+    if len(norm_phone.lstrip("+")) < 7:
+        return jsonify({"success": False, "message": "رقم الهاتف غير صحيح"}), 400
     c_info = detect_country_info(cc, norm_phone)
+    lang = str(data.get("lang") or c_info["lang"]).strip().lower()
+    dialect = str(data.get("dialect") or c_info["dialect"]).strip().lower()
+    supported_langs = {"ar", "en", "fr", "de", "tr", "es", "it", "nl", "pt", "ru", "hi", "ur", "ja", "ko", "zh"}
+    supported_dialects = {"iraqi", "gulf", "egyptian", "levantine", "maghrebi", "sudanese", "msa", "english", "german", "french", "turkish", "spanish", "italian", "dutch", "portuguese", "russian", "hindi", "urdu", "japanese", "korean", "chinese"}
+    if lang not in supported_langs or dialect not in supported_dialects:
+        return jsonify({"success": False, "message": "اللغة أو اللهجة المحددة غير مدعومة"}), 400
 
-    target_g = int(data.get("targetGlucose") or 120)
-    corr_f = int(data.get("correctionFactor") or 40)
-    carb_r = int(data.get("carbRatio") or 15)
+    username = str(data.get("username") or norm_phone).strip()
+    password = str(data.get("password") or secrets.token_urlsafe(8)).strip()
+    try:
+        age = max(0, min(120, int(data.get("age") or 40)))
+        weight = max(1, float(data.get("weight") or 70))
+        height = max(30, float(data.get("height") or 170))
+        target_g = int(data.get("targetGlucose") or 120)
+        corr_f = int(data.get("correctionFactor") or 40)
+        carb_r = int(data.get("carbRatio") or 15)
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "تحقق من القيم الرقمية المدخلة"}), 400
 
-    if not name or not username or not password:
-        return jsonify({"success": False, "message": "يرجى ملء الاسم واليوزر والرمز السري"})
+    gender = str(data.get("gender") or "غير محدد").strip()
+    blood = str(data.get("blood") or "غير محدد").strip()
+    diabetes_type = str(data.get("diabetesType") or "النوع الثاني").strip()
+    medication = str(data.get("medication") or "").strip()
+    emergency_raw = str(data.get("emergencyPhone") or "").strip()
+    emergency_phone = normalize_phone(emergency_raw, cc)[0] if emergency_raw else ""
+    qr_token = secrets.token_urlsafe(24)
 
     conn = get_db()
-    exists = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    exists = conn.execute("SELECT id FROM users WHERE username = ? OR phone = ?", (username, norm_phone)).fetchone()
     if exists:
         conn.close()
-        return jsonify({"success": False, "message": "هذا اليوزر مستخدم مسبقاً، اختار غيره"})
+        return jsonify({"success": False, "message": "هذا الرقم أو اسم المستخدم مسجل مسبقاً"}), 409
 
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO users (
-            username, password, role, name, phone, countryCode, countryName, dialect,
-            age, weight, height, blood, diabetesType, emergencyPhone, targetGlucose, correctionFactor, carbRatio
-        )
-        VALUES (?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        username, password, name, norm_phone, cc, c_info["countryName"], c_info["dialect"],
-        age, weight, height, blood, d_type, raw_phone, target_g, corr_f, carb_r,
-    ))
+            username, password, role, name, phone, countryCode, countryName, dialect, lang, qrToken,
+            age, gender, weight, height, blood, diabetesType, medication, emergencyPhone,
+            targetGlucose, correctionFactor, carbRatio
+        ) VALUES (?, ?, 'patient', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (username, password, name, norm_phone, cc, c_info["countryName"], dialect, lang, qr_token,
+          age, gender, weight, height, blood, diabetes_type, medication, emergency_phone,
+          target_g, corr_f, carb_r))
     new_id = cur.lastrowid
     conn.commit()
+    created = conn.execute("SELECT * FROM users WHERE id = ?", (new_id,)).fetchone()
     conn.close()
-
-    return jsonify({"success": True, "patient_id": new_id})
+    return jsonify({"success": True, "patient_id": new_id, "user": serialize_user(created),
+                    "temporary_password": password})
 
 
 @app.route("/api/doctor/update-patient", methods=["POST"])
@@ -1673,33 +1780,53 @@ def doctor_update_patient():
         return jsonify({"success": False, "message": "غير مصرح"}), 403
 
     data = request.get_json(silent=True) or {}
-    pid = data.get("patient_id")
+    try:
+        pid = int(data.get("patient_id") or 0)
+        age = max(0, min(120, int(data.get("age") or 40)))
+        weight = max(1, float(data.get("weight") or 70))
+        height = max(30, float(data.get("height") or 170))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "تحقق من القيم الرقمية المدخلة"}), 400
     if not pid:
-        return jsonify({"success": False, "message": "معرف المراجع مفقود"})
-
-    cc = str(data.get("countryCode") or "+964").strip()
-    c_info = detect_country_info(cc)
+        return jsonify({"success": False, "message": "معرف المراجع مفقود"}), 400
 
     conn = get_db()
+    current = conn.execute("SELECT * FROM users WHERE id = ? AND role = 'patient'", (pid,)).fetchone()
+    if not current:
+        conn.close()
+        return jsonify({"success": False, "message": "المراجع غير موجود"}), 404
+
+    current = dict(current)
+    cc = str(data.get("countryCode") or current.get("countryCode") or "+964").strip()
+    raw_phone = str(data.get("phone") or current.get("phone") or "").strip()
+    phone, cc = normalize_phone(raw_phone, cc)
+    c_info = detect_country_info(cc)
+    lang = str(data.get("lang") or current.get("lang") or c_info["lang"]).strip().lower()
+    dialect = str(data.get("dialect") or current.get("dialect") or c_info["dialect"]).strip().lower()
+    emergency_raw = str(data.get("emergencyPhone") if "emergencyPhone" in data else current.get("emergencyPhone") or "").strip()
+    emergency_phone = normalize_phone(emergency_raw, cc)[0] if emergency_raw else ""
+    name = str(data.get("name") or current.get("name") or "").strip()
+    gender = str(data.get("gender") or current.get("gender") or "غير محدد").strip()
+    blood = str(data.get("blood") or current.get("blood") or "غير محدد").strip()
+    diabetes_type = str(data.get("diabetesType") or current.get("diabetesType") or "النوع الثاني").strip()
+    medication = str(data.get("medication") if data.get("medication") is not None else current.get("medication") or "").strip()
+
+    duplicate = conn.execute("SELECT id FROM users WHERE phone = ? AND id != ?", (phone, pid)).fetchone()
+    if duplicate:
+        conn.close()
+        return jsonify({"success": False, "message": "رقم الهاتف مستخدم لحساب آخر"}), 409
+
     conn.execute("""
-        UPDATE users
-        SET name = ?, age = ?, weight = ?, height = ?, diabetesType = ?, blood = ?,
-            emergencyPhone = ?, countryCode = ?, countryName = ?, dialect = ?
+        UPDATE users SET name = ?, phone = ?, age = ?, gender = ?, blood = ?, weight = ?, height = ?,
+            diabetesType = ?, medication = ?, emergencyPhone = ?, countryCode = ?, countryName = ?,
+            lang = ?, dialect = ?
         WHERE id = ? AND role = 'patient'
-    """, (
-        str(data.get("name", "")).strip(),
-        int(data.get("age") or 40),
-        float(data.get("weight") or 70),
-        float(data.get("height") or 170),
-        str(data.get("diabetesType") or "النوع الثاني").strip(),
-        str(data.get("blood") or "O+").strip(),
-        str(data.get("emergencyPhone") or "").strip(),
-        cc, c_info["countryName"], c_info["dialect"],
-        pid,
-    ))
+    """, (name, phone, age, gender, blood, weight, height, diabetes_type, medication,
+          emergency_phone, cc, c_info["countryName"], lang, dialect, pid))
     conn.commit()
+    updated = conn.execute("SELECT * FROM users WHERE id = ?", (pid,)).fetchone()
     conn.close()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "user": serialize_user(updated)})
 
 
 @app.route("/api/doctor/delete-patient/<int:patient_id>", methods=["DELETE"])
@@ -1720,6 +1847,35 @@ def doctor_delete_patient(patient_id):
     return jsonify({"success": True})
 
 
+@app.route("/api/doctor/lab-reports", methods=["POST"])
+def doctor_add_lab_report():
+    if session.get("role") != "doctor":
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("patient_id") or 0)
+    except (TypeError, ValueError):
+        pid = 0
+    title = str(data.get("title") or "").strip()
+    summary = str(data.get("summary") or "").strip()
+    if not pid or not title or not summary:
+        return jsonify({"success": False, "message": "أدخل اسم التحليل والنتيجة"}), 400
+    conn = get_db()
+    exists = conn.execute("SELECT id FROM users WHERE id = ? AND role = 'patient'", (pid,)).fetchone()
+    if not exists:
+        conn.close()
+        return jsonify({"success": False, "message": "المراجع غير موجود"}), 404
+    cur = conn.execute("""
+        INSERT INTO lab_reports (patient_id, title, summary, abnormal, advice, date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (pid, title, summary, str(data.get("abnormal") or ""),
+          str(data.get("advice") or ""), datetime.now().strftime("%Y-%m-%d")))
+    report = conn.execute("SELECT * FROM lab_reports WHERE id = ?", (cur.lastrowid,)).fetchone()
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "report": dict(report)})
+
+
 @app.route("/api/doctor/update-notes", methods=["POST"])
 def doctor_update_notes():
     if session.get("role") != "doctor":
@@ -1737,7 +1893,7 @@ def doctor_update_notes():
     conn.execute("""
         UPDATE users
         SET doctorNotes = ?, targetGlucose = ?, correctionFactor = ?, carbRatio = ?, nextVisitDate = ?
-        WHERE id = ?
+        WHERE id = ? AND role = 'patient'
     """, (notes, target_g, corr_f, carb_r, next_visit, pid))
     conn.commit()
     conn.close()
@@ -1760,6 +1916,21 @@ def doctor_reset_password():
     conn.commit()
     conn.close()
     return jsonify({"success": True, "message": "تم تحديث الرمز السري للمراجع بنجاح"})
+
+
+@app.route("/api/doctor/card/<token>")
+def doctor_lookup_patient_card(token):
+    if session.get("role") != "doctor":
+        return jsonify({"success": False, "message": "يجب تسجيل دخول الطبيب لمسح بطاقة المراجع"}), 403
+    conn = get_db()
+    row = conn.execute("""
+        SELECT id, name, age, gender, blood, phone, countryName, diabetesType
+        FROM users WHERE qrToken = ? AND role = 'patient'
+    """, (token,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"success": False, "message": "رمز البطاقة غير معروف أو تم إلغاؤه"}), 404
+    return jsonify({"success": True, "patient": dict(row)})
 
 
 # ==============================================================================
@@ -1823,6 +1994,10 @@ def handle_chat(patient_id):
         return jsonify([]), 401
 
     conn = get_db()
+    target = conn.execute("SELECT id FROM users WHERE id = ? AND role = 'patient'", (patient_id,)).fetchone()
+    if not target or (role == "patient" and uid != patient_id) or role not in ("doctor", "patient"):
+        conn.close()
+        return jsonify({"success": False, "message": "غير مصرح"}), 403
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
         text = str(data.get("text", "")).strip()
