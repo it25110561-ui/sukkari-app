@@ -181,7 +181,7 @@
     ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.22); border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.38); }
 
-    /* ==================== الشريط العائم السفلي الأصلي ==================== */
+    /* ==================== الشريط العائم السفلي ==================== */
     .macos-dock-wrap {
       position: fixed;
       bottom: 16px;
@@ -201,7 +201,7 @@
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
       border: 1.5px solid rgba(255, 255, 255, 0.13);
-      border-radius: 28px; /* تم التعديل لتكون مستطيلة بحواف ناعمة لتناسب تعدد الأسطر بدون تشوه */
+      border-radius: 28px;
       box-shadow:
         0 18px 42px rgba(0, 0, 0, 0.65),
         inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -248,7 +248,6 @@
       transform: translateY(-2px) scale(0.96);
     }
 
-    /* دائرة الإشعار الحمراء */
     .dock-badge {
       position: absolute;
       top: -6px;
@@ -268,7 +267,6 @@
       z-index: 3;
     }
 
-    /* النقطة البيضاء أسفل الأيقونة النشطة */
     .macos-dock-item::after {
       content: "";
       position: absolute;
@@ -286,7 +284,6 @@
       transform: translateX(-50%) scale(1);
     }
 
-    /* تلميح الاسم الزجاجي فوق الأيقونة */
     .macos-dock-tooltip {
       position: absolute;
       top: -38px;
@@ -323,7 +320,7 @@
       .macos-dock { gap: 8px; padding: 10px 12px; border-radius: 22px; }
       .macos-dock-item { width: 44px; height: 44px; border-radius: 12px; } 
       .macos-dock-item svg { width: 22px; height: 22px; }
-      .macos-dock-divider { display: none; } /* إخفاء الفاصل لتجنب تشوه التصميم عند تعدد الأسطر بالشاشات الصغيرة */
+      .macos-dock-divider { display: none; }
     }
   </style>
 </head>
@@ -366,7 +363,7 @@
   <!-- ==================== التطبيق الرئيسي ==================== -->
   <div id="app-shell" class="hidden min-h-screen flex flex-col">
 
-    <!-- الشريط العلوي الزجاجي (تم ضبطه لمنع التداخل في الهاتف) -->
+    <!-- الشريط العلوي الزجاجي -->
     <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-3 sm:px-4 py-2.5 flex items-center justify-between w-full overflow-hidden">
       <!-- القسم الأيمن من الهيدر -->
       <div class="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
@@ -403,7 +400,7 @@
           <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white text-sm px-2">✕</button>
         </div>
 
-        <!-- الشريط الجانبي للمراجع (تم إزالة الأيقونات المنقولة للعائم) -->
+        <!-- الشريط الجانبي للمراجع -->
         <nav id="patient-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
           <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الأوضاع الذكية السريعة</div>
           <button onclick="togglePatientFlag('ramadanMode')" class="sidebar-btn justify-between">
@@ -509,7 +506,6 @@
 
         <!-- الشريط الجانبي للطبيب -->
         <nav id="doctor-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
-          <!-- تمت إزالة الأزرار التي نقلت للشريط العائم -->
           <button onclick="exportDoctorSelectedExcel()" class="sidebar-btn mt-4">
             <span class="sidebar-sq-icon sq-green">
               <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
@@ -982,58 +978,49 @@
       </main>
     </div>
 
-    <!-- ==================== الشريط العائم السفلي للمراجع (مُحدّث بكافة الأيقونات الأساسية) ==================== -->
+    <!-- ==================== الشريط العائم السفلي للمراجع ==================== -->
     <div id="patient-floating-dock" class="hidden macos-dock-wrap">
       <div class="macos-dock" data-macos-dock>
-        <!-- 1. قياساتي -->
         <button onclick="setDockActive('pat-home'); scrollToPatientSection('pat-overview')" data-dock-id="pat-home" class="macos-dock-item sq-green open" title="قياساتي">
           <span class="macos-dock-tooltip">قياساتي</span>
           <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
         </button>
 
-        <!-- 2. صوّر وجبتك -->
         <button onclick="setDockActive('pat-meal'); openToolModal('modal-meal-ai')" data-dock-id="pat-meal" class="macos-dock-item sq-orange" title="صوّر وجبتك">
           <span class="macos-dock-tooltip">صوّر وجبتك</span>
           <svg viewBox="0 0 24 24"><path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </button>
 
-        <!-- 3. المساعد الذكي -->
         <button onclick="setDockActive('pat-ai'); openToolModal('modal-ai-chat')" data-dock-id="pat-ai" class="macos-dock-item sq-purple" title="المساعد الذكي">
           <span class="macos-dock-tooltip">المساعد الذكي</span>
           <svg viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A7.002 7.002 0 0 1 19 11v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a7.002 7.002 0 0 1 6-6.93V3a1 1 0 0 1 1-1zm-2.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9 15v1.5h6V15H9zm-6-3h1v4H3a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1zm18 0a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1v-4h1z"/></svg>
         </button>
 
-        <!-- 4. اقرأ تحليلك -->
         <button onclick="setDockActive('pat-lab'); openToolModal('modal-lab-ai')" data-dock-id="pat-lab" class="macos-dock-item sq-indigo" title="اقرأ تحليلك">
           <span class="macos-dock-tooltip">اقرأ تحليلك</span>
           <svg viewBox="0 0 24 24"><path d="M6 2v2h1v4.5L3.2 16.2C2.5 17.6 3.5 19 5 19h14c1.5 0 2.5-1.4 1.8-2.8L17 8.5V4h1V2H6zm3 2h6v4.9l2.4 4.8H6.6L9 8.9V4z"/></svg>
         </button>
 
-        <!-- 5. قارئ الملصقات -->
         <button onclick="setDockActive('pat-label'); openToolModal('modal-label-ai')" data-dock-id="pat-label" class="macos-dock-item sq-sky" title="قارئ الملصقات">
           <span class="macos-dock-tooltip">قارئ الملصقات</span>
           <svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
         </button>
 
-        <!-- 6. تعرّف على الدواء -->
         <button onclick="setDockActive('pat-med'); openToolModal('modal-med-ai')" data-dock-id="pat-med" class="macos-dock-item sq-teal" title="تعرّف على الدواء">
           <span class="macos-dock-tooltip">تعرّف على الدواء</span>
           <svg viewBox="0 0 24 24"><path d="M4.22 11.29l7.07-7.07c1.95-1.95 5.12-1.95 7.07 0 1.95 1.95 1.95 5.12 0 7.07l-7.07 7.07c-1.95 1.95-5.12 1.95-7.07 0-1.95-1.95-1.95-5.12 0-7.07zm5.66 5.66l2.83-2.83-4.24-4.24-2.83 2.83c-1.17 1.17-1.17 3.07 0 4.24 1.17 1.17 3.07 1.17 4.24 0z"/></svg>
         </button>
 
-        <!-- 7. الأمان قبل النوم -->
         <button onclick="setDockActive('pat-bedtime'); openToolModal('modal-bedtime')" data-dock-id="pat-bedtime" class="macos-dock-item sq-indigo" title="الأمان قبل النوم">
           <span class="macos-dock-tooltip">الأمان قبل النوم</span>
           <svg viewBox="0 0 24 24"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
         </button>
 
-        <!-- 8. فحص قبل الرياضة -->
         <button onclick="setDockActive('pat-workout'); openToolModal('modal-workout')" data-dock-id="pat-workout" class="macos-dock-item sq-green" title="قبل الرياضة">
           <span class="macos-dock-tooltip">قبل الرياضة</span>
           <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
         </button>
 
-        <!-- 9. الدكتور -->
         <button onclick="setDockActive('pat-chat'); openToolModal('modal-doc-chat')" data-dock-id="pat-chat" class="macos-dock-item sq-blue" title="الدكتور">
           <span class="dock-badge" id="pat-doc-badge">1</span>
           <span class="macos-dock-tooltip">الدكتور</span>
@@ -1042,7 +1029,6 @@
 
         <div class="macos-dock-divider"></div>
 
-        <!-- 10. طوارئ 15-15 -->
         <button onclick="setDockActive('pat-hypo'); openToolModal('modal-hypo15')" data-dock-id="pat-hypo" class="macos-dock-item sq-red" title="طوارئ 15-15">
           <span class="macos-dock-tooltip">طوارئ 15-15</span>
           <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H15V3H9v2H6.5c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM13 10h-2v2H9v-2H7V8h2V6h2v2h2v2z"/></svg>
@@ -1090,8 +1076,6 @@
   </div>
 
   <!-- ==================== النوافذ المنبثقة للذكاء الاصطناعي وتحليل الصور ==================== -->
-
-  <!-- المساعد الطبي الذكي -->
   <div id="modal-ai-chat" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-xl p-5 space-y-3 border-white/15">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
@@ -1135,7 +1119,6 @@
     </div>
   </div>
 
-  <!-- تحليل الوجبة بالكاميرا -->
   <div id="modal-meal-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
@@ -1152,7 +1135,6 @@
     </div>
   </div>
 
-  <!-- قارئ ملصقات المعلّبات -->
   <div id="modal-label-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
@@ -1168,7 +1150,6 @@
     </div>
   </div>
 
-  <!-- قراءة التحاليل المختبرية بالكاميرا -->
   <div id="modal-lab-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
@@ -1184,7 +1165,6 @@
     </div>
   </div>
 
-  <!-- التعرف على علبة الدواء والأنسولين بالصورة -->
   <div id="modal-med-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
@@ -1201,7 +1181,6 @@
   </div>
 
   <!-- ==================== بقية النوافذ التفاعلية للمراجع والطبيب ==================== -->
-
   <div id="modal-hypo15" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
@@ -1247,36 +1226,6 @@
       <input id="work-glucose" type="number" placeholder="قياس سكرك قبل التمرين" class="input-dark w-full" />
       <button onclick="checkWorkoutSafety()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs">تقييم جاهزية التمرين</button>
       <div id="work-result" class="text-xs p-3 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 hidden"></div>
-    </div>
-  </div>
-
-  <div id="modal-lockscreen" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4 text-center border-white/15">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">بطاقة طوارئ لشاشة قفل الموبايل</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <canvas id="lockscreen-canvas" width="360" height="560" class="mx-auto rounded-2xl border border-white/15 max-h-80"></canvas>
-      <button onclick="downloadLockScreenCard()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs">
-        تحميل الصورة لتعيينها كخلفية قفل
-      </button>
-    </div>
-  </div>
-
-  <div id="modal-cards" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto border-white/15">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">بطاقات الطوارئ والتوعية الجاهزة</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-400/25 space-y-1.5 text-xs">
-        <div class="font-black text-rose-400">بطاقة المدرسة ومكان العمل (لزملاء الدوام والإدارة):</div>
-        <p class="text-slate-200">هذا الشخص مصاب بالسكري. في حال ظهور رجفة، تعرّق بارد، أو تشوش: أعطه فوراً عصيراً محلى أو تمراً. <strong>تحذير: ممنوع إعطاء الأنسولين إطلاقاً في حالة الإغماء أو الهبوط!</strong></p>
-      </div>
-      <div class="p-4 rounded-xl bg-sky-500/10 border border-sky-400/25 space-y-1.5 text-xs">
-        <div class="font-black text-sky-400">بطاقة التنبيه لطبيب الأسنان والعمليات الصغرى:</div>
-        <p class="text-slate-200">يرجى فحص السكر قبل التخدير، تحديد موعد الجلسة صباحاً بعد الإفطار والعلاج لتجنب هبوط السكر، والاهتمام بتعقيم الجروح لسرعة الالتئام.</p>
-      </div>
     </div>
   </div>
 
@@ -1329,21 +1278,17 @@
   <div id="modal-herbs" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">دليل الأعشاب العراقية وتداخلها مع العلاج</h3>
+        <h3 class="text-base font-black text-emerald-400">دليل الأعشاب وتداخلها مع العلاج</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-2">
         <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-amber-500">
           <div class="font-bold text-amber-300">الحلبة:</div>
-          <p class="text-slate-300">تبطئ امتصاص السكر، لكن الإكثار منها مع الأنسولين أو الكليبنكلاميد قد يسبب <strong>هبوطاً مفاجئاً</strong>.</p>
+          <p class="text-slate-300">تبطئ امتصاص السكر، لكن الإكثار منها مع الأنسولين قد يسبب هبوطاً.</p>
         </div>
         <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-emerald-500">
           <div class="font-bold text-emerald-300">الدارسين (القرفة):</div>
-          <p class="text-slate-300">يحسّن حساسية الأنسولين بكميات معتدلة (رشة على الشاي أو اللبن)، تجنب الجرعات المركزة بدون استشارة الطبيب.</p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-rose-500">
-          <div class="font-bold text-rose-300">ورق الزيتون والمرمية:</div>
-          <p class="text-slate-300">قد تخفض السكر والضغط معاً؛ راقب قياسك جيداً عند شربها مع أدويتك.</p>
+          <p class="text-slate-300">يحسّن حساسية الأنسولين بكميات معتدلة.</p>
         </div>
       </div>
     </div>
@@ -1361,7 +1306,7 @@
           <input id="inv-strips-input" type="number" class="input-dark w-full" />
         </div>
         <div>
-          <label class="block text-slate-400 mb-1">عدد أقلام / عبوات الأنسولين المتبقية:</label>
+          <label class="block text-slate-400 mb-1">عدد أقلام الأنسولين المتبقية:</label>
           <input id="inv-pens-input" type="number" class="input-dark w-full" />
         </div>
         <button onclick="saveInventory()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black">تحديث المخزون</button>
@@ -1372,7 +1317,7 @@
   <div id="modal-periodic" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 space-y-4 text-xs max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">الفحوصات الدورية وخطة التدرج بالمشي</h3>
+        <h3 class="text-base font-black text-emerald-400">الفحوصات الدورية وخطة المشي</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-2">
@@ -1381,7 +1326,7 @@
           <input id="chk-hba1c" type="date" class="input-dark text-xs" />
         </div>
         <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center">
-          <span>فحص وظائف الكلى والزلال — كل 6 أشهر</span>
+          <span>فحص الكلى والزلال — كل 6 أشهر</span>
           <input id="chk-kidney" type="date" class="input-dark text-xs" />
         </div>
         <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center">
@@ -1390,22 +1335,18 @@
         </div>
         <button onclick="savePeriodicChecks()" class="w-full py-2 rounded-xl bg-emerald-600 text-white font-bold">حفظ تواريخ الفحوصات</button>
       </div>
-      <div class="p-3.5 rounded-xl bg-sky-500/10 border border-sky-400/25 space-y-2">
-        <div class="font-bold text-sky-300">خطة التدرج بالمشي الأسبوعي:</div>
-        <p class="text-slate-300">الأسبوع 1: 10 دقائق بعد الغداء • الأسبوع 2: 15 دقيقة • الأسبوع 3: 25 دقيقة • الأسبوع 4: 30 دقيقة يومياً.</p>
-      </div>
     </div>
   </div>
 
   <div id="modal-calibration" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">مقياس دقة الجهاز المنزلي مقابل المختبر</h3>
+        <h3 class="text-base font-black text-sky-400">مقياس دقة الجهاز المنزلي</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="cal-meter" type="number" placeholder="قراءة جهازك المنزلي" class="input-dark w-full" />
       <input id="cal-lab" type="number" placeholder="قراءة المختبر بنفس الوقت" class="input-dark w-full" />
-      <button onclick="submitCalibration()" class="w-full py-2.5 rounded-xl bg-sky-600 text-white font-bold">احسب نسبة الدقة</button>
+      <button onclick="submitCalibration()" class="w-full py-2.5 rounded-xl bg-sky-600 text-white font-bold">احسب النسبة</button>
       <div id="cal-result" class="p-3 rounded-xl bg-slate-950/60 border border-white/10 text-emerald-300 font-bold hidden"></div>
     </div>
   </div>
@@ -1471,10 +1412,7 @@
           <option value="+964">+964 العراق</option>
           <option value="+966">+966 السعودية</option>
           <option value="+971">+971 الإمارات</option>
-          <option value="+965">+965 الكويت</option>
           <option value="+20">+20 مصر</option>
-          <option value="+962">+962 الأردن</option>
-          <option value="+1">+1 English</option>
         </select>
         <input id="newp-phone" type="tel" placeholder="رقم الموبايل" class="input-dark col-span-2" dir="ltr" />
       </div>
@@ -1578,10 +1516,7 @@
       { name: "كبة حلب / كبة برغل مقلية", tag: "باعتدال", level: "amber", tip: "تناول حبة أو حبتين مشوية أو مسلوقة بدل المقلية مع سلطة." },
       { name: "دولمة عراقية", tag: "باعتدال", level: "amber", tip: "السلق والباذنجان ممتازان، قلل من التمن داخل الحشوة." },
       { name: "تشريب لحم أو دجاج", tag: "يرفع السكر بسرعة", level: "rose", tip: "الخبز المنقوع يمتص بسرعة؛ تناول اللحم والمرق مع خبز شعير قليل." },
-      { name: "تمر (خستاوي / زهدي)", tag: "باعتدال", level: "amber", tip: "حبتان إلى 3 حبات كحد أقصى ويفضل مع لبن أو جوز لإبطاء الامتصاص." },
-      { name: "كاهي وكيمر", tag: "يرفع السكر والدسم", level: "rose", tip: "يرفع السكر بقوة ولفترة طويلة؛ تجنبه قدر الإمكان." },
-      { name: "سمك مسكوف مع زلاطة", tag: "آمن وممتاز", level: "emerald", tip: "وجبة بروتينية ممتازة لا ترفع السكر إذا قُلّل الخبز معها." },
-      { name: "شنينة / لبن أربيل بارد", tag: "آمن ومفيد", level: "emerald", tip: "بديل رائع للمشروبات الغازية والعصائر الصناعية." }
+      { name: "تمر (خستاوي / زهدي)", tag: "باعتدال", level: "amber", tip: "حبتان إلى 3 حبات كحد أقصى ويفضل مع لبن أو جوز لإبطاء الامتصاص." }
     ];
 
     setInterval(() => {
@@ -1620,75 +1555,15 @@
       });
     });
 
-    // ================= المصادقة والتسجيل =================
     function switchAuthTab(tab) {
       const isLogin = tab === 'login';
       document.getElementById('login-form').classList.toggle('hidden', !isLogin);
       const rf = document.getElementById('register-form'); if(rf) rf.classList.toggle('hidden', isLogin);
-      const tl = document.getElementById('tab-login-btn'); if(tl) tl.className = isLogin
-        ? 'py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition'
-        : 'py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition';
-      const tr = document.getElementById('tab-register-btn'); if(tr) tr.className = !isLogin
-        ? 'py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition'
-        : 'py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition';
     }
 
     function quickFill(u, p) {
       document.getElementById('login-username').value = u;
       document.getElementById('login-password').value = p;
-    }
-
-    function updateCountryPreview() {
-      const sel = document.getElementById('reg-country');
-      const opt = sel.options[sel.selectedIndex];
-      document.getElementById('reg-dialect-preview').textContent = opt.getAttribute('data-label') || '';
-    }
-
-    async function sendOtpCode() {
-      const countryCode = document.getElementById('reg-country').value;
-      const phone = document.getElementById('reg-phone').value.trim();
-      if (!phone) return alert('أدخل رقم الموبايل أولاً');
-
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ countryCode, phone })
-      });
-      const data = await res.json();
-      if (!data.success) return alert(data.message);
-
-      document.getElementById('otp-box').classList.remove('hidden');
-      if (data.demo_otp) {
-        document.getElementById('demo-otp-hint').textContent = `رمز التحقق: ${data.demo_otp}`;
-        document.getElementById('reg-otp').value = data.demo_otp;
-      }
-      alert(data.message);
-    }
-
-    async function handleVerifyRegister(e) {
-      e.preventDefault();
-      const payload = {
-        countryCode: document.getElementById('reg-country').value,
-        phone: document.getElementById('reg-phone').value.trim(),
-        otp: document.getElementById('reg-otp').value.trim(),
-        name: document.getElementById('reg-name').value.trim(),
-        password: document.getElementById('reg-password').value.trim(),
-        age: document.getElementById('reg-age').value,
-        weight: document.getElementById('reg-weight').value,
-        height: document.getElementById('reg-height').value,
-        diabetesType: document.getElementById('reg-dtype').value,
-        blood: document.getElementById('reg-blood').value,
-        emergencyPhone: document.getElementById('reg-emerg').value.trim()
-      };
-      const res = await fetch('/api/auth/verify-register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!data.success) return alert(data.message);
-      currentUser = data.user;
-      initAppShell();
     }
 
     async function handleLogin(e) {
@@ -1711,7 +1586,6 @@
       location.reload();
     }
 
-    // ================= تهيئة الواجهة والشريط الجانبي والشريط العائم =================
     function toggleSidebar() {
       const sb = document.getElementById('unified-sidebar');
       const bd = document.getElementById('sidebar-backdrop');
@@ -1746,7 +1620,6 @@
         document.getElementById('sidebar-backdrop').classList.add('hidden');
       }
       if (id === 'modal-ai-chat') loadAiChatHistory();
-      if (id === 'modal-lockscreen') drawLockScreenCard();
       if (id === 'modal-iraqi-food') filterIraqiFoods();
       if (id === 'modal-doc-chat') loadPatientChat();
       if (id === 'modal-doc-chat-panel') loadDoctorChat();
@@ -1761,16 +1634,27 @@
       }
     }
 
+    /* === هنا تم إصلاح الخلل البرمجي الذي كان يوقف عمل الكود === */
     async function initAppShell() {
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
-      document.getElementById('header-user-name').textContent = currentUser.name;
-      const dbadge = document.getElementById('header-dialect-badge'); if (dbadge) dbadge.textContent = `${currentUser.countryName || 'العراق'} • ${currentUser.dialectLabel || 'اللهجة العراقية'}`;
+      
+      const userNameEl = document.getElementById('header-user-name');
+      if (userNameEl) userNameEl.textContent = currentUser.name;
+      
+      const dbadge = document.getElementById('header-dialect-badge'); 
+      if (dbadge) dbadge.textContent = `${currentUser.countryName || 'العراق'} • ${currentUser.dialectLabel || 'اللهجة العراقية'}`;
+
+      // حماية المتغيرات بـ (If conditions) للتأكد من وجودها حتى لا يتوقف الكود
+      const hst = document.getElementById('header-section-title');
+      const hrb = document.getElementById('header-role-badge');
+      const srt = document.getElementById('sidebar-role-title');
 
       if (currentUser.role === 'doctor') {
-        document.getElementById('header-section-title').textContent = 'ملفات المراجعين';
-        document.getElementById('header-role-badge').textContent = 'دكتور مشرف';
-        document.getElementById('sidebar-role-title').textContent = 'الشريط الجانبي للطبيب';
+        if(hst) hst.textContent = 'ملفات المراجعين';
+        if(hrb) hrb.textContent = 'دكتور مشرف';
+        if(srt) srt.textContent = 'الشريط الجانبي للطبيب';
+        
         document.getElementById('doctor-sidebar-nav').classList.remove('hidden');
         document.getElementById('patient-sidebar-nav').classList.add('hidden');
         document.getElementById('doctor-view').classList.remove('hidden');
@@ -1780,9 +1664,10 @@
         setDockActive('doc-home');
         await loadDoctorDashboard();
       } else {
-        document.getElementById('header-section-title').textContent = 'قياساتي';
-        document.getElementById('header-role-badge').textContent = 'مراجع';
-        document.getElementById('sidebar-role-title').textContent = 'الشريط الجانبي للمراجع';
+        if(hst) hst.textContent = 'قياساتي';
+        if(hrb) hrb.textContent = 'مراجع';
+        if(srt) srt.textContent = 'الشريط الجانبي للمراجع';
+        
         document.getElementById('patient-sidebar-nav').classList.remove('hidden');
         document.getElementById('doctor-sidebar-nav').classList.add('hidden');
         document.getElementById('patient-view').classList.remove('hidden');
@@ -1794,7 +1679,6 @@
       }
     }
 
-    // ================= الذكاء الاصطناعي (المحادثة + ضغط وتحليل الصور) =================
     function formatAiText(str) {
       const escaped = String(str || '')
         .replace(/&/g, '&amp;')
@@ -2115,7 +1999,6 @@
       }
     }
 
-    // ================= منطق واجهة المراجع =================
     function scrollToPatientSection(id) {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -2152,77 +2035,75 @@
       document.getElementById('sb-ramadan-state').textContent = u.ramadanMode ? 'مفعّل' : 'مغلق';
       document.getElementById('sb-sick-state').textContent = u.sickDayMode ? 'مفعّل' : 'مغلق';
       document.getElementById('sb-senior-state').textContent = u.seniorMode ? 'مفعّل' : 'مغلق';
-      document.getElementById('ramadan-indicator-badge').classList.toggle('hidden', !u.ramadanMode);
+      const indicatorBadge = document.getElementById('ramadan-indicator-badge');
+      if(indicatorBadge) indicatorBadge.classList.toggle('hidden', !u.ramadanMode);
 
       const timingSel = document.getElementById('log-timing');
-      if (u.ramadanMode) {
-        timingSel.innerHTML = `
-          <option value="قبل السحور">قبل السحور</option>
-          <option value="الظهر (صائم)">الظهر (صائم)</option>
-          <option value="قبل الفطور">قبل الفطور</option>
-          <option value="بعد الفطور بساعتين">بعد الفطور بساعتين</option>
-        `;
-      } else {
-        timingSel.innerHTML = `
-          <option value="على الريك">على الريك (صائم)</option>
-          <option value="ورا الأكل">ورا الأكل بساعتين</option>
-          <option value="عشوائي">عشوائي / قبل النوم</option>
-        `;
+      if(timingSel) {
+        if (u.ramadanMode) {
+          timingSel.innerHTML = `
+            <option value="قبل السحور">قبل السحور</option>
+            <option value="الظهر (صائم)">الظهر (صائم)</option>
+            <option value="قبل الفطور">قبل الفطور</option>
+            <option value="بعد الفطور بساعتين">بعد الفطور بساعتين</option>
+          `;
+        } else {
+          timingSel.innerHTML = `
+            <option value="على الريك">على الريك (صائم)</option>
+            <option value="ورا الأكل">ورا الأكل بساعتين</option>
+            <option value="عشوائي">عشوائي / قبل النوم</option>
+          `;
+        }
       }
 
       const alertsBox = document.getElementById('patient-alerts-area');
-      const alerts = [];
-      if (u.sickDayMode) alerts.push('<strong>بروتوكول أيام المرض مفعّل:</strong> اشرب كوب ماء كل ساعة وقس سكرك كل 3 ساعات.');
-      if (a.dawnPhenomenon) alerts.push(`<strong>كاشف ظاهرة الفجر:</strong> ${a.dawnMsg}`);
-      if (a.basalTitrationAlert) alerts.push(`<strong>مساعد ضبط الجرعة الصباحية:</strong> قياسك الصائم أعلى من الهدف (${u.targetGlucose}) لـ 3 أيام متتالية، استشر طبيبك لتعديل الجرعة.`);
-      if (a.hasDangerousSwing) alerts.push(`<strong>تنبيه تذبذب سكري:</strong> الفرق بين أعلى وأقل قراءة وصل إلى ${a.swingDiff} درجة.`);
-      if ((u.stripsCount || 0) <= 10) alerts.push(`<strong>تنبيه المخزون:</strong> تبقّى لديك ${u.stripsCount} أشرطة فحص فقط.`);
+      if (alertsBox) {
+        const alerts = [];
+        if (u.sickDayMode) alerts.push('<strong>بروتوكول أيام المرض مفعّل:</strong> اشرب كوب ماء كل ساعة وقس سكرك كل 3 ساعات.');
+        if (a.dawnPhenomenon) alerts.push(`<strong>كاشف ظاهرة الفجر:</strong> ${a.dawnMsg}`);
+        if (a.basalTitrationAlert) alerts.push(`<strong>مساعد ضبط الجرعة الصباحية:</strong> قياسك الصائم أعلى من الهدف (${u.targetGlucose}) لـ 3 أيام متتالية، استشر طبيبك لتعديل الجرعة.`);
+        if (a.hasDangerousSwing) alerts.push(`<strong>تنبيه تذبذب سكري:</strong> الفرق بين أعلى وأقل قراءة وصل إلى ${a.swingDiff} درجة.`);
+        if ((u.stripsCount || 0) <= 10) alerts.push(`<strong>تنبيه المخزون:</strong> تبقّى لديك ${u.stripsCount} أشرطة فحص فقط.`);
 
-      alertsBox.innerHTML = alerts.map(msg => `
-        <div class="p-3 rounded-xl bg-amber-500/10 backdrop-blur-md border border-amber-400/25 text-xs text-amber-200">${msg}</div>
-      `).join('');
+        alertsBox.innerHTML = alerts.map(msg => `
+          <div class="p-3 rounded-xl bg-amber-500/10 backdrop-blur-md border border-amber-400/25 text-xs text-amber-200">${msg}</div>
+        `).join('');
+      }
 
-      document.getElementById('tir-in-pct').textContent = `${a.tir.inRangePct}%`;
-      document.getElementById('tir-bar-low').style.width = `${a.tir.lowPct}%`;
-      document.getElementById('tir-bar-in').style.width = `${a.tir.inRangePct}%`;
-      document.getElementById('tir-bar-high').style.width = `${a.tir.highPct}%`;
-      document.getElementById('tir-low-lbl').textContent = `هبوط: ${a.tir.lowPct}%`;
-      document.getElementById('tir-high-lbl').textContent = `ارتفاع: ${a.tir.highPct}%`;
+      const tirPct = document.getElementById('tir-in-pct'); if(tirPct) tirPct.textContent = `${a.tir.inRangePct}%`;
+      const tirL = document.getElementById('tir-bar-low'); if(tirL) tirL.style.width = `${a.tir.lowPct}%`;
+      const tirI = document.getElementById('tir-bar-in'); if(tirI) tirI.style.width = `${a.tir.inRangePct}%`;
+      const tirH = document.getElementById('tir-bar-high'); if(tirH) tirH.style.width = `${a.tir.highPct}%`;
+      const tirLL = document.getElementById('tir-low-lbl'); if(tirLL) tirLL.textContent = `هبوط: ${a.tir.lowPct}%`;
+      const tirHL = document.getElementById('tir-high-lbl'); if(tirHL) tirHL.textContent = `ارتفاع: ${a.tir.highPct}%`;
 
-      document.getElementById('pat-streak-val').textContent = `${a.streak} يوم`;
-      document.getElementById('pat-badges-list').innerHTML = a.badges.length
-        ? a.badges.map(b => `<span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25 text-amber-300 text-[11px] font-bold">${b}</span>`).join('')
-        : '<span class="text-xs text-slate-500">استمر بالقياس لربح الأوسمة</span>';
+      const pStreak = document.getElementById('pat-streak-val'); if(pStreak) pStreak.textContent = `${a.streak} يوم`;
+      const pBadges = document.getElementById('pat-badges-list'); 
+      if(pBadges) {
+        pBadges.innerHTML = a.badges.length
+          ? a.badges.map(b => `<span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25 text-amber-300 text-[11px] font-bold">${b}</span>`).join('')
+          : '<span class="text-xs text-slate-500">استمر بالقياس لربح الأوسمة</span>';
+      }
 
-      document.getElementById('pat-next-visit').textContent = u.nextVisitDate || 'غير محدد';
-      document.getElementById('pat-strips-badge').textContent = u.stripsCount ?? 50;
-      document.getElementById('pat-pens-badge').textContent = u.insulinPensCount ?? 5;
+      const pNext = document.getElementById('pat-next-visit'); if(pNext) pNext.textContent = u.nextVisitDate || 'غير محدد';
+      const pStrips = document.getElementById('pat-strips-badge'); if(pStrips) pStrips.textContent = u.stripsCount ?? 50;
+      const pPens = document.getElementById('pat-pens-badge'); if(pPens) pPens.textContent = u.insulinPensCount ?? 5;
       
-      const lastInjSiteEl = document.getElementById('last-inj-site-lbl');
-      if(lastInjSiteEl) lastInjSiteEl.textContent = u.lastInjectionSite || 'غير محدد';
-      
-      const invStripsInput = document.getElementById('inv-strips-input');
-      if(invStripsInput) invStripsInput.value = u.stripsCount ?? 50;
-      const invPensInput = document.getElementById('inv-pens-input');
-      if(invPensInput) invPensInput.value = u.insulinPensCount ?? 5;
+      const invStripsInput = document.getElementById('inv-strips-input'); if(invStripsInput) invStripsInput.value = u.stripsCount ?? 50;
+      const invPensInput = document.getElementById('inv-pens-input'); if(invPensInput) invPensInput.value = u.insulinPensCount ?? 5;
 
-      document.getElementById('safe-foods-list').textContent = a.safeFoods.length ? a.safeFoods.join('، ') : 'لا توجد بيانات بعد';
-      document.getElementById('spike-foods-list').textContent = a.spikeFoods.length ? a.spikeFoods.join('، ') : 'لا توجد طفرات مسجلة';
+      const sfList = document.getElementById('safe-foods-list'); if(sfList) sfList.textContent = a.safeFoods.length ? a.safeFoods.join('، ') : 'لا توجد بيانات كافية بعد';
+      const spList = document.getElementById('spike-foods-list'); if(spList) spList.textContent = a.spikeFoods.length ? a.spikeFoods.join('، ') : 'لا توجد طفرات مسجلة';
 
-      document.getElementById('pat-doctor-notes').textContent = u.doctorNotes || 'لا توجد ملاحظات مسجلة حالياً من الطبيب.';
-      document.getElementById('corr-params-lbl').textContent = `المستهدف: ${u.targetGlucose || 120} | المعامل: ${u.correctionFactor || 40}`;
-      document.getElementById('adherence-badge').textContent = `الالتزام: ${a.adherencePct}%`;
+      const pNotes = document.getElementById('pat-doctor-notes'); if(pNotes) pNotes.textContent = u.doctorNotes || 'لا توجد ملاحظات مسجلة حالياً من الطبيب.';
+      const cLbl = document.getElementById('corr-params-lbl'); if(cLbl) cLbl.textContent = `المستهدف: ${u.targetGlucose || 120} | المعامل: ${u.correctionFactor || 40}`;
+      const adhBdge = document.getElementById('adherence-badge'); if(adhBdge) adhBdge.textContent = `الالتزام: ${a.adherencePct}%`;
 
-      const profDialect = document.getElementById('prof-dialect');
-      if(profDialect) profDialect.value = u.dialect || 'iraqi';
-      const profAge = document.getElementById('prof-age');
-      if(profAge) profAge.value = u.age || 40;
-      const profWeight = document.getElementById('prof-weight');
-      if(profWeight) profWeight.value = u.weight || 75;
-      const profHeight = document.getElementById('prof-height');
-      if(profHeight) profHeight.value = u.height || 170;
-      const profEmerg = document.getElementById('prof-emerg');
-      if(profEmerg) profEmerg.value = u.emergencyPhone || '';
+      const profDialect = document.getElementById('prof-dialect'); if(profDialect) profDialect.value = u.dialect || 'iraqi';
+      const profAge = document.getElementById('prof-age'); if(profAge) profAge.value = u.age || 40;
+      const profWeight = document.getElementById('prof-weight'); if(profWeight) profWeight.value = u.weight || 75;
+      const profHeight = document.getElementById('prof-height'); if(profHeight) profHeight.value = u.height || 170;
+      const profEmerg = document.getElementById('prof-emerg'); if(profEmerg) profEmerg.value = u.emergencyPhone || '';
 
       renderPatientLogsAndChart(patientLogs);
     }
@@ -2340,11 +2221,11 @@
       const target = parseFloat(currentUser.targetGlucose || 120);
       const factor = parseFloat(currentUser.correctionFactor || 40);
       if (!cur || cur <= target) {
-        document.getElementById('corr-result-box').textContent = 'قراءتك ضمن الهدف أو أقل، لا تحتاج جرعة تصحيحية.';
+        document.getElementById('corr-result-box').textContent = 'قراءتك ضمن الهدف، لا تحتاج جرعة تصحيحية.';
         return;
       }
       const units = ((cur - target) / factor).toFixed(1);
-      document.getElementById('corr-result-box').textContent = `الجرعة التصحيحية التقديرية: ${units} وحدة أنسولين سريع (حسب خطة طبيبك).`;
+      document.getElementById('corr-result-box').textContent = `الجرعة التقديرية: ${units} وحدة سريع.`;
     }
 
     function startPostMealTimer(mins) {
@@ -2360,7 +2241,7 @@
       const res = await fetch('/api/patient/foot-check', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        document.getElementById('foot-check-status').textContent = `تم الفحص الأسبوعي بتاريخ ${data.lastFootCheck} ✓`;
+        document.getElementById('foot-check-status').textContent = `تم الفحص بتاريخ ${data.lastFootCheck} ✓`;
       }
     }
 
@@ -2391,7 +2272,7 @@
         document.getElementById('hypo15-timer-lbl').textContent = `${m}:${s}`;
         if (hypo15Seconds <= 0) {
           clearInterval(hypo15Interval);
-          alert('انتهت الـ 15 دقيقة! أعد فحص السكر الآن للتأكد من ارتفاعه فوق 70.');
+          alert('انتهت الـ 15 دقيقة! أعد فحص السكر الآن.');
         }
       }, 1000);
     }
@@ -2407,7 +2288,7 @@
       const box = document.getElementById('bed-result');
       box.classList.remove('hidden');
       if (g < 100 || (g < 120 && ex)) {
-        box.textContent = 'تنبيه: سكرك قريب من الهبوط ليلاً! تناول وجبة خفيفة قبل النوم (كلاص لبن أو قطعة خبز شعير مع جبن).';
+        box.textContent = 'تنبيه: سكرك قريب من الهبوط ليلاً! تناول وجبة خفيفة قبل النوم.';
       } else {
         box.textContent = 'قراءتك آمنة للنوم. تصبح على خير!';
       }
@@ -2417,43 +2298,9 @@
       const g = parseFloat(document.getElementById('work-glucose').value);
       const box = document.getElementById('work-result');
       box.classList.remove('hidden');
-      if (g < 100) box.textContent = 'تنبيه: سكرك أقل من 100؛ تناول وجبة خفيفة (ثمرة فاكهة أو 3 تمرات) قبل المشي لتجنب الهبوط.';
-      else if (g > 250) box.textContent = 'تحذير: سكرك مرتفع فوق 250؛ أجّل الرياضة واشرب ماء وافحص الكيتونات أولاً.';
-      else box.textContent = 'قراءتك ممتازة ومناسبة للمشي والرياضة بأمان!';
-    }
-
-    function drawLockScreenCard() {
-      const c = document.getElementById('lockscreen-canvas');
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#070c18';
-      ctx.fillRect(0, 0, c.width, c.height);
-      ctx.fillStyle = '#e11d48';
-      ctx.fillRect(0, 0, c.width, 95);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px Cairo, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('بطاقة طوارئ - مصاب بالسكري', c.width / 2, 56);
-
-      ctx.font = 'bold 20px Cairo, sans-serif';
-      ctx.fillText(`الاسم: ${currentUser.name}`, c.width / 2, 160);
-      ctx.fillStyle = '#34d399';
-      ctx.fillText(`النوع: ${currentUser.diabetesType}`, c.width / 2, 210);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillText(`فصيلة الدم: ${currentUser.blood || 'O+'}`, c.width / 2, 260);
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(`طوارئ الأهل: ${currentUser.emergencyPhone || '-'}`, c.width / 2, 315);
-
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = '15px Cairo, sans-serif';
-      ctx.fillText('في حال الإغماء أو الهبوط أعطني عصيراً محلى فوراً', c.width / 2, 400);
-      ctx.fillText('ممنوع إعطاء الأنسولين عند فقدان الوعي', c.width / 2, 435);
-    }
-
-    function downloadLockScreenCard() {
-      const link = document.createElement('a');
-      link.download = 'sukkari_emergency_lockscreen.png';
-      link.href = document.getElementById('lockscreen-canvas').toDataURL('image/png');
-      link.click();
+      if (g < 100) box.textContent = 'تنبيه: سكرك قليل؛ تناول وجبة خفيفة قبل المشي.';
+      else if (g > 250) box.textContent = 'تحذير: سكرك مرتفع؛ أجّل الرياضة واشرب ماء.';
+      else box.textContent = 'قراءتك ممتازة للرياضة!';
     }
 
     function calculateMealBolus() {
@@ -2471,7 +2318,7 @@
 
       const box = document.getElementById('bolus-result');
       box.classList.remove('hidden');
-      box.textContent = `مجموع الكارب التقديري: ${Math.round(carbs)} غرام • الجرعة المقترحة: ${units.toFixed(1)} وحدة أنسولين سريع.`;
+      box.textContent = `الكارب: ${Math.round(carbs)}g • الجرعة: ${units.toFixed(1)} وحدة.`;
     }
 
     function filterIraqiFoods() {
@@ -2491,20 +2338,6 @@
           <p class="text-slate-400">${f.tip}</p>
         </div>
       `).join('');
-    }
-
-    async function saveInjectionSite(site) {
-      const res = await fetch('/api/patient/update-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lastInjectionSite: site })
-      });
-      const data = await res.json();
-      if (data.success) {
-        currentUser = data.user;
-        document.getElementById('last-inj-site-lbl').textContent = site;
-        alert(`تم تسجيل الحقن في (${site}). في المرة القادمة اختر مكاناً مختلفاً.`);
-      }
     }
 
     async function saveInventory() {
@@ -2534,22 +2367,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ periodicChecks })
       });
-      alert('تم حفظ مواعيد الفحوصات الدورية بنجاح.');
-    }
-
-    async function submitNeuropathyCheck() {
-      const checks = document.querySelectorAll('.neuro-q');
-      let score = 0;
-      checks.forEach(c => { if (c.checked) score++; });
-      const res = await fetch('/api/patient/neuropathy-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ score })
-      });
-      const data = await res.json();
-      const box = document.getElementById('neuro-result');
-      box.classList.remove('hidden');
-      box.textContent = `النتيجة: ${score}/4 — التقييم: ${data.risk_level}`;
+      alert('تم حفظ مواعيد الفحوصات بنجاح.');
     }
 
     async function submitCalibration() {
@@ -2618,18 +2436,18 @@
     async function sendWeeklySummaryToDoctor() {
       if (!patientAnalytics) return;
       const s = patientAnalytics.fiveSecondSummary;
-      const msg = `ملخص الأسبوع التلقائي: النطاق الآمن ${patientAnalytics.tir.inRangePct}% | متوسط الصائم: ${s.fastingAvg} | متوسط بعد الأكل: ${s.postMealAvg} | الالتزام: ${s.adherencePct}%`;
+      const msg = `ملخص الأسبوع: النطاق الآمن ${patientAnalytics.tir.inRangePct}% | صائم: ${s.fastingAvg} | التزام: ${s.adherencePct}%`;
       await fetch(`/api/chat/${currentUser.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: msg })
       });
-      alert('تم إرسال ملخص الأسبوع إلى محادثة الدكتور بنجاح ✓');
+      alert('تم إرسال الملخص إلى الدكتور ✓');
     }
 
     function shareCaregiverWhatsApp() {
       const s = patientAnalytics ? patientAnalytics.fiveSecondSummary : {};
-      const txt = `تقرير متابعة السكر (${currentUser.name}): النطاق الآمن ${patientAnalytics?.tir?.inRangePct || 0}%، متوسط الصائم ${s.fastingAvg || '-'}، الالتزام بالعلاج ${s.adherencePct || 100}%.`;
+      const txt = `تقرير السكر (${currentUser.name}): النطاق الآمن ${patientAnalytics?.tir?.inRangePct || 0}%، متوسط الصائم ${s.fastingAvg || '-'}، الالتزام ${s.adherencePct || 100}%.`;
       window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
     }
 
@@ -2637,7 +2455,6 @@
       window.location.href = `/api/export/excel/${currentUser.id}`;
     }
 
-    // ================= منطق واجهة الطبيب =================
     function scrollToDoctorSection(id) {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -2729,7 +2546,7 @@
 
       document.getElementById('dp-name').textContent = p.name;
       document.getElementById('dp-country-badge').textContent = `${p.countryName || 'العراق'} (${p.phone || p.username})`;
-      document.getElementById('dp-meta').textContent = `${p.diabetesType} | العمر: ${p.age} | الوزن: ${p.weight} كغم | الطول: ${p.height} سم | BMI: ${p.bmi} | فصيلة الدم: ${p.blood || '-'}`;
+      document.getElementById('dp-meta').textContent = `${p.diabetesType} | العمر: ${p.age} | الوزن: ${p.weight} كغم | BMI: ${p.bmi}`;
 
       document.getElementById('dp-5s-fasting').textContent = s5.fastingAvg ?? '-';
       document.getElementById('dp-5s-post').textContent = s5.postMealAvg ?? '-';
@@ -2738,9 +2555,8 @@
 
       const alerts = [];
       if (a.dawnPhenomenon) alerts.push(`كاشف ظاهرة الفجر: ${a.dawnMsg}`);
-      if (a.basalTitrationAlert) alerts.push('مساعد ضبط الجرعة الصباحية: القراءات الصائمة أعلى من الهدف لـ 3 أيام متتالية.');
+      if (a.basalTitrationAlert) alerts.push('تنبيه: القراءات الصائمة أعلى من الهدف لـ 3 أيام متتالية.');
       if (a.hasDangerousSwing) alerts.push(`تنبيه تذبذب حاد: الفرق بين القراءات ${a.swingDiff} درجة.`);
-      if (a.todayTracker?.side_effects) alerts.push(`شكوى أعراض جانبية من المراجع: ${a.todayTracker.side_effects}`);
       document.getElementById('dp-clinical-alerts').innerHTML = alerts.map(txt => `
         <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-400/25 text-xs text-rose-300 font-bold">${txt}</div>
       `).join('');
@@ -2750,10 +2566,10 @@
 
       const tod = a.timeOfDay || {};
       document.getElementById('dp-time-of-day').innerHTML = `
-        <div class="flex justify-between"><span>الصباح (5 ص - 12 م):</span><strong>${tod['الصباح'] || '-'}</strong></div>
-        <div class="flex justify-between"><span>الظهيرة والعصر (12 م - 6 م):</span><strong>${tod['الظهيرة'] || '-'}</strong></div>
-        <div class="flex justify-between"><span>المساء (6 م - 11 م):</span><strong>${tod['المساء'] || '-'}</strong></div>
-        <div class="flex justify-between"><span>الليل والفجر (11 م - 5 ص):</span><strong>${tod['الليل'] || '-'}</strong></div>
+        <div class="flex justify-between"><span>الصباح (5ص - 12م):</span><strong>${tod['الصباح'] || '-'}</strong></div>
+        <div class="flex justify-between"><span>الظهيرة والعصر (12م - 6م):</span><strong>${tod['الظهيرة'] || '-'}</strong></div>
+        <div class="flex justify-between"><span>المساء (6م - 11م):</span><strong>${tod['المساء'] || '-'}</strong></div>
+        <div class="flex justify-between"><span>الليل والفجر (11م - 5ص):</span><strong>${tod['الليل'] || '-'}</strong></div>
       `;
 
       document.getElementById('dp-notes-input').value = p.doctorNotes || '';
@@ -2781,7 +2597,7 @@
         data: {
           labels: rev.map(x => x.date.slice(5)),
           datasets: [{
-            label: 'سكر المراجع (mg/dL)',
+            label: 'سكر المراجع',
             data: rev.map(x => x.val),
             borderColor: '#38bdf8',
             backgroundColor: 'rgba(56,189,248,0.14)',
@@ -2792,18 +2608,14 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' } },
-            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' } }
-          }
+          plugins: { legend: { display: false } }
         }
       });
     }
 
     function startDoctorVoiceDictation() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return alert('متصفحك لا يدعم الإملاء الصوتي، استخدم متصفح Chrome.');
+      if (!SR) return alert('متصفحك لا يدعم الإملاء الصوتي.');
       const rec = new SR();
       rec.lang = 'ar-IQ';
       document.getElementById('voice-dict-btn-lbl').textContent = 'جاري الاستماع لصوتك...';
@@ -2832,7 +2644,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      alert('تم حفظ الخطة العلاجية وموعد المراجعة بنجاح ✓');
+      alert('تم حفظ الخطة والموعد ✓');
       await loadDoctorDashboard();
     }
 
@@ -2906,7 +2718,7 @@
 
     async function deleteSelectedPatient() {
       if (!selectedPatient) return;
-      if (!confirm(`هل أنت متأكد من حذف ملف المراجع (${selectedPatient.name}) نهائياً؟`)) return;
+      if (!confirm(`هل أنت متأكد من حذف ملف (${selectedPatient.name})؟`)) return;
       await fetch(`/api/doctor/patient/${selectedPatient.id}`, { method: 'DELETE' });
       selectedPatient = null;
       await loadDoctorDashboard();
@@ -2920,7 +2732,7 @@
       const box = document.getElementById('doc-chat-messages');
       box.innerHTML = msgs.map(m => `
         <div class="p-2.5 rounded-xl ${m.sender === 'doctor' ? 'bg-sky-500/15 border border-sky-400/25 text-sky-200 mr-6' : 'bg-white/[0.04] border border-white/10 text-slate-200 ml-6'}">
-          <div class="font-bold text-[10px] opacity-70">${m.sender === 'doctor' ? 'أنت (الدكتور)' : selectedPatient.name} • ${m.time}</div>
+          <div class="font-bold text-[10px] opacity-70">${m.sender === 'doctor' ? 'أنت' : selectedPatient.name} • ${m.time}</div>
           <div>${m.text}</div>
         </div>
       `).join('');
@@ -2954,7 +2766,7 @@
           <p class="text-slate-300">${l.summary}</p>
           <p class="text-amber-300 text-[11px]">غير الطبيعي: ${l.abnormal || 'لا يوجد'}</p>
         </div>
-      `).join('') || '<div class="text-slate-500">لم يرفع المراجع أي تحاليل مختبرية بعد.</div>';
+      `).join('') || '<div class="text-slate-500">لم يرفع المراجع أي تحاليل.</div>';
     }
 
     function renderDoctorQrModal() {
@@ -2963,7 +2775,7 @@
         <div class="text-base font-black text-white">${selectedPatient.name}</div>
         <div class="text-slate-400">رقم الملف الطبي: #${selectedPatient.id}</div>
         <div class="text-emerald-400 font-bold">الهاتف: ${selectedPatient.phone || selectedPatient.username}</div>
-        <div class="text-amber-300">نوع السكري: ${selectedPatient.diabetesType} • فصيلة الدم: ${selectedPatient.blood || '-'}</div>
+        <div class="text-amber-300">نوع السكري: ${selectedPatient.diabetesType}</div>
       `;
     }
 
