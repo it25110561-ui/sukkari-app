@@ -104,7 +104,7 @@ def detect_country_info(country_code="+964", full_phone=""):
 
 def get_ai_dialect_instruction(dialect):
     mapping = {
-        "iraqi": "تحدث باللهجة العراقية الدارجة المهذبة والواضحة والمطمئنة (مثل: عيني، شلونك، هسه، زين، ماكو شي).",
+        "iraqi": "تحدث باللهجة العراقية الدارجة المهذبة والواضحة والمطمئنة (مثل: عيني، شلونك، هسه، زين، ماكو شي، تكدر).",
         "gulf": "تحدث باللهجة الخليجية المهذبة والواضحة والمطمئنة (مثل: يا هلا، شلونك، الحين، طيب، ما عليك شر).",
         "egyptian": "تحدث باللهجة المصرية البسيطة والودودة والمطمئنة (مثل: أهلاً بيك، إزيك، دلوقتي، كويس، ألف سلامة).",
         "levantine": "تحدث باللهجة الشامية اللطيفة والمطمئنة (مثل: أهلاً فيك، كيفك، هلق، منيح، سلامتك).",
@@ -237,6 +237,17 @@ def init_db():
     """)
 
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS ai_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            time TEXT NOT NULL,
+            FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS lab_reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id INTEGER NOT NULL,
@@ -249,7 +260,6 @@ def init_db():
         )
     """)
 
-    # ترقية تلقائية للأعمدة الجديدة في حال وجود قاعدة بيانات قديمة
     existing_user_cols = [r[1] for r in cur.execute("PRAGMA table_info(users)").fetchall()]
     user_migrations = [
         ("phone", "TEXT DEFAULT ''"),
@@ -273,7 +283,7 @@ def init_db():
         ("periodicChecksJson", "TEXT DEFAULT '{}'"),
         ("travelChecklistJson", "TEXT DEFAULT '{}'"),
         ("preVisitChecklistJson", "TEXT DEFAULT '{}'"),
-        ("walkingPlanJson", "TEXT DEFAULT '{\"week\":1,\"completedDays\":0}'"),
+        ("walkingPlanJson", "TEXT DEFAULT '{"week":1,"completedDays":0}'"),
     ]
     for col_name, col_def in user_migrations:
         if col_name not in existing_user_cols:
@@ -289,7 +299,6 @@ def init_db():
         if col_name not in existing_log_cols:
             cur.execute(f"ALTER TABLE logs ADD COLUMN {col_name} {col_def}")
 
-    # إنشاء الحسابات التجريبية الافتراضية
     count = cur.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
         cur.execute("""
@@ -349,13 +358,73 @@ def serialize_user(row):
     return u
 
 
-# ================= محرك الذكاء الاصطناعي متعدد اللهجات واللغات =================
+# ================= محرك الذكاء الاصطناعي الذكي المرتبط بملف المراجع =================
 
-def call_openrouter(messages, max_tokens=700, temperature=0.4):
+def build_patient_medical_context(uid):
+    if not uid:
+        return "iraqi", get_ai_dialect_instruction("iraqi"), ""
+
+    conn = get_db()
+    u_row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    if not u_row:
+        conn.close()
+        return "iraqi", get_ai_dialect_instruction("iraqi"), ""
+
+    u = dict(u_row)
+    dialect = u.get("dialect") or "iraqi"
+    dialect_inst = get_ai_dialect_instruction(dialect)
+
+    logs = conn.execute(
+        "SELECT val, timing, bp, mood, mealName, date FROM logs WHERE patient_id = ? ORDER BY id DESC LIMIT 6",
+        (uid,)
+    ).fetchall()
+    latest_lab = conn.execute(
+        "SELECT title, summary, abnormal, date FROM lab_reports WHERE patient_id = ? ORDER BY id DESC LIMIT 1",
+        (uid,)
+    ).fetchone()
+    conn.close()
+
+    logs_summary = "، ".join(
+        f"{l['val']} ({l['timing']}{' - وجبة: ' + l['mealName'] if l['mealName'] else ''})"
+        for l in logs
+    ) or "لا توجد قياسات مسجلة بعد"
+
+    modes = []
+    if u.get("ramadanMode"):
+        modes.append("وضع الصيام ورمضان مفعّل حالياً")
+    if u.get("sickDayMode"):
+        modes.append("وضع أيام المرض/الفلاونزا مفعّل حالياً")
+    modes_str = " | ".join(modes) if modes else "الوضع الاعتيادي"
+
+    lab_str = f"{latest_lab['title']} ({latest_lab['date']}): {latest_lab['abnormal']}" if latest_lab else "لا يوجد"
+
+    context_block = (
+        f"بيانات المراجع الشخصية والطبية (استخدمها لتخصيص إجابتك بدقة):
+"
+        f"- الاسم: {u.get('name')} | العمر: {u.get('age')} سنة | الجنس: {u.get('gender')}
+"
+        f"- الوزن: {u.get('weight')} كغم | الطول: {u.get('height')} سم | BMI: {calc_bmi(u.get('weight'), u.get('height'))}
+"
+        f"- نوع السكري: {u.get('diabetesType')} | الدولة: {u.get('countryName')}
+"
+        f"- السكر المستهدف: {u.get('targetGlucose', 120)} mg/dL | معامل الكارب: 1 وحدة لكل {u.get('carbRatio', 15)} غرام كارب | معامل التصحيح: {u.get('correctionFactor', 40)}
+"
+        f"- الحالة الحالية: {modes_str}
+"
+        f"- آخر قياسات السكر: {logs_summary}
+"
+        f"- آخر تحليل مختبري: {lab_str}
+"
+        f"- توجيهات الطبيب المشرف: {u.get('doctorNotes') or 'لا توجد ملاحظات خاصة'}"
+    )
+    return dialect, dialect_inst, context_block
+
+
+def call_openrouter(messages, max_tokens=750, temperature=0.35):
     if not OPENROUTER_API_KEY:
-        return None, "مفتاح الذكاء الاصطناعي (OPENROUTER_API_KEY) غير مضبوط بالسيرفر."
+        return None, "مفتاح الذكاء الاصطناعي (OPENROUTER_API_KEY) غير مضبوط في إعدادات السيرفر."
 
-    models = ["google/gemini-2.0-flash-001", "openai/gpt-4o-mini"]
+    models = ["google/gemini-2.0-flash-001", "google/gemini-2.5-flash", "openai/gpt-4o-mini"]
     last_error = "تعذر الاتصال بخدمة الذكاء الاصطناعي."
 
     for model in models:
@@ -378,7 +447,7 @@ def call_openrouter(messages, max_tokens=700, temperature=0.4):
             method="POST"
         )
         try:
-            with urllib.request.urlopen(req, timeout=35) as resp:
+            with urllib.request.urlopen(req, timeout=40) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
                 content = body["choices"][0]["message"]["content"]
                 return content, None
@@ -409,7 +478,6 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
     vals = [int(l["val"]) for l in logs if l.get("val") is not None]
     total = len(vals)
 
-    # 1. مؤشر النطاق الآمن (Time-in-Range: 70-180)
     if total > 0:
         in_range = sum(1 for v in vals if 70 <= v <= 180)
         low_count = sum(1 for v in vals if v < 70)
@@ -423,12 +491,10 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
     else:
         tir = {"inRangePct": 0, "lowPct": 0, "highPct": 0, "total": 0}
 
-    # 2. كاشف التذبذب السكري الخطير (Glycemic Swing Alert)
     recent_vals = vals[:10]
     swing_diff = (max(recent_vals) - min(recent_vals)) if len(recent_vals) >= 2 else 0
     has_dangerous_swing = bool(swing_diff >= 130 or (any(v < 70 for v in recent_vals) and any(v > 220 for v in recent_vals)))
 
-    # 3. كاشف ظاهرة الفجر (Dawn Phenomenon Detector)
     fasting_vals = [int(l["val"]) for l in logs if "ريك" in str(l.get("timing", "")) or "صائم" in str(l.get("timing", ""))]
     bedtime_vals = [int(l["val"]) for l in logs if "عشوائي" in str(l.get("timing", "")) or "نوم" in str(l.get("timing", ""))]
     dawn_phenomenon = False
@@ -440,12 +506,10 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
             dawn_phenomenon = True
             dawn_msg = f"متوسط الصائم ({round(f_avg)}) أعلى من قبل النوم ({round(b_avg)}) بمقدار {round(f_avg - b_avg)} درجة — احتمالية ظاهرة الفجر."
 
-    # 4. مساعد ضبط الجرعة الصباحية (Basal Titration Helper: 3 أيام صائم فوق الهدف)
     target_g = int(user_dict.get("targetGlucose") or 120)
     last_3_fasting = fasting_vals[:3]
     basal_titration_alert = len(last_3_fasting) == 3 and all(v > target_g for v in last_3_fasting)
 
-    # 5. مخطط تحليل أوقات اليوم للدكتور (Time-of-Day Pattern)
     time_groups = {}
     for l in logs:
         t = l.get("timing") or "عشوائي"
@@ -455,7 +519,6 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
         for k, v in time_groups.items()
     ]
 
-    # 6. مقارنة الأداء الأسبوعي (Before & After Comparison)
     now_dt = datetime.now()
     this_week_vals = []
     last_week_vals = []
@@ -480,13 +543,10 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
         "lastWeekHypos": sum(1 for v in last_week_vals if v < 70),
     }
 
-    # 7. مكتشف استجابة جسمك الشخصية للأكل (Personal Food Response Tracker)
     safe_foods = []
     spike_foods = []
     for l in logs:
         m_name = str(l.get("mealName") or "").strip()
-        if not m_name and "وجبة:" in str(l.get("meds", "")):
-            m_name = str(l["meds"]).split("وجبة:", 1)[1].split("(")[0].strip()
         if m_name:
             v = int(l["val"])
             if v <= 165 and m_name not in safe_foods:
@@ -494,7 +554,6 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
             elif v > 180 and m_name not in spike_foods:
                 spike_foods.append(m_name)
 
-    # 8. سلسلة الالتزام والأوسمة التحفيزية (Daily Streak & Badges)
     unique_days = sorted({str(l["date"])[:10] for l in logs if l.get("date")}, reverse=True)
     streak = 0
     check_day = now_dt.date()
@@ -517,7 +576,6 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
     if tir["inRangePct"] >= 70 and total >= 3:
         badges.append("🎯 نطاق آمن ممتاز (+70%)")
 
-    # 9. كشف الانقطاع (> 7 أيام) ونسبة الالتزام بالعلاج والأعراض الجانبية
     days_since_last = 999
     if logs:
         try:
@@ -530,7 +588,6 @@ def compute_patient_analytics(logs, user_dict, daily_rows):
     adherence_pct = round((len(adherence_days) / len(daily_rows)) * 100) if daily_rows else 100
     latest_side_effects = next((r["side_effects"] for r in daily_rows if r.get("side_effects")), "")
 
-    # 10. ملخص الـ 5 ثواني قبل دخول المراجع للدكتور
     f_avg_str = f"{round(sum(fasting_vals)/len(fasting_vals))}" if fasting_vals else "-"
     post_vals = [int(l["val"]) for l in logs if "أكل" in str(l.get("timing", "")) or "فطور" in str(l.get("timing", ""))]
     p_avg_str = f"{round(sum(post_vals)/len(post_vals))}" if post_vals else "-"
@@ -649,7 +706,6 @@ def api_login():
         (username, username, password)
     ).fetchone()
 
-    # دعم تسجيل الدخول برقم الهاتف المحلي أو الدولي أيضاً
     if not row and any(ch.isdigit() for ch in username):
         norm_p, _ = normalize_phone(username, "+964")
         row = conn.execute(
@@ -996,7 +1052,6 @@ def handle_logs():
             "INSERT INTO logs (patient_id, val, timing, meds, bp, mood, mealName, ketones, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (uid, val, timing, meds, bp, mood, meal_name, ketones, date_str)
         )
-        # إنقاص شريط واحد تلقائياً من مخزون أشرطة الفحص
         conn.execute("UPDATE users SET stripsCount = MAX(0, COALESCE(stripsCount, 50) - 1) WHERE id = ?", (uid,))
         conn.commit()
         conn.close()
@@ -1039,16 +1094,74 @@ def get_patient_full_analytics():
     })
 
 
-# ================= مسارات الذكاء الاصطناعي (مخصصة حسب دولة ولهجة المراجع) =================
+# ================= مسارات الذكاء الاصطناعي (المحادثة + تحليل الصور المتقدم) =================
 
-def get_current_user_dialect():
+@app.route("/api/ai/history", methods=["GET", "DELETE"])
+def ai_chat_history():
     uid = session.get("user_id")
     if not uid:
-        return "iraqi"
+        return jsonify({"success": False}), 401
+
     conn = get_db()
-    row = conn.execute("SELECT dialect FROM users WHERE id = ?", (uid,)).fetchone()
+    if request.method == "DELETE":
+        conn.execute("DELETE FROM ai_messages WHERE patient_id = ?", (uid,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+
+    rows = conn.execute(
+        "SELECT id, role, content, time FROM ai_messages WHERE patient_id = ? ORDER BY id ASC LIMIT 40",
+        (uid,)
+    ).fetchall()
     conn.close()
-    return (row["dialect"] if row and row["dialect"] else "iraqi")
+    return jsonify({"success": True, "messages": [dict(r) for r in rows]})
+
+
+@app.route("/api/ai/assistant", methods=["POST"])
+def ai_assistant():
+    uid = session.get("user_id")
+    data = request.get_json(silent=True) or {}
+    question = str(data.get("question", "")).strip()
+    if not question:
+        return jsonify({"success": False, "answer": "اكتب سؤالك حتى أجاوبك."})
+
+    _, dialect_inst, patient_ctx = build_patient_medical_context(uid)
+    system_msg = (
+        f"أنت المساعد الطبي الذكي الخاص بمنصة (سُكّري)، متخصص بمرض السكري والتغذية العلاجية ومتابعة القياسات. "
+        f"{dialect_inst}\n\n"
+        f"{patient_ctx}\n\n"
+        "قواعد الإجابة:\n"
+        "1. اجعل إجابتك منظمة بنقاط قصيرة وواضحة ومباشرة بدون حشو.\n"
+        "2. اربط نصيحتك بأرقام المراجع وقياسات سكره الأخيرة ومعامل الكارب الخاص به.\n"
+        "3. إذا ذكر المراجع قياساً أقل من 70 أو أعلى من 300 أو أعراض خطيرة، نبهه فوراً لإجراءات الطوارئ ومراجعة طبيبه."
+    )
+
+    history_msgs = []
+    if uid:
+        conn = get_db()
+        prev_rows = conn.execute(
+            "SELECT role, content FROM ai_messages WHERE patient_id = ? ORDER BY id DESC LIMIT 8",
+            (uid,)
+        ).fetchall()
+        conn.close()
+        for r in reversed(prev_rows):
+            history_msgs.append({"role": r["role"], "content": r["content"]})
+
+    messages = [{"role": "system", "content": system_msg}] + history_msgs + [{"role": "user", "content": question}]
+    answer, err = call_openrouter(messages, max_tokens=650, temperature=0.4)
+
+    if err:
+        return jsonify({"success": False, "answer": f"⚠️ تعذر الحصول على رد حالياً: {err}"})
+
+    if uid:
+        now_t = datetime.now().strftime("%H:%M")
+        conn = get_db()
+        conn.execute("INSERT INTO ai_messages (patient_id, role, content, time) VALUES (?, 'user', ?, ?)", (uid, question, now_t))
+        conn.execute("INSERT INTO ai_messages (patient_id, role, content, time) VALUES (?, 'assistant', ?, ?)", (uid, answer, now_t))
+        conn.commit()
+        conn.close()
+
+    return jsonify({"success": True, "answer": answer})
 
 
 @app.route("/api/ai/meal-analyze", methods=["POST"])
@@ -1056,18 +1169,26 @@ def analyze_meal():
     if "image" not in request.files:
         return jsonify({"success": False, "message": "ما وصلت أي صورة للسيرفر."})
 
-    dialect = get_current_user_dialect()
-    dialect_inst = get_ai_dialect_instruction(dialect)
+    uid = session.get("user_id")
+    _, dialect_inst, patient_ctx = build_patient_medical_context(uid)
+    user_note = str(request.form.get("note", "")).strip()
     img_bytes = request.files["image"].read()
     b64_img = base64.b64encode(img_bytes).decode("utf-8")
 
     prompt = (
-        f"أنت أخصائي تغذية وطبيب سكري. {dialect_inst} "
-        "حلل صورة الوجبة الغذائية المرفقة لمريض سكري. "
-        "أجب بصيغة JSON فقط وبدون أي نص خارجي بالمفاتيح التالية: "
-        '{"meal_name": "اسم الوجبة ومكوناتها", "carbs": "تقدير الكربوهيدرات بالغرام", '
-        '"calories": "تقدير السعرات الحرارية", "insulin_dose": "تقدير وحدات الأنسولين السريع المقترحة أو نصيحة الكمية", '
-        '"tips": "نصيحة غذائية مختصرة لتجنب صعود السكر"}'
+        f"أنت أخصائي تغذية وطبيب سكري. {dialect_inst}\n"
+        f"{patient_ctx}\n"
+        f"ملاحظة المراجع عن الوجبة: {user_note or 'لا توجد'}\n\n"
+        "حلل صورة الوجبة الغذائية المرفقة بدقة لمريض السكري. "
+        "أجب بصيغة JSON فقط وبدون أي نص خارجي بالمفاتيح التالية:\n"
+        '{"meal_name": "اسم الوجبة ومكوناتها الواضحة بالصورة", '
+        '"glycemic_impact": "منخفض 🟢 أو متوسط 🟡 أو مرتفع 🔴", '
+        '"carbs": "تقدير الكربوهيدرات بالغرام (مثلاً: 45 غرام)", '
+        '"calories": "تقدير السعرات الحرارية (مثلاً: 420 سعرة)", '
+        '"protein_fat": "تقدير البروتين والدهون وهل تسبب صعود متأخر", '
+        '"insulin_dose": "تقدير وحدات الأنسولين السريع حسب معامل الكارب للمراجع أو الحصة المناسبة", '
+        '"is_heavy_fat": true, '
+        '"tips": "نصيحة عملية مختصرة باللهجة المحلية لتناول الوجبة بدون طفرة سكر"}'
     )
 
     messages = [{
@@ -1078,7 +1199,7 @@ def analyze_meal():
         ]
     }]
 
-    raw, err = call_openrouter(messages, max_tokens=500, temperature=0.3)
+    raw, err = call_openrouter(messages, max_tokens=600, temperature=0.25)
     if err:
         return jsonify({"success": False, "message": err})
 
@@ -1087,18 +1208,24 @@ def analyze_meal():
         return jsonify({
             "success": True,
             "meal_name": parsed.get("meal_name", "وجبة غذائية"),
+            "glycemic_impact": parsed.get("glycemic_impact", "متوسط 🟡"),
             "carbs": parsed.get("carbs", "غير محدد"),
             "calories": parsed.get("calories", "غير محدد"),
+            "protein_fat": parsed.get("protein_fat", "-"),
             "insulin_dose": parsed.get("insulin_dose", "حسب جدول الطبيب"),
+            "is_heavy_fat": bool(parsed.get("is_heavy_fat", False)),
             "tips": parsed.get("tips", "يفضل قياس السكر بعد الأكل بساعتين.")
         })
     except Exception:
         return jsonify({
             "success": True,
             "meal_name": "نتيجة تحليل الوجبة",
+            "glycemic_impact": "متوسط 🟡",
             "carbs": "موضح بالتفاصيل",
             "calories": "-",
+            "protein_fat": "-",
             "insulin_dose": "راجع الطبيب لتحديد الجرعة الدقيقة",
+            "is_heavy_fat": False,
             "tips": raw
         })
 
@@ -1108,17 +1235,22 @@ def analyze_nutrition_label():
     if "image" not in request.files:
         return jsonify({"success": False, "message": "اختار صورة جدول القيم الغذائية على العلبة أولاً."})
 
-    dialect = get_current_user_dialect()
-    dialect_inst = get_ai_dialect_instruction(dialect)
+    uid = session.get("user_id")
+    _, dialect_inst, patient_ctx = build_patient_medical_context(uid)
     img_bytes = request.files["image"].read()
     b64_img = base64.b64encode(img_bytes).decode("utf-8")
 
     prompt = (
-        f"أنت أخصائي تغذية لمرضى السكري. {dialect_inst} "
-        "اقرأ جدول القيم الغذائية (Nutrition Facts) في صورة المنتج المعلب المرفقة. "
-        "أجب بصيغة JSON فقط بالمفاتيح التالية: "
-        '{"product_name": "اسم المنتج أو نوعه", "carbs": "الكربوهيدرات الكلية لكل حصة", '
-        '"sugars": "كمية السكريات المضافة/الكافية بالغرام", "verdict": "آمن / باعتدال / غير مناسب لمريض السكري", '
+        f"أنت أخصائي تغذية لمرضى السكري. {dialect_inst}\n"
+        f"{patient_ctx}\n\n"
+        "اقرأ جدول القيم الغذائية (Nutrition Facts) وقائمة المكونات في صورة المنتج المعلب المرفقة، واكشف أي سكريات مخفية (مثل Maltodextrin, Dextrose, Corn Syrup, Sucrose). "
+        "أجب بصيغة JSON فقط بالمفاتيح التالية:\n"
+        '{"product_name": "اسم المنتج أو نوعه", '
+        '"serving_size": "حجم الحصة الواحدة", '
+        '"carbs": "الكربوهيدرات الكلية لكل حصة", '
+        '"sugars": "كمية السكريات بالغرام", '
+        '"hidden_sugars": "السكريات المخفية المكتشفة أو: لا توجد", '
+        '"verdict": "آمن 🟢 أو باعتدال 🟡 أو تجنبه 🔴", '
         '"advice": "نصيحة واضحة للمراجع قبل شراء أو تناول المنتج"}'
     )
 
@@ -1130,7 +1262,7 @@ def analyze_nutrition_label():
         ]
     }]
 
-    raw, err = call_openrouter(messages, max_tokens=500, temperature=0.3)
+    raw, err = call_openrouter(messages, max_tokens=550, temperature=0.25)
     if err:
         return jsonify({"success": False, "message": err})
 
@@ -1139,8 +1271,10 @@ def analyze_nutrition_label():
         return jsonify({
             "success": True,
             "product_name": parsed.get("product_name", "منتج غذائي معلب"),
+            "serving_size": parsed.get("serving_size", "-"),
             "carbs": parsed.get("carbs", "-"),
             "sugars": parsed.get("sugars", "-"),
+            "hidden_sugars": parsed.get("hidden_sugars", "غير محدد"),
             "verdict": parsed.get("verdict", "يرجى الانتباه للكمية"),
             "advice": parsed.get("advice", raw)
         })
@@ -1148,8 +1282,10 @@ def analyze_nutrition_label():
         return jsonify({
             "success": True,
             "product_name": "قراءة ملصق غذائي",
+            "serving_size": "-",
             "carbs": "-",
             "sugars": "-",
+            "hidden_sugars": "-",
             "verdict": "موضح بالتفاصيل",
             "advice": raw
         })
@@ -1164,17 +1300,17 @@ def analyze_lab_report():
     if "image" not in request.files:
         return jsonify({"success": False, "message": "اختار صورة ورقة التحليل المختبري أولاً."})
 
-    dialect = get_current_user_dialect()
-    dialect_inst = get_ai_dialect_instruction(dialect)
+    _, dialect_inst, patient_ctx = build_patient_medical_context(uid)
     img_bytes = request.files["image"].read()
     b64_img = base64.b64encode(img_bytes).decode("utf-8")
 
     prompt = (
-        f"أنت طبيب متخصص بالسكري والباطنية. {dialect_inst} "
-        "اقرأ ورقة التحليل المختبري في الصورة واشرحها للمريض ببساطة ووضوح. "
-        "أجب بصيغة JSON فقط بالمفاتيح التالية: "
-        '{"title": "نوع التحليل (مثلاً: تحليل السكر التراكمي HbA1c أو وظائف الكلى)", '
-        '"summary": "شرح مبسط لأهم الأرقام الموجودة بالتحليل", '
+        f"أنت طبيب متخصص بالسكري والباطنية. {dialect_inst}\n"
+        f"{patient_ctx}\n\n"
+        "اقرأ ورقة التحليل المختبري في الصورة بدقة واشرحها للمريض ببساطة ووضوح. "
+        "أجب بصيغة JSON فقط بالمفاتيح التالية:\n"
+        '{"title": "نوع التحليل (مثلاً: تحليل السكر التراكمي HbA1c أو وظائف الكلى والدهون)", '
+        '"summary": "شرح مبسط لأهم الأرقام الموجودة بالتحليل مقارنة بالمعدل الطبيعي", '
         '"abnormal": "القيم الصاعدة أو النازلة عن الطبيعي إن وجدت أو اكتب: جميع القيم ضمن الحدود الطبيعية", '
         '"advice": "نصيحة طبية مختصرة للمراجع"}'
     )
@@ -1187,7 +1323,7 @@ def analyze_lab_report():
         ]
     }]
 
-    raw, err = call_openrouter(messages, max_tokens=650, temperature=0.3)
+    raw, err = call_openrouter(messages, max_tokens=700, temperature=0.25)
     if err:
         return jsonify({"success": False, "message": err})
 
@@ -1222,6 +1358,61 @@ def analyze_lab_report():
     })
 
 
+@app.route("/api/ai/med-analyze", methods=["POST"])
+def analyze_medication_image():
+    if "image" not in request.files:
+        return jsonify({"success": False, "message": "اختار صورة علبة الدواء أو قلم الأنسولين أولاً."})
+
+    uid = session.get("user_id")
+    _, dialect_inst, patient_ctx = build_patient_medical_context(uid)
+    img_bytes = request.files["image"].read()
+    b64_img = base64.b64encode(img_bytes).decode("utf-8")
+
+    prompt = (
+        f"أنت صيدلي إكلينيكي وطبيب سكري. {dialect_inst}\n"
+        f"{patient_ctx}\n\n"
+        "تعرف على علبة الدواء أو شريط الحبوب أو قلم الأنسولين الظاهر في الصورة، واشرحه للمريض ببساطة. "
+        "أجب بصيغة JSON فقط بالمفاتيح التالية:\n"
+        '{"med_name": "الاسم التجاري والتركيز الظاهر على العلبة", '
+        '"active_ingredient": "المادة العلمية الفعالة وفئة العلاج", '
+        '"usage": "الطريقة الشائعة لأخذه (قبل الأكل / بعد الأكل / طويل المفعول)", '
+        '"hypo_risk": "هل يسبب هبوط سكر؟ (نعم - انتبه للهبوط / لا يسبب هبوطاً بمفرده)", '
+        '"advice": "تنبيه مهم للمراجع حول هذا الدواء"}'
+    )
+
+    messages = [{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}}
+        ]
+    }]
+
+    raw, err = call_openrouter(messages, max_tokens=550, temperature=0.25)
+    if err:
+        return jsonify({"success": False, "message": err})
+
+    try:
+        parsed = extract_json_block(raw)
+        return jsonify({
+            "success": True,
+            "med_name": parsed.get("med_name", "دواء"),
+            "active_ingredient": parsed.get("active_ingredient", "-"),
+            "usage": parsed.get("usage", "-"),
+            "hypo_risk": parsed.get("hypo_risk", "راجع طبيبك"),
+            "advice": parsed.get("advice", raw)
+        })
+    except Exception:
+        return jsonify({
+            "success": True,
+            "med_name": "قراءة علبة الدواء",
+            "active_ingredient": "-",
+            "usage": "-",
+            "hypo_risk": "-",
+            "advice": raw
+        })
+
+
 @app.route("/api/lab-reports")
 def get_my_lab_reports():
     uid = session.get("user_id")
@@ -1234,30 +1425,6 @@ def get_my_lab_reports():
     ).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
-
-
-@app.route("/api/ai/assistant", methods=["POST"])
-def ai_assistant():
-    data = request.get_json(silent=True) or {}
-    question = str(data.get("question", "")).strip()
-    if not question:
-        return jsonify({"answer": "اكتب سؤالك حتى أجاوبك."})
-
-    dialect = get_current_user_dialect()
-    dialect_inst = get_ai_dialect_instruction(dialect)
-    system_msg = (
-        f"أنت مساعد طبي ذكي متخصص بمرض السكري ومضاعفاته وتغذيته. {dialect_inst} "
-        "أعطِ إجابات عملية مختصرة ومنظمة، ونبّه المريض لمراجعة طبيبه في الحالات الطارئة."
-    )
-
-    answer, err = call_openrouter([
-        {"role": "system", "content": system_msg},
-        {"role": "user", "content": question}
-    ], max_tokens=550, temperature=0.45)
-
-    if err:
-        return jsonify({"answer": f"⚠️ تعذر الحصول على رد حالياً: {err}"})
-    return jsonify({"answer": answer})
 
 
 # ================= مسارات الطبيب ولوحة إحصائيات العيادة =================
@@ -1307,8 +1474,6 @@ def doctor_patients():
         patients_list.append(p)
 
     conn.close()
-
-    # ترتيب الحالات الحرجة بأعلى القائمة تلقائياً
     patients_list.sort(key=lambda x: (0 if x["isCritical"] else 1, -x["id"]))
     return jsonify(patients_list)
 
@@ -1403,7 +1568,7 @@ def doctor_delete_patient(patient_id):
         return jsonify({"success": False, "message": "غير مصرح"}), 403
 
     conn = get_db()
-    for tbl in ["logs", "messages", "lab_reports", "daily_trackers", "neuropathy_checks", "calibration_logs"]:
+    for tbl in ["logs", "messages", "ai_messages", "lab_reports", "daily_trackers", "neuropathy_checks", "calibration_logs"]:
         conn.execute(f"DELETE FROM {tbl} WHERE patient_id = ?", (patient_id,))
     conn.execute("DELETE FROM users WHERE id = ? AND role = 'patient'", (patient_id,))
     conn.commit()
@@ -1471,7 +1636,7 @@ def export_patient_excel(patient_id):
     conn.close()
 
     output = io.StringIO()
-    output.write("\ufeff")  # UTF-8 BOM لفتح الملف بالعربي بشكل مثالي في Excel
+    output.write("\ufeff")
     writer = csv.writer(output)
     writer.writerow(["اسم المراجع", pat["name"] if pat else "-", "نوع السكري", pat["diabetesType"] if pat else "-"])
     writer.writerow([])
@@ -1491,7 +1656,7 @@ def export_patient_excel(patient_id):
     )
 
 
-# ================= مسارات المحادثة =================
+# ================= مسارات المحادثة مع الطبيب =================
 
 @app.route("/api/chat/<int:patient_id>", methods=["GET", "POST"])
 def handle_chat(patient_id):
