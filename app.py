@@ -399,7 +399,7 @@ def build_patient_medical_context(uid):
     lab_str = f"{latest_lab['title']} ({latest_lab['date']}): {latest_lab['abnormal']}" if latest_lab else "لا يوجد"
 
     context_block = (
-        f"بيانات المراجع الشخصية والطبية (استخدمها لتخصيص إجابتك بدقة):
+        f"بيانات المراجع الشخصية والطبية (استخدمها لتخصيص إجابتك بدقة):\n"
 "
         f"- الاسم: {u.get('name')} | العمر: {u.get('age')} سنة | الجنس: {u.get('gender')}
 "
