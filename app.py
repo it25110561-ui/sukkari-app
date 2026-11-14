@@ -283,7 +283,7 @@ def init_db():
         ("periodicChecksJson", "TEXT DEFAULT '{}'"),
         ("travelChecklistJson", "TEXT DEFAULT '{}'"),
         ("preVisitChecklistJson", "TEXT DEFAULT '{}'"),
-        ("walkingPlanJson", "TEXT DEFAULT '{"week":1,"completedDays":0}'"),
+        ("walkingPlanJson", 'TEXT DEFAULT \'{"week":1,"completedDays":0}\''),
     ]
     for col_name, col_def in user_migrations:
         if col_name not in existing_user_cols:
