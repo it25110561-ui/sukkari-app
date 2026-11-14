@@ -534,11 +534,20 @@ def build_patient_medical_context(uid):
 
 
 def call_openrouter(messages, max_tokens=750, temperature=0.35):
-    if not OPENROUTER_API_KEY:
-        return None, "مفتاح الذكاء الاصطناعي (OPENROUTER_API_KEY) غير مضبوط في إعدادات السيرفر."
+    """Call OpenRouter using free models only; never silently fall back to paid models."""
+    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        return None, "مفتاح OPENROUTER_API_KEY غير مضبوط في Railway."
 
-    models = ["google/gemini-2.0-flash-001", "google/gemini-2.5-flash", "openai/gpt-4o-mini"]
-    last_error = "تعذر الاتصال بخدمة الذكاء الاصطناعي."
+    # The router selects a currently available free model. Explicit :free IDs are
+    # fallbacks in case the router has no compatible endpoint for a request.
+    models = [
+        "openrouter/free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemma-3-27b-it:free",
+        "qwen/qwen3-4b:free",
+    ]
+    last_error = "تعذر الاتصال بخدمة الذكاء الاصطناعي المجانية."
 
     for model in models:
         payload = json.dumps({
@@ -546,28 +555,56 @@ def call_openrouter(messages, max_tokens=750, temperature=0.35):
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,
+            "stream": False,
         }).encode("utf-8")
-
         req = urllib.request.Request(
             "https://openrouter.ai/api/v1/chat/completions",
             data=payload,
             headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://sukkari-app.local",
+                "HTTP-Referer": "https://sukkari-app-production.up.railway.app",
                 "X-Title": "Sukkari Smart Health",
             },
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=40) as resp:
+            with urllib.request.urlopen(req, timeout=45) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
-                content = body["choices"][0]["message"]["content"]
-                return content, None
-        except urllib.error.HTTPError as e:
-            last_error = f"خطأ من المزود ({e.code})"
-        except Exception as e:
-            last_error = str(e)
+            choices = body.get("choices") or []
+            if not choices:
+                err_obj = body.get("error") or {}
+                last_error = str(err_obj.get("message") or "المزوّد لم يرجع إجابة.")
+                continue
+            message = choices[0].get("message") or {}
+            content = message.get("content")
+            if isinstance(content, list):
+                content = "\n".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
+            if not content or not str(content).strip():
+                last_error = "النموذج أعاد إجابة فارغة. جرّب مرة ثانية."
+                continue
+            return str(content).strip(), None
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            try:
+                detail = (json.loads(raw).get("error") or {}).get("message") or raw
+            except Exception:
+                detail = raw
+            detail = str(detail).strip()[:260]
+            if exc.code == 402:
+                last_error = "OpenRouter رفض الطلب (402). تأكد أن رصيد الحساب ليس سالباً؛ النماذج المجانية لا تحتاج شراء رصيد لكنها تتوقف إذا كان الرصيد سالباً."
+                # Do not retry paid models. Continue only through the free IDs above.
+            elif exc.code == 429:
+                last_error = "تم بلوغ حد الطلبات المجانية مؤقتاً (429). انتظر قليلاً ثم أعد المحاولة."
+            elif exc.code in (401, 403):
+                last_error = f"مفتاح OpenRouter غير صالح أو لا يملك صلاحية (HTTP {exc.code})."
+                break
+            else:
+                last_error = f"تعذر استخدام النموذج المجاني {model} (HTTP {exc.code}): {detail}"
+        except (TimeoutError, OSError) as exc:
+            last_error = f"انتهت مهلة الاتصال بمزوّد الذكاء الاصطناعي: {exc}"
+        except Exception as exc:
+            last_error = f"خطأ أثناء قراءة استجابة OpenRouter: {exc}"
 
     return None, last_error
 
@@ -1743,7 +1780,11 @@ def doctor_create_patient():
         return jsonify({"success": False, "message": "تحقق من القيم الرقمية المدخلة"}), 400
 
     gender = str(data.get("gender") or "غير محدد").strip()
-    blood = str(data.get("blood") or "غير محدد").strip()
+    blood = str(data.get("blood") or "غير معروف").strip().upper()
+    if gender not in {"ذكر", "أنثى", "غير محدد"}:
+        return jsonify({"success": False, "message": "قيمة الجنس غير صحيحة"}), 400
+    if blood not in {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "غير معروف", "غير محدد"}:
+        return jsonify({"success": False, "message": "فصيلة الدم غير صحيحة"}), 400
     diabetes_type = str(data.get("diabetesType") or "النوع الثاني").strip()
     medication = str(data.get("medication") or "").strip()
     emergency_raw = str(data.get("emergencyPhone") or "").strip()
@@ -1807,7 +1848,13 @@ def doctor_update_patient():
     emergency_phone = normalize_phone(emergency_raw, cc)[0] if emergency_raw else ""
     name = str(data.get("name") or current.get("name") or "").strip()
     gender = str(data.get("gender") or current.get("gender") or "غير محدد").strip()
-    blood = str(data.get("blood") or current.get("blood") or "غير محدد").strip()
+    blood = str(data.get("blood") or current.get("blood") or "غير معروف").strip().upper()
+    if gender not in {"ذكر", "أنثى", "غير محدد"}:
+        conn.close()
+        return jsonify({"success": False, "message": "قيمة الجنس غير صحيحة"}), 400
+    if blood not in {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "غير معروف", "غير محدد"}:
+        conn.close()
+        return jsonify({"success": False, "message": "فصيلة الدم غير صحيحة"}), 400
     diabetes_type = str(data.get("diabetesType") or current.get("diabetesType") or "النوع الثاني").strip()
     medication = str(data.get("medication") if data.get("medication") is not None else current.get("medication") or "").strip()
 
