@@ -368,23 +368,27 @@
   <div id="app-shell" class="hidden min-h-screen flex flex-col">
 
     <!-- الشريط العلوي الزجاجي -->
-    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-3 py-3 flex items-center justify-between gap-1 overflow-hidden">
-      <div class="flex items-center gap-2 min-w-0">
-        <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 flex-shrink-0" title="القائمة الجانبية">
+    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200" title="القائمة الجانبية">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <img src="/icon.svg" alt="سُكّري" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex-shrink-0" />
-        <span class="font-black text-base sm:text-lg text-emerald-400 flex-shrink-0 hidden sm:inline-block">سُكّري</span>
-        <span id="header-section-title" class="text-sm font-bold text-slate-200 hidden md:inline whitespace-nowrap ml-2">قياساتي</span>
-        <span id="header-role-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 whitespace-nowrap">مراجع</span>
+        <img src="/icon.svg" alt="سُكّري" class="w-8 h-8 rounded-lg" />
+        <span class="font-black text-lg text-emerald-400">سُكّري</span>
+        <span id="header-section-title" class="text-sm font-bold text-slate-200 hidden sm:inline">قياساتي</span>
+        <span id="header-role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300">مراجع</span>
+        <span id="header-dialect-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-400/25">
+          العراق • اللهجة العراقية
+        </span>
       </div>
-      <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0 min-w-0">
-        <span id="header-user-name" class="text-xs sm:text-sm font-bold text-slate-200 truncate max-w-[110px] sm:max-w-[200px]"></span>
-        <span class="text-white/15 hidden sm:inline">|</span>
-        <span id="live-clock" class="text-[10px] sm:text-xs text-slate-400 font-mono hidden sm:inline-block whitespace-nowrap"></span>
-        <button onclick="logout()" class="p-1.5 sm:p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition flex-shrink-0" title="تسجيل الخروج">
+
+      <div class="flex items-center gap-3">
+        <span id="header-user-name" class="text-sm font-bold text-slate-200"></span>
+        <span class="text-white/15">|</span>
+        <span id="live-clock" class="text-xs text-slate-400 font-mono"></span>
+        <button onclick="logout()" class="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition" title="تسجيل الخروج">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
           </svg>
@@ -1667,19 +1671,11 @@
       <div class="grid grid-cols-3 gap-2">
         <input id="newp-age" type="number" value="42" placeholder="العمر" class="input-dark w-full" />
         <input id="newp-weight" type="number" value="78" placeholder="الوزن" class="input-dark w-full" />
-        <input id="newp-height" type="number" value="170" placeholder="الطول" class="input-dark w-full" />
-      </div>
-      <div class="grid grid-cols-3 gap-2">
         <select id="newp-dtype" class="input-dark w-full">
           <option value="النوع الثاني">النوع الثاني</option>
           <option value="النوع الأول">النوع الأول</option>
           <option value="سكري الحمل">سكري الحمل</option>
         </select>
-        <select id="newp-blood" class="input-dark w-full">
-          <option value="O+">O+</option><option value="O-">O-</option><option value="A+">A+</option><option value="A-">A-</option>
-          <option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option>
-        </select>
-        <input id="newp-emerg" type="tel" placeholder="رقم الطوارئ" class="input-dark w-full" dir="ltr" />
       </div>
       <button onclick="doctorCreatePatient()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold">إنشاء ملف المراجع</button>
     </div>
@@ -1750,7 +1746,7 @@
         <h3 class="text-base font-black text-teal-400">بطاقة وهوية المراجع</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div id="doc-qr-box"></div>
+      <div id="doc-qr-box" class="p-4 rounded-xl bg-slate-950/60 border border-white/10 space-y-2"></div>
     </div>
   </div>
 
@@ -1818,11 +1814,11 @@
     function switchAuthTab(tab) {
       const isLogin = tab === 'login';
       document.getElementById('login-form').classList.toggle('hidden', !isLogin);
-      document.getElementById('register-form').classList.toggle('hidden', isLogin);
-      document.getElementById('tab-login-btn').className = isLogin
+      const rf = document.getElementById('register-form'); if(rf) rf.classList.toggle('hidden', isLogin);
+      const tl = document.getElementById('tab-login-btn'); if(tl) tl.className = isLogin
         ? 'py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition'
         : 'py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition';
-      document.getElementById('tab-register-btn').className = !isLogin
+      const tr = document.getElementById('tab-register-btn'); if(tr) tr.className = !isLogin
         ? 'py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition'
         : 'py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition';
     }
@@ -1953,7 +1949,7 @@
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
       document.getElementById('header-user-name').textContent = currentUser.name;
-      document.getElementById('header-dialect-badge').textContent = `${currentUser.countryName || 'العراق'} • ${currentUser.dialectLabel || 'اللهجة العراقية'}`;
+      const dbadge = document.getElementById('header-dialect-badge'); if (dbadge) dbadge.textContent = `${currentUser.countryName || 'العراق'} • ${currentUser.dialectLabel || 'اللهجة العراقية'}`;
 
       if (currentUser.role === 'doctor') {
         document.getElementById('header-section-title').textContent = 'ملفات المراجعين';
@@ -2761,7 +2757,7 @@
       const data = await res.json();
       if (data.success) {
         currentUser = data.user;
-        document.getElementById('header-dialect-badge').textContent = `${currentUser.countryName} • ${currentUser.dialectLabel}`;
+        const dbadge2 = document.getElementById('header-dialect-badge'); if (dbadge2) dbadge2.textContent = `${currentUser.countryName} • ${currentUser.dialectLabel}`;
         closeAllModals();
       }
     }
@@ -2881,7 +2877,7 @@
               <span class="text-xs font-black ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">${p.latestVal ?? '-'}</span>
             </div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-              <span>الهاتف: <span dir="ltr">${p.phone || p.username}</span></span>
+              <span>${p.diabetesType} • ${p.countryName || 'العراق'}</span>
               <span class="inline-flex items-center gap-1.5 ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">
                 <span class="w-2 h-2 rounded-full ${p.isCritical ? 'bg-rose-400' : 'bg-emerald-400'}"></span>
                 <span>${p.isCritical ? 'حالة حرجة' : 'مستقر'}</span>
@@ -3023,10 +3019,7 @@
         phone: document.getElementById('newp-phone').value.trim(),
         age: document.getElementById('newp-age').value,
         weight: document.getElementById('newp-weight').value,
-        height: document.getElementById('newp-height').value,
-        diabetesType: document.getElementById('newp-dtype').value,
-        blood: document.getElementById('newp-blood').value,
-        emergencyPhone: document.getElementById('newp-emerg').value
+        diabetesType: document.getElementById('newp-dtype').value
       };
       const res = await fetch('/api/doctor/create-patient', {
         method: 'POST',
@@ -3140,20 +3133,11 @@
 
     function renderDoctorQrModal() {
       if (!selectedPatient) return;
-      const pid = 'p' + String(selectedPatient.id).padStart(2, '0');
       document.getElementById('doc-qr-box').innerHTML = `
-        <div class="bg-white p-6 rounded-xl text-slate-900 space-y-3 text-center border-[3px] border-slate-200">
-          <div class="text-xs text-slate-500 font-bold mb-1">بطاقة مراجع السكري</div>
-          <div class="text-4xl font-black text-slate-800 tracking-widest mb-3">${pid}</div>
-          <div class="text-[11px] font-bold text-slate-600 space-y-1">
-            <div>العمر: ${selectedPatient.age} | الوزن: ${selectedPatient.weight} كغم | الطول: ${selectedPatient.height} سم</div>
-            <div>النوع: ${selectedPatient.diabetesType} | فصيلة الدم: ${selectedPatient.blood || '-'}</div>
-            <div class="pt-2 mt-2 border-t border-slate-200">الهاتف: <span dir="ltr">${selectedPatient.phone || selectedPatient.username}</span></div>
-          </div>
-          <div class="mt-4 flex justify-center">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${pid}" alt="QR Code" class="w-32 h-32 opacity-90 mix-blend-multiply" />
-          </div>
-        </div>
+        <div class="text-base font-black text-white">${selectedPatient.name}</div>
+        <div class="text-slate-400">رقم الملف الطبي: #${selectedPatient.id}</div>
+        <div class="text-emerald-400 font-bold">الهاتف: ${selectedPatient.phone || selectedPatient.username}</div>
+        <div class="text-amber-300">نوع السكري: ${selectedPatient.diabetesType} • فصيلة الدم: ${selectedPatient.blood || '-'}</div>
       `;
     }
 
