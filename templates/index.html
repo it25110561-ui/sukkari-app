@@ -337,14 +337,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 bg-slate-950/60 border border-white/5 p-1.5 rounded-xl mb-6">
-        <button id="tab-login-btn" onclick="switchAuthTab('login')" class="py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition">
-          تسجيل الدخول
-        </button>
-        <button id="tab-register-btn" onclick="switchAuthTab('register')" class="py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition">
-          حساب مراجع جديد (برقم الهاتف)
-        </button>
-      </div>
+      
 
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
@@ -367,107 +360,7 @@
         </div>
       </form>
 
-      <form id="register-form" onsubmit="handleVerifyRegister(event)" class="space-y-3 hidden">
-        <div class="p-3 rounded-xl bg-emerald-950/35 border border-emerald-500/25 text-xs text-emerald-300 flex items-center justify-between">
-          <span>اللهجة التلقائية حسب مفتاح الدولة:</span>
-          <strong id="reg-dialect-preview">العراق • اللهجة العراقية</strong>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">الدولة والرمز</label>
-            <select id="reg-country" onchange="updateCountryPreview()" class="input-dark w-full text-xs">
-              <option value="+964" data-label="العراق • اللهجة العراقية">+964 العراق</option>
-              <option value="+966" data-label="السعودية • اللهجة الخليجية">+966 السعودية</option>
-              <option value="+971" data-label="الإمارات • اللهجة الخليجية">+971 الإمارات</option>
-              <option value="+965" data-label="الكويت • اللهجة الخليجية">+965 الكويت</option>
-              <option value="+974" data-label="قطر • اللهجة الخليجية">+974 قطر</option>
-              <option value="+973" data-label="البحرين • اللهجة الخليجية">+973 البحرين</option>
-              <option value="+968" data-label="عُمان • اللهجة الخليجية">+968 عُمان</option>
-              <option value="+20" data-label="مصر • اللهجة المصرية">+20 مصر</option>
-              <option value="+962" data-label="الأردن • اللهجة الشامية">+962 الأردن</option>
-              <option value="+961" data-label="لبنان • اللهجة الشامية">+961 لبنان</option>
-              <option value="+963" data-label="سوريا • اللهجة الشامية">+963 سوريا</option>
-              <option value="+970" data-label="فلسطين • اللهجة الشامية">+970 فلسطين</option>
-              <option value="+212" data-label="المغرب • العربية المبسطة">+212 المغرب</option>
-              <option value="+213" data-label="الجزائر • العربية المبسطة">+213 الجزائر</option>
-              <option value="+216" data-label="تونس • العربية المبسطة">+216 تونس</option>
-              <option value="+1" data-label="USA/Canada • English">+1 USA/CA</option>
-              <option value="+44" data-label="UK • English">+44 UK</option>
-              <option value="+90" data-label="Turkey • English">+90 Turkey</option>
-            </select>
-          </div>
-          <div class="col-span-2">
-            <label class="block text-xs text-slate-400 mb-1">رقم الموبايل</label>
-            <div class="flex gap-2">
-              <input id="reg-phone" type="tel" required placeholder="7701234567" class="input-dark w-full" dir="ltr" />
-              <button type="button" onclick="sendOtpCode()" class="px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold whitespace-nowrap">
-                أرسل الرمز
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div id="otp-box" class="hidden p-3 rounded-xl bg-slate-900/70 border border-sky-500/35 space-y-2">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-sky-300 font-bold">أدخل رمز التحقق المكون من 6 أرقام:</span>
-            <span id="demo-otp-hint" class="text-amber-300 font-mono font-bold"></span>
-          </div>
-          <input id="reg-otp" type="text" maxlength="6" placeholder="123456" class="input-dark w-full text-center tracking-widest font-mono text-lg" dir="ltr" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">الاسم الكامل</label>
-            <input id="reg-name" type="text" required placeholder="الاسم الثلاثي" class="input-dark w-full" />
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">الرمز السري للحساب</label>
-            <input id="reg-password" type="password" required placeholder="••••••" class="input-dark w-full" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">العمر</label>
-            <input id="reg-age" type="number" value="38" class="input-dark w-full" />
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">الوزن (كغم)</label>
-            <input id="reg-weight" type="number" value="75" class="input-dark w-full" />
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">الطول (سم)</label>
-            <input id="reg-height" type="number" value="170" class="input-dark w-full" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">نوع السكري</label>
-            <select id="reg-dtype" class="input-dark w-full text-xs">
-              <option value="النوع الثاني">النوع الثاني</option>
-              <option value="النوع الأول">النوع الأول</option>
-              <option value="سكري الحمل">سكري الحمل</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">فصيلة الدم</label>
-            <select id="reg-blood" class="input-dark w-full text-xs">
-              <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
-              <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">رقم طوارئ الأهل</label>
-            <input id="reg-emerg" type="tel" placeholder="0770..." class="input-dark w-full text-xs" dir="ltr" />
-          </div>
-        </div>
-
-        <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow-lg transition">
-          تأكيد الرقم وإنشاء الحساب
-        </button>
-      </form>
+      
     </div>
   </div>
 
@@ -475,27 +368,23 @@
   <div id="app-shell" class="hidden min-h-screen flex flex-col">
 
     <!-- الشريط العلوي الزجاجي -->
-    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200" title="القائمة الجانبية">
+    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-3 py-3 flex items-center justify-between gap-1 overflow-hidden">
+      <div class="flex items-center gap-2 min-w-0">
+        <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 flex-shrink-0" title="القائمة الجانبية">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <img src="/icon.svg" alt="سُكّري" class="w-8 h-8 rounded-lg" />
-        <span class="font-black text-lg text-emerald-400">سُكّري</span>
-        <span id="header-section-title" class="text-sm font-bold text-slate-200 hidden sm:inline">قياساتي</span>
-        <span id="header-role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300">مراجع</span>
-        <span id="header-dialect-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-400/25">
-          العراق • اللهجة العراقية
-        </span>
+        <img src="/icon.svg" alt="سُكّري" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex-shrink-0" />
+        <span class="font-black text-base sm:text-lg text-emerald-400 flex-shrink-0 hidden sm:inline-block">سُكّري</span>
+        <span id="header-section-title" class="text-sm font-bold text-slate-200 hidden md:inline whitespace-nowrap ml-2">قياساتي</span>
+        <span id="header-role-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 whitespace-nowrap">مراجع</span>
       </div>
-
-      <div class="flex items-center gap-3">
-        <span id="header-user-name" class="text-sm font-bold text-slate-200"></span>
-        <span class="text-white/15">|</span>
-        <span id="live-clock" class="text-xs text-slate-400 font-mono"></span>
-        <button onclick="logout()" class="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition" title="تسجيل الخروج">
+      <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0 min-w-0">
+        <span id="header-user-name" class="text-xs sm:text-sm font-bold text-slate-200 truncate max-w-[110px] sm:max-w-[200px]"></span>
+        <span class="text-white/15 hidden sm:inline">|</span>
+        <span id="live-clock" class="text-[10px] sm:text-xs text-slate-400 font-mono hidden sm:inline-block whitespace-nowrap"></span>
+        <button onclick="logout()" class="p-1.5 sm:p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition flex-shrink-0" title="تسجيل الخروج">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
           </svg>
@@ -1778,11 +1667,19 @@
       <div class="grid grid-cols-3 gap-2">
         <input id="newp-age" type="number" value="42" placeholder="العمر" class="input-dark w-full" />
         <input id="newp-weight" type="number" value="78" placeholder="الوزن" class="input-dark w-full" />
+        <input id="newp-height" type="number" value="170" placeholder="الطول" class="input-dark w-full" />
+      </div>
+      <div class="grid grid-cols-3 gap-2">
         <select id="newp-dtype" class="input-dark w-full">
           <option value="النوع الثاني">النوع الثاني</option>
           <option value="النوع الأول">النوع الأول</option>
           <option value="سكري الحمل">سكري الحمل</option>
         </select>
+        <select id="newp-blood" class="input-dark w-full">
+          <option value="O+">O+</option><option value="O-">O-</option><option value="A+">A+</option><option value="A-">A-</option>
+          <option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option>
+        </select>
+        <input id="newp-emerg" type="tel" placeholder="رقم الطوارئ" class="input-dark w-full" dir="ltr" />
       </div>
       <button onclick="doctorCreatePatient()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold">إنشاء ملف المراجع</button>
     </div>
@@ -1853,7 +1750,7 @@
         <h3 class="text-base font-black text-teal-400">بطاقة وهوية المراجع</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div id="doc-qr-box" class="p-4 rounded-xl bg-slate-950/60 border border-white/10 space-y-2"></div>
+      <div id="doc-qr-box"></div>
     </div>
   </div>
 
@@ -2984,7 +2881,7 @@
               <span class="text-xs font-black ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">${p.latestVal ?? '-'}</span>
             </div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-              <span>${p.diabetesType} • ${p.countryName || 'العراق'}</span>
+              <span>الهاتف: <span dir="ltr">${p.phone || p.username}</span></span>
               <span class="inline-flex items-center gap-1.5 ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">
                 <span class="w-2 h-2 rounded-full ${p.isCritical ? 'bg-rose-400' : 'bg-emerald-400'}"></span>
                 <span>${p.isCritical ? 'حالة حرجة' : 'مستقر'}</span>
@@ -3126,7 +3023,10 @@
         phone: document.getElementById('newp-phone').value.trim(),
         age: document.getElementById('newp-age').value,
         weight: document.getElementById('newp-weight').value,
-        diabetesType: document.getElementById('newp-dtype').value
+        height: document.getElementById('newp-height').value,
+        diabetesType: document.getElementById('newp-dtype').value,
+        blood: document.getElementById('newp-blood').value,
+        emergencyPhone: document.getElementById('newp-emerg').value
       };
       const res = await fetch('/api/doctor/create-patient', {
         method: 'POST',
@@ -3240,11 +3140,20 @@
 
     function renderDoctorQrModal() {
       if (!selectedPatient) return;
+      const pid = 'p' + String(selectedPatient.id).padStart(2, '0');
       document.getElementById('doc-qr-box').innerHTML = `
-        <div class="text-base font-black text-white">${selectedPatient.name}</div>
-        <div class="text-slate-400">رقم الملف الطبي: #${selectedPatient.id}</div>
-        <div class="text-emerald-400 font-bold">الهاتف: ${selectedPatient.phone || selectedPatient.username}</div>
-        <div class="text-amber-300">نوع السكري: ${selectedPatient.diabetesType} • فصيلة الدم: ${selectedPatient.blood || '-'}</div>
+        <div class="bg-white p-6 rounded-xl text-slate-900 space-y-3 text-center border-[3px] border-slate-200">
+          <div class="text-xs text-slate-500 font-bold mb-1">بطاقة مراجع السكري</div>
+          <div class="text-4xl font-black text-slate-800 tracking-widest mb-3">${pid}</div>
+          <div class="text-[11px] font-bold text-slate-600 space-y-1">
+            <div>العمر: ${selectedPatient.age} | الوزن: ${selectedPatient.weight} كغم | الطول: ${selectedPatient.height} سم</div>
+            <div>النوع: ${selectedPatient.diabetesType} | فصيلة الدم: ${selectedPatient.blood || '-'}</div>
+            <div class="pt-2 mt-2 border-t border-slate-200">الهاتف: <span dir="ltr">${selectedPatient.phone || selectedPatient.username}</span></div>
+          </div>
+          <div class="mt-4 flex justify-center">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${pid}" alt="QR Code" class="w-32 h-32 opacity-90 mix-blend-multiply" />
+          </div>
+        </div>
       `;
     }
 
