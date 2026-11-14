@@ -181,7 +181,7 @@
     ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.22); border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.38); }
 
-    /* ==================== الشريط العائم السفلي الأصلي (Floating Pill Dock) ==================== */
+    /* ==================== الشريط العائم السفلي الأصلي ==================== */
     .macos-dock-wrap {
       position: fixed;
       bottom: 16px;
@@ -194,13 +194,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 13px;
-      padding: 11px 17px 15px;
+      flex-wrap: wrap; /* السماح بتعدد الأسطر إذا كانت الشاشة صغيرة */
+      gap: 12px;
+      padding: 12px 18px 14px;
       background: rgba(14, 25, 36, 0.92);
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
       border: 1.5px solid rgba(255, 255, 255, 0.13);
-      border-radius: 999px;
+      border-radius: 28px; /* تم التعديل لتكون مستطيلة بحواف ناعمة لتناسب تعدد الأسطر بدون تشوه */
       box-shadow:
         0 18px 42px rgba(0, 0, 0, 0.65),
         inset 0 1px 0 rgba(255, 255, 255, 0.14);
@@ -247,7 +248,7 @@
       transform: translateY(-2px) scale(0.96);
     }
 
-    /* دائرة الإشعار الحمراء (1) على أيقونة الدكتور */
+    /* دائرة الإشعار الحمراء */
     .dock-badge {
       position: absolute;
       top: -6px;
@@ -317,16 +318,18 @@
       margin: 0 2px;
       flex-shrink: 0;
     }
-    @media (max-width: 420px) {
-      .macos-dock { gap: 8px; padding: 9px 12px 13px; }
-      .macos-dock-item { width: 44px; height: 44px; border-radius: 13px; }
+
+    @media (max-width: 480px) {
+      .macos-dock { gap: 8px; padding: 10px 12px; border-radius: 22px; }
+      .macos-dock-item { width: 44px; height: 44px; border-radius: 12px; } 
       .macos-dock-item svg { width: 22px; height: 22px; }
+      .macos-dock-divider { display: none; } /* إخفاء الفاصل لتجنب تشوه التصميم عند تعدد الأسطر بالشاشات الصغيرة */
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- ==================== شاشة تسجيل الدخول والتسجيل برقم الهاتف + OTP ==================== -->
+  <!-- ==================== شاشة تسجيل الدخول والتسجيل ==================== -->
   <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
     <div class="card w-full max-w-lg p-6 sm:p-8 shadow-2xl">
       <div class="flex items-center justify-center gap-3 mb-6">
@@ -336,8 +339,6 @@
           <p class="text-xs text-slate-400">متابعة طبية ذكية مخصصة حسب دولتك ولهجتك</p>
         </div>
       </div>
-
-      
 
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
@@ -359,37 +360,33 @@
           </div>
         </div>
       </form>
-
-      
     </div>
   </div>
 
   <!-- ==================== التطبيق الرئيسي ==================== -->
   <div id="app-shell" class="hidden min-h-screen flex flex-col">
 
-    <!-- الشريط العلوي الزجاجي -->
-    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200" title="القائمة الجانبية">
+    <!-- الشريط العلوي الزجاجي (تم ضبطه لمنع التداخل في الهاتف) -->
+    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-3 sm:px-4 py-2.5 flex items-center justify-between w-full overflow-hidden">
+      <!-- القسم الأيمن من الهيدر -->
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
+        <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 shrink-0" title="القائمة الجانبية">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <img src="/icon.svg" alt="سُكّري" class="w-8 h-8 rounded-lg" />
-        <span class="font-black text-lg text-emerald-400">سُكّري</span>
-        <span id="header-section-title" class="text-sm font-bold text-slate-200 hidden sm:inline">قياساتي</span>
-        <span id="header-role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300">مراجع</span>
-        <span id="header-dialect-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-400/25">
-          العراق • اللهجة العراقية
-        </span>
+        <img src="/icon.svg" alt="سُكّري" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0" />
+        <span class="font-black text-sm sm:text-lg text-emerald-400 shrink-0">سُكّري</span>
+        <span id="header-role-badge" class="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 shrink-0 hidden sm:inline-block">مراجع</span>
       </div>
 
-      <div class="flex items-center gap-3">
-        <span id="header-user-name" class="text-sm font-bold text-slate-200"></span>
-        <span class="text-white/15">|</span>
-        <span id="live-clock" class="text-xs text-slate-400 font-mono"></span>
-        <button onclick="logout()" class="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition" title="تسجيل الخروج">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <!-- القسم الأيسر من الهيدر -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <span id="header-user-name" class="text-xs sm:text-sm font-bold text-slate-200 truncate max-w-[90px] sm:max-w-[150px]"></span>
+        <span class="text-white/15 hidden sm:inline">|</span>
+        <span id="live-clock" class="text-[10px] sm:text-xs text-slate-400 font-mono hidden sm:inline"></span>
+        <button onclick="logout()" class="p-1.5 sm:p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition shrink-0" title="تسجيل الخروج">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
           </svg>
         </button>
@@ -400,21 +397,14 @@
       <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 hidden lg:hidden"></div>
 
       <!-- ==================== الشريط الجانبي الزجاجي الموحّد ==================== -->
-      <aside id="unified-sidebar" class="fixed lg:sticky top-[57px] right-0 z-30 h-[calc(100vh-57px)] w-72 bg-slate-950/75 backdrop-blur-2xl border-l border-white/10 flex flex-col transition-transform duration-200 translate-x-full lg:translate-x-0 overflow-y-auto pb-28">
+      <aside id="unified-sidebar" class="fixed lg:sticky top-[53px] sm:top-[57px] right-0 z-30 h-[calc(100vh-57px)] w-72 bg-slate-950/75 backdrop-blur-2xl border-l border-white/10 flex flex-col transition-transform duration-200 translate-x-full lg:translate-x-0 overflow-y-auto pb-28">
         <div class="p-3.5 border-b border-white/10 flex items-center justify-between">
           <span id="sidebar-role-title" class="text-xs font-extrabold text-emerald-400 tracking-wide">الشريط الجانبي للأدوات</span>
           <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white text-sm px-2">✕</button>
         </div>
 
-        <!-- الشريط الجانبي للمراجع -->
+        <!-- الشريط الجانبي للمراجع (تم إزالة الأيقونات المنقولة للعائم) -->
         <nav id="patient-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
-          <button onclick="scrollToPatientSection('pat-overview')" class="sidebar-btn bg-emerald-500/15 border-emerald-400/25 text-emerald-300 font-bold hover:bg-emerald-500/25">
-            <span class="sidebar-sq-icon sq-green">
-              <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-            </span>
-            <span>الرئيسية وتسجيل القياس</span>
-          </button>
-
           <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الأوضاع الذكية السريعة</div>
           <button onclick="togglePatientFlag('ramadanMode')" class="sidebar-btn justify-between">
             <span class="flex items-center gap-2.5">
@@ -444,70 +434,6 @@
             <span id="sb-senior-state" class="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">مغلق</span>
           </button>
 
-          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الذكاء الاصطناعي وتحليل الصور</div>
-          <button onclick="openToolModal('modal-ai-chat')" class="sidebar-btn bg-indigo-500/15 border-indigo-400/25 hover:bg-indigo-500/25 text-indigo-200 font-bold">
-            <span class="sidebar-sq-icon sq-purple">
-              <svg viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A7.002 7.002 0 0 1 19 11v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a7.002 7.002 0 0 1 6-6.93V3a1 1 0 0 1 1-1zm-2.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9 15v1.5h6V15H9zm-6-3h1v4H3a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1zm18 0a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1v-4h1z"/></svg>
-            </span>
-            <span>المساعد الطبي الذكي (محادثة)</span>
-          </button>
-          <button onclick="openToolModal('modal-meal-ai')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-orange">
-              <svg viewBox="0 0 24 24"><path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-            </span>
-            <span>تحليل الوجبة بالصورة</span>
-          </button>
-          <button onclick="openToolModal('modal-label-ai')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-sky">
-              <svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
-            </span>
-            <span>قارئ ملصقات المعلّبات</span>
-          </button>
-          <button onclick="openToolModal('modal-lab-ai')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-indigo">
-              <svg viewBox="0 0 24 24"><path d="M6 2v2h1v4.5L3.2 16.2C2.5 17.6 3.5 19 5 19h14c1.5 0 2.5-1.4 1.8-2.8L17 8.5V4h1V2H6zm3 2h6v4.9l2.4 4.8H6.6L9 8.9V4z"/></svg>
-            </span>
-            <span>قراءة التحاليل المختبرية</span>
-          </button>
-          <button onclick="openToolModal('modal-med-ai')" class="sidebar-btn text-sky-300">
-            <span class="sidebar-sq-icon sq-teal">
-              <svg viewBox="0 0 24 24"><path d="M4.22 11.29l7.07-7.07c1.95-1.95 5.12-1.95 7.07 0 1.95 1.95 1.95 5.12 0 7.07l-7.07 7.07c-1.95 1.95-5.12 1.95-7.07 0-1.95-1.95-1.95-5.12 0-7.07zm5.66 5.66l2.83-2.83-4.24-4.24-2.83 2.83c-1.17 1.17-1.17 3.07 0 4.24 1.17 1.17 3.07 1.17 4.24 0z"/></svg>
-            </span>
-            <span>التعرف على علبة الدواء بالصورة</span>
-          </button>
-
-          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الطوارئ والأمان</div>
-          <button onclick="openToolModal('modal-hypo15')" class="sidebar-btn text-rose-300">
-            <span class="sidebar-sq-icon sq-red">
-              <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H15V3H9v2H6.5c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM13 10h-2v2H9v-2H7V8h2V6h2v2h2v2z"/></svg>
-            </span>
-            <span>مؤقت قاعدة (15-15) للهبوط</span>
-          </button>
-          <button onclick="openToolModal('modal-bedtime')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-indigo">
-              <svg viewBox="0 0 24 24"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
-            </span>
-            <span>فحص الأمان قبل النوم</span>
-          </button>
-          <button onclick="openToolModal('modal-workout')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-green">
-              <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
-            </span>
-            <span>فحص الأمان قبل الرياضة</span>
-          </button>
-          <button onclick="openToolModal('modal-lockscreen')" class="sidebar-btn text-amber-300">
-            <span class="sidebar-sq-icon sq-orange">
-              <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-5.78v1.75l3.2-2.99L12.8 9v1.7c-3.11.43-4.35 2.56-4.8 4.7 1.11-1.5 2.58-2.18 4.8-2.18z"/></svg>
-            </span>
-            <span>توليد خلفية طوارئ لشاشة القفل</span>
-          </button>
-          <button onclick="openToolModal('modal-cards')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-blue">
-              <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM9 8c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm4 8H5v-1c0-1.33 2.67-2 4-2s4 .67 4 2v1zm6-1h-4v-1.5h4V15zm0-3h-4v-1.5h4V12z"/></svg>
-            </span>
-            <span>بطاقة المدرسة / العمل / الأسنان</span>
-          </button>
-
           <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">التغذية والأدلة</div>
           <button onclick="openToolModal('modal-bolus')" class="sidebar-btn">
             <span class="sidebar-sq-icon sq-green">
@@ -535,12 +461,6 @@
           </button>
 
           <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">المتابعة العلاجية والفحوصات</div>
-          <button onclick="openToolModal('modal-injection')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-sky">
-              <svg viewBox="0 0 24 24"><path d="M18.36 2.64l3 3-1.41 1.41-.71-.71-2.12 2.12 1.41 1.41-1.41 1.41-1.41-1.41-7.78 7.78c-.78.78-2.05.78-2.83 0l-.71-.71-2.47 2.47-1.41-1.41 2.47-2.47-.71-.71c-.78-.78-.78-2.05 0-2.83l7.78-7.78-1.41-1.41 1.41-1.41 1.41 1.41 2.12-2.12-.71-.71 1.41-1.41z"/></svg>
-            </span>
-            <span>خريطة تدوير أماكن الأنسولين</span>
-          </button>
           <button onclick="openToolModal('modal-inventory')" class="sidebar-btn">
             <span class="sidebar-sq-icon sq-orange">
               <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10-2h4v2h-4V4zm6 11h-3v3h-2v-3H8v-2h3v-3h2v3h3v2z"/></svg>
@@ -553,33 +473,14 @@
             </span>
             <span>جدول الفحوصات الدورية والمشي</span>
           </button>
-          <button onclick="openToolModal('modal-neuropathy')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-purple">
-              <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-            </span>
-            <span>مقياس فحص الأعصاب واللثة</span>
-          </button>
           <button onclick="openToolModal('modal-calibration')" class="sidebar-btn">
             <span class="sidebar-sq-icon sq-sky">
               <svg viewBox="0 0 24 24"><path d="M13 7.83c.85-.3 1.53-.98 1.83-1.83H18l-3 7c0 1.66 1.57 3 3.5 3s3.5-1.34 3.5-3l-3-7h2V4h-6.17C14.42 2.83 13.31 2 12 2s-2.42.83-2.83 2H3v2h2l-3 7c0 1.66 1.57 3 3.5 3S9 14.66 9 13L6 6h3.17c.3.85.98 1.53 1.83 1.83V19H2v2h20v-2h-9V7.83z"/></svg>
             </span>
             <span>معايرة دقة الجهاز المنزلي</span>
           </button>
-          <button onclick="openToolModal('modal-travel')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-orange">
-              <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
-            </span>
-            <span>حقيبة السفر والتحضير للعيادة</span>
-          </button>
 
           <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">التواصل والتقارير</div>
-          <button onclick="openToolModal('modal-doc-chat')" class="sidebar-btn text-sky-300">
-            <span class="sidebar-sq-icon sq-blue">
-              <span class="sidebar-sq-badge">1</span>
-              <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm-1 1.5h2v2h2v1.5h-2v2h-2v-2H9v-1.5h2v-2z"/></svg>
-            </span>
-            <span>محادثة الدكتور المشرف</span>
-          </button>
           <button onclick="sendWeeklySummaryToDoctor()" class="sidebar-btn">
             <span class="sidebar-sq-icon sq-green">
               <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -608,45 +509,8 @@
 
         <!-- الشريط الجانبي للطبيب -->
         <nav id="doctor-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
-          <button onclick="scrollToDoctorSection('doc-overview')" class="sidebar-btn bg-sky-500/15 border-sky-400/25 text-sky-300 font-bold hover:bg-sky-500/25">
-            <span class="sidebar-sq-icon sq-green">
-              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
-            </span>
-            <span>لوحة العيادة وملف المراجع</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-create-patient')" class="sidebar-btn text-emerald-300 font-bold">
-            <span class="sidebar-sq-icon sq-blue">
-              <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </span>
-            <span>إضافة مراجع جديد</span>
-          </button>
-
-          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">أدوات متابعة المراجع المحدد</div>
-          <button onclick="scrollToDoctorSection('doc-notes-section')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-orange">
-              <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
-            </span>
-            <span>توجيهات الطبيب والإملاء الصوتي</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-chat-panel')" class="sidebar-btn text-sky-300">
-            <span class="sidebar-sq-icon sq-sky">
-              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
-            </span>
-            <span>محادثة المراجع المباشرة</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-labs-panel')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-purple">
-              <svg viewBox="0 0 24 24"><path d="M6 2v2h1v4.5L3.2 16.2C2.5 17.6 3.5 19 5 19h14c1.5 0 2.5-1.4 1.8-2.8L17 8.5V4h1V2H6zm3 2h6v4.9l2.4 4.8H6.6L9 8.9V4z"/></svg>
-            </span>
-            <span>تحاليل المراجع المختبرية</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-qr-panel')" class="sidebar-btn">
-            <span class="sidebar-sq-icon sq-teal">
-              <svg viewBox="0 0 24 24"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zm-5.99 4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4 0h2v2h-2zm2 2h2v2h-2zm0-4h2v2h-2zm2-2h2v2h-2z"/></svg>
-            </span>
-            <span>بطاقة وباركود المراجع</span>
-          </button>
-          <button onclick="exportDoctorSelectedExcel()" class="sidebar-btn">
+          <!-- تمت إزالة الأزرار التي نقلت للشريط العائم -->
+          <button onclick="exportDoctorSelectedExcel()" class="sidebar-btn mt-4">
             <span class="sidebar-sq-icon sq-green">
               <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
             </span>
@@ -675,8 +539,8 @@
         </nav>
       </aside>
 
-      <!-- ==================== المحتوى الرئيسي للمراجع (مبسّط ومنظّم بدون رسم بياني) ==================== -->
-      <main id="patient-view" class="hidden flex-1 p-4 sm:p-6 pb-32 space-y-5 max-w-6xl mx-auto w-full">
+      <!-- ==================== المحتوى الرئيسي للمراجع ==================== -->
+      <main id="patient-view" class="hidden flex-1 p-4 sm:p-6 pb-48 space-y-5 max-w-6xl mx-auto w-full"> 
         <div id="pat-overview"></div>
 
         <!-- 1. التنبيهات السريرية الذكية -->
@@ -737,7 +601,6 @@
           </div>
 
           <form onsubmit="submitNewLog(event)" class="space-y-3">
-            <!-- الصف الأساسي -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label class="block text-xs text-slate-300 font-bold mb-1">قراءة السكر (mg/dL) *</label>
@@ -761,8 +624,6 @@
                 </button>
               </div>
             </div>
-
-            <!-- الصف الإضافي الاختياري -->
             <div class="pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
                 <label class="block text-xs text-slate-400 mb-1">ضغط الدم (اختياري)</label>
@@ -795,33 +656,8 @@
           </form>
         </div>
 
-        <!-- 4. اختصار المساعد الذكي وتحليل الصور -->
-        <div class="card p-4 bg-gradient-to-l from-emerald-500/10 via-white/[0.02] to-sky-500/10 border-emerald-400/20 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <span class="sidebar-sq-icon sq-purple !w-10 !h-10 !rounded-xl">
-              <svg viewBox="0 0 24 24" class="!w-5 !h-5"><path d="M12 2a1 1 0 0 1 1 1v1.07A7.002 7.002 0 0 1 19 11v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a7.002 7.002 0 0 1 6-6.93V3a1 1 0 0 1 1-1zm-2.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9 15v1.5h6V15H9z"/></svg>
-            </span>
-            <div>
-              <div class="text-sm font-black text-emerald-300">مساعدك الذكي ومحلل الصور الطبي</div>
-              <div class="text-xs text-slate-400">اسأله عن قياساتك أو صوّر وجبتك وتحاليلك</div>
-            </div>
-          </div>
-          <div class="flex flex-wrap gap-2 text-xs">
-            <button onclick="openToolModal('modal-ai-chat')" class="px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/30 text-white font-bold flex items-center gap-1.5">
-              <span>اسأل المساعد الذكي</span>
-            </button>
-            <button onclick="openToolModal('modal-meal-ai')" class="px-3.5 py-2 rounded-xl bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-black flex items-center gap-1.5">
-              <span>صوّر وجبتك</span>
-            </button>
-            <button onclick="openToolModal('modal-lab-ai')" class="px-3.5 py-2 rounded-xl bg-sky-600/90 hover:bg-sky-500 border border-sky-400/30 text-white font-bold flex items-center gap-1.5">
-              <span>اقرأ تحليلك</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 5. المتابعة اليومية والحاسبات الذكية (4 بطاقات متوازنة ومرتبة) -->
+        <!-- 5. المتابعة اليومية والحاسبات الذكية -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <!-- البطاقة 1: الماء والمشي -->
           <div class="card p-5 space-y-3.5">
             <div class="section-head">
               <span class="section-sq-icon sq-sky">
@@ -849,7 +685,6 @@
             </div>
           </div>
 
-          <!-- البطاقة 2: الالتزام بالعلاج -->
           <div class="card p-5 space-y-3.5">
             <div class="flex items-center justify-between">
               <div class="section-head">
@@ -885,7 +720,6 @@
             </div>
           </div>
 
-          <!-- البطاقة 3: حاسبة التصحيح ومؤقت ما بعد الوجبة -->
           <div class="card p-5 space-y-4">
             <div class="space-y-2.5">
               <div class="flex items-center justify-between">
@@ -928,7 +762,6 @@
             </div>
           </div>
 
-          <!-- البطاقة 4: استجابة جسمك للأكل ومحاكي التراكمي -->
           <div class="card p-5 space-y-4">
             <div class="space-y-2.5">
               <div class="section-head">
@@ -963,7 +796,6 @@
           </div>
         </div>
 
-        <!-- 6. توجيهات الدكتور وسجل آخر القياسات (بدون رسم بياني عند المريض) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="card p-5 flex flex-col justify-between space-y-3">
             <div class="flex items-center justify-between">
@@ -995,8 +827,8 @@
         </div>
       </main>
 
-      <!-- ==================== المحتوى الرئيسي للطبيب (يحتوي على الرسم البياني) ==================== -->
-      <main id="doctor-view" class="hidden flex-1 p-4 sm:p-6 pb-32 space-y-5 max-w-7xl mx-auto w-full">
+      <!-- ==================== المحتوى الرئيسي للطبيب ==================== -->
+      <main id="doctor-view" class="hidden flex-1 p-4 sm:p-6 pb-48 space-y-5 max-w-7xl mx-auto w-full">
         <div id="doc-overview"></div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1045,14 +877,6 @@
                   </div>
                   <p id="dp-meta" class="text-xs text-slate-400 mt-1">-</p>
                 </div>
-                <div class="flex items-center gap-2">
-                  <button onclick="exportDoctorSelectedExcel()" class="px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5">
-                    <span>تصدير Excel</span>
-                  </button>
-                  <button onclick="openToolModal('modal-doc-qr-panel')" class="px-3.5 py-2 rounded-xl bg-teal-600/90 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5">
-                    <span>الباركود</span>
-                  </button>
-                </div>
               </div>
 
               <div class="mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-400/25">
@@ -1080,7 +904,6 @@
               <div id="dp-clinical-alerts" class="mt-3 space-y-1.5"></div>
             </div>
 
-            <!-- الرسم البياني وسجل قياسات المراجع (حصرياً للطبيب) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="card p-4">
                 <div class="section-head mb-2">
@@ -1159,28 +982,58 @@
       </main>
     </div>
 
-    <!-- ==================== الشريط العائم السفلي للمراجع (بمنظره الأصلي للمشروع) ==================== -->
+    <!-- ==================== الشريط العائم السفلي للمراجع (مُحدّث بكافة الأيقونات الأساسية) ==================== -->
     <div id="patient-floating-dock" class="hidden macos-dock-wrap">
       <div class="macos-dock" data-macos-dock>
-        <!-- 1. قياساتي (أخضر + نقطة بيضاء سفلية) -->
+        <!-- 1. قياساتي -->
         <button onclick="setDockActive('pat-home'); scrollToPatientSection('pat-overview')" data-dock-id="pat-home" class="macos-dock-item sq-green open" title="قياساتي">
           <span class="macos-dock-tooltip">قياساتي</span>
           <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
         </button>
 
-        <!-- 2. صوّر وجبتك (برتقالي + كاميرا) -->
+        <!-- 2. صوّر وجبتك -->
         <button onclick="setDockActive('pat-meal'); openToolModal('modal-meal-ai')" data-dock-id="pat-meal" class="macos-dock-item sq-orange" title="صوّر وجبتك">
           <span class="macos-dock-tooltip">صوّر وجبتك</span>
           <svg viewBox="0 0 24 24"><path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </button>
 
-        <!-- 3. المساعد الذكي (بنفسجي + روبوت) -->
+        <!-- 3. المساعد الذكي -->
         <button onclick="setDockActive('pat-ai'); openToolModal('modal-ai-chat')" data-dock-id="pat-ai" class="macos-dock-item sq-purple" title="المساعد الذكي">
           <span class="macos-dock-tooltip">المساعد الذكي</span>
           <svg viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A7.002 7.002 0 0 1 19 11v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a7.002 7.002 0 0 1 6-6.93V3a1 1 0 0 1 1-1zm-2.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9 15v1.5h6V15H9zm-6-3h1v4H3a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1zm18 0a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1v-4h1z"/></svg>
         </button>
 
-        <!-- 4. الدكتور (أزرق + إشعار رقم 1) -->
+        <!-- 4. اقرأ تحليلك -->
+        <button onclick="setDockActive('pat-lab'); openToolModal('modal-lab-ai')" data-dock-id="pat-lab" class="macos-dock-item sq-indigo" title="اقرأ تحليلك">
+          <span class="macos-dock-tooltip">اقرأ تحليلك</span>
+          <svg viewBox="0 0 24 24"><path d="M6 2v2h1v4.5L3.2 16.2C2.5 17.6 3.5 19 5 19h14c1.5 0 2.5-1.4 1.8-2.8L17 8.5V4h1V2H6zm3 2h6v4.9l2.4 4.8H6.6L9 8.9V4z"/></svg>
+        </button>
+
+        <!-- 5. قارئ الملصقات -->
+        <button onclick="setDockActive('pat-label'); openToolModal('modal-label-ai')" data-dock-id="pat-label" class="macos-dock-item sq-sky" title="قارئ الملصقات">
+          <span class="macos-dock-tooltip">قارئ الملصقات</span>
+          <svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+        </button>
+
+        <!-- 6. تعرّف على الدواء -->
+        <button onclick="setDockActive('pat-med'); openToolModal('modal-med-ai')" data-dock-id="pat-med" class="macos-dock-item sq-teal" title="تعرّف على الدواء">
+          <span class="macos-dock-tooltip">تعرّف على الدواء</span>
+          <svg viewBox="0 0 24 24"><path d="M4.22 11.29l7.07-7.07c1.95-1.95 5.12-1.95 7.07 0 1.95 1.95 1.95 5.12 0 7.07l-7.07 7.07c-1.95 1.95-5.12 1.95-7.07 0-1.95-1.95-1.95-5.12 0-7.07zm5.66 5.66l2.83-2.83-4.24-4.24-2.83 2.83c-1.17 1.17-1.17 3.07 0 4.24 1.17 1.17 3.07 1.17 4.24 0z"/></svg>
+        </button>
+
+        <!-- 7. الأمان قبل النوم -->
+        <button onclick="setDockActive('pat-bedtime'); openToolModal('modal-bedtime')" data-dock-id="pat-bedtime" class="macos-dock-item sq-indigo" title="الأمان قبل النوم">
+          <span class="macos-dock-tooltip">الأمان قبل النوم</span>
+          <svg viewBox="0 0 24 24"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
+        </button>
+
+        <!-- 8. فحص قبل الرياضة -->
+        <button onclick="setDockActive('pat-workout'); openToolModal('modal-workout')" data-dock-id="pat-workout" class="macos-dock-item sq-green" title="قبل الرياضة">
+          <span class="macos-dock-tooltip">قبل الرياضة</span>
+          <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+        </button>
+
+        <!-- 9. الدكتور -->
         <button onclick="setDockActive('pat-chat'); openToolModal('modal-doc-chat')" data-dock-id="pat-chat" class="macos-dock-item sq-blue" title="الدكتور">
           <span class="dock-badge" id="pat-doc-badge">1</span>
           <span class="macos-dock-tooltip">الدكتور</span>
@@ -1189,7 +1042,7 @@
 
         <div class="macos-dock-divider"></div>
 
-        <!-- 5. طوارئ 15-15 (أحمر + سيارة إسعاف) -->
+        <!-- 10. طوارئ 15-15 -->
         <button onclick="setDockActive('pat-hypo'); openToolModal('modal-hypo15')" data-dock-id="pat-hypo" class="macos-dock-item sq-red" title="طوارئ 15-15">
           <span class="macos-dock-tooltip">طوارئ 15-15</span>
           <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H15V3H9v2H6.5c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM13 10h-2v2H9v-2H7V8h2V6h2v2h2v2z"/></svg>
@@ -1197,7 +1050,7 @@
       </div>
     </div>
 
-    <!-- ==================== الشريط العائم السفلي للطبيب (بمنظره الأصلي للمشروع) ==================== -->
+    <!-- ==================== الشريط العائم السفلي للطبيب ==================== -->
     <div id="doctor-floating-dock" class="hidden macos-dock-wrap">
       <div class="macos-dock" data-macos-dock>
         <button onclick="setDockActive('doc-home'); scrollToDoctorSection('doc-overview')" data-dock-id="doc-home" class="macos-dock-item sq-green open" title="العيادة">
@@ -1218,6 +1071,11 @@
         <button onclick="setDockActive('doc-chat'); openToolModal('modal-doc-chat-panel')" data-dock-id="doc-chat" class="macos-dock-item sq-blue" title="المحادثة">
           <span class="macos-dock-tooltip">المحادثة</span>
           <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+        </button>
+        
+        <button onclick="setDockActive('doc-qr'); openToolModal('modal-doc-qr-panel')" data-dock-id="doc-qr" class="macos-dock-item sq-teal" title="بطاقة المراجع">
+          <span class="macos-dock-tooltip">بطاقة المراجع</span>
+          <svg viewBox="0 0 24 24"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zm-5.99 4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4 0h2v2h-2zm2 2h2v2h-2zm0-4h2v2h-2zm2-2h2v2h-2z"/></svg>
         </button>
 
         <div class="macos-dock-divider"></div>
@@ -1491,24 +1349,6 @@
     </div>
   </div>
 
-  <div id="modal-injection" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">تدوير أماكن حقن الأنسولين</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <p class="text-xs text-slate-400">آخر مكان حقن مسجل: <strong id="last-inj-site-lbl" class="text-emerald-400">غير محدد</strong></p>
-      <div class="grid grid-cols-2 gap-2 text-xs">
-        <button onclick="saveInjectionSite('البطن - يمين')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">البطن - يمين</button>
-        <button onclick="saveInjectionSite('البطن - يسار')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">البطن - يسار</button>
-        <button onclick="saveInjectionSite('الذراع الأيمن')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الذراع الأيمن</button>
-        <button onclick="saveInjectionSite('الذراع الأيسر')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الذراع الأيسر</button>
-        <button onclick="saveInjectionSite('الفخذ الأيمن')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الفخذ الأيمن</button>
-        <button onclick="saveInjectionSite('الفخذ الأيسر')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الفخذ الأيسر</button>
-      </div>
-    </div>
-  </div>
-
   <div id="modal-inventory" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
@@ -1557,21 +1397,6 @@
     </div>
   </div>
 
-  <div id="modal-neuropathy" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-purple-400">فحص تنميل الأعصاب وصحة اللثة والجلد</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل تشعر بخدر أو تنميل في القدمين؟</label>
-      <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل تحس بحرقة أو وخز بالرجلين ليلاً؟</label>
-      <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل يزعجك ملامسة الغطاء للقدمين؟</label>
-      <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل لاحظت جفافاً أو تشققاً بالكعبين أو التهاب لثة؟</label>
-      <button onclick="submitNeuropathyCheck()" class="w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold">حساب النتيجة وإرسالها للدكتور</button>
-      <div id="neuro-result" class="p-3 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 hidden"></div>
-    </div>
-  </div>
-
   <div id="modal-calibration" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="card w-full max-w-md p-6 space-y-4 text-xs border-white/15">
       <div class="flex justify-between items-center">
@@ -1582,21 +1407,6 @@
       <input id="cal-lab" type="number" placeholder="قراءة المختبر بنفس الوقت" class="input-dark w-full" />
       <button onclick="submitCalibration()" class="w-full py-2.5 rounded-xl bg-sky-600 text-white font-bold">احسب نسبة الدقة</button>
       <div id="cal-result" class="p-3 rounded-xl bg-slate-950/60 border border-white/10 text-emerald-300 font-bold hidden"></div>
-    </div>
-  </div>
-
-  <div id="modal-travel" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
-      <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">حقيبة السفر والتحضير لموعد العيادة</h3>
-        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
-      </div>
-      <div class="space-y-2">
-        <label class="flex items-center gap-2"><input type="checkbox" class="accent-amber-500" /> حافظة تبريد للأنسولين (بجنطة اليد مو الشحن)</label>
-        <label class="flex items-center gap-2"><input type="checkbox" class="accent-amber-500" /> أشرطة فحص وبطارية إضافية للجهاز</label>
-        <label class="flex items-center gap-2"><input type="checkbox" class="accent-amber-500" /> وجبة سريعة وعصير للطوارئ بالطريق</label>
-        <label class="flex items-center gap-2"><input type="checkbox" class="accent-amber-500" /> جلب علب الأدوية والتحاليل يوم مراجعة الدكتور</label>
-      </div>
     </div>
   </div>
 
@@ -1921,7 +1731,13 @@
         'modal-doc-chat': 'pat-chat',
         'modal-doc-create-patient': 'doc-new',
         'modal-doc-labs-panel': 'doc-labs',
-        'modal-doc-chat-panel': 'doc-chat'
+        'modal-doc-chat-panel': 'doc-chat',
+        'modal-bedtime': 'pat-bedtime',
+        'modal-workout': 'pat-workout',
+        'modal-label-ai': 'pat-label',
+        'modal-med-ai': 'pat-med',
+        'modal-lab-ai': 'pat-lab',
+        'modal-doc-qr-panel': 'doc-qr'
       };
       if (modalDockMap[id]) setDockActive(modalDockMap[id]);
 
@@ -2299,7 +2115,7 @@
       }
     }
 
-    // ================= منطق واجهة المراجع (بدون رسم بياني) =================
+    // ================= منطق واجهة المراجع =================
     function scrollToPatientSection(id) {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -2381,9 +2197,14 @@
       document.getElementById('pat-next-visit').textContent = u.nextVisitDate || 'غير محدد';
       document.getElementById('pat-strips-badge').textContent = u.stripsCount ?? 50;
       document.getElementById('pat-pens-badge').textContent = u.insulinPensCount ?? 5;
-      document.getElementById('last-inj-site-lbl').textContent = u.lastInjectionSite || 'غير محدد';
-      document.getElementById('inv-strips-input').value = u.stripsCount ?? 50;
-      document.getElementById('inv-pens-input').value = u.insulinPensCount ?? 5;
+      
+      const lastInjSiteEl = document.getElementById('last-inj-site-lbl');
+      if(lastInjSiteEl) lastInjSiteEl.textContent = u.lastInjectionSite || 'غير محدد';
+      
+      const invStripsInput = document.getElementById('inv-strips-input');
+      if(invStripsInput) invStripsInput.value = u.stripsCount ?? 50;
+      const invPensInput = document.getElementById('inv-pens-input');
+      if(invPensInput) invPensInput.value = u.insulinPensCount ?? 5;
 
       document.getElementById('safe-foods-list').textContent = a.safeFoods.length ? a.safeFoods.join('، ') : 'لا توجد بيانات بعد';
       document.getElementById('spike-foods-list').textContent = a.spikeFoods.length ? a.spikeFoods.join('، ') : 'لا توجد طفرات مسجلة';
@@ -2392,11 +2213,16 @@
       document.getElementById('corr-params-lbl').textContent = `المستهدف: ${u.targetGlucose || 120} | المعامل: ${u.correctionFactor || 40}`;
       document.getElementById('adherence-badge').textContent = `الالتزام: ${a.adherencePct}%`;
 
-      document.getElementById('prof-dialect').value = u.dialect || 'iraqi';
-      document.getElementById('prof-age').value = u.age || 40;
-      document.getElementById('prof-weight').value = u.weight || 75;
-      document.getElementById('prof-height').value = u.height || 170;
-      document.getElementById('prof-emerg').value = u.emergencyPhone || '';
+      const profDialect = document.getElementById('prof-dialect');
+      if(profDialect) profDialect.value = u.dialect || 'iraqi';
+      const profAge = document.getElementById('prof-age');
+      if(profAge) profAge.value = u.age || 40;
+      const profWeight = document.getElementById('prof-weight');
+      if(profWeight) profWeight.value = u.weight || 75;
+      const profHeight = document.getElementById('prof-height');
+      if(profHeight) profHeight.value = u.height || 170;
+      const profEmerg = document.getElementById('prof-emerg');
+      if(profEmerg) profEmerg.value = u.emergencyPhone || '';
 
       renderPatientLogsAndChart(patientLogs);
     }
@@ -2811,7 +2637,7 @@
       window.location.href = `/api/export/excel/${currentUser.id}`;
     }
 
-    // ================= منطق واجهة الطبيب (تشمل الرسم البياني) =================
+    // ================= منطق واجهة الطبيب =================
     function scrollToDoctorSection(id) {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
