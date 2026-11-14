@@ -12,22 +12,92 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     * { font-family: 'Cairo', sans-serif; }
-    body { background-color: #0b1120; color: #f1f5f9; overflow-x: hidden; }
-    .card {
-      background: #131c31;
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 1rem;
+    body {
+      background-color: #070c18;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      position: relative;
     }
+    /* إضاءة محيطية ناعمة خلف الواجهة لإبراز تأثير الزجاج المصنفر */
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      border-radius: 9999px;
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(110px);
+    }
+    body::before {
+      width: 440px;
+      height: 440px;
+      top: -110px;
+      right: -90px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.18), rgba(14, 165, 233, 0.06) 65%, transparent 100%);
+    }
+    body::after {
+      width: 480px;
+      height: 480px;
+      bottom: -140px;
+      left: -100px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.15), rgba(99, 102, 241, 0.08) 65%, transparent 100%);
+    }
+
+    /* البطاقات الزجاجية */
+    .card {
+      background: linear-gradient(145deg, rgba(22, 33, 58, 0.56) 0%, rgba(13, 20, 38, 0.46) 100%);
+      backdrop-filter: blur(22px) saturate(165%);
+      -webkit-backdrop-filter: blur(22px) saturate(165%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 1.15rem;
+      box-shadow:
+        0 14px 36px -10px rgba(0, 0, 0, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    }
+
+    /* حقول الإدخال الزجاجية */
     .input-dark {
-      background: #0b1120;
-      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(8, 13, 26, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: #f8fafc;
       border-radius: 0.75rem;
       padding: 0.6rem 0.85rem;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
     }
-    .input-dark:focus { border-color: #10b981; }
+    .input-dark:focus {
+      border-color: rgba(16, 185, 129, 0.65);
+      background: rgba(10, 17, 34, 0.75);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+    }
+
+    /* القوائم الجانبية وأزرار الأدوات */
+    .sidebar-btn {
+      width: 100%;
+      text-align: right;
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #cbd5e1;
+      border: 1px solid transparent;
+      transition: all 0.18s ease;
+    }
+    .sidebar-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .sidebar-btn svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
     body.senior-mode { font-size: 1.22rem; }
     body.senior-mode .text-xs { font-size: 0.95rem !important; }
     body.senior-mode .text-sm { font-size: 1.08rem !important; }
@@ -35,14 +105,16 @@
       min-height: 48px;
       font-size: 1.05rem !important;
     }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0b1120; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
 
-    /* ==================== macOS Floating Dock ==================== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(7, 12, 24, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.22); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.38); }
+
+    /* ==================== macOS Glass Floating Dock ==================== */
     .macos-dock-wrap {
       position: fixed;
-      bottom: 14px;
+      bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 35;
@@ -54,48 +126,95 @@
       justify-content: center;
       gap: 10px;
       padding: 9px 14px 13px;
-      background: rgba(22, 30, 52, 0.74);
-      backdrop-filter: blur(22px) saturate(180%);
-      -webkit-backdrop-filter: blur(22px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(13, 20, 38, 0.62) 100%);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 22px;
       box-shadow:
-        0 20px 45px rgba(0, 0, 0, 0.62),
-        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+        0 24px 48px -10px rgba(0, 0, 0, 0.72),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06);
     }
     .macos-dock-item {
       position: relative;
       width: 46px;
       height: 46px;
-      border-radius: 13px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 21px;
-      color: #ffffff;
+      color: #f8fafc;
       cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       box-shadow:
-        0 8px 18px rgba(0, 0, 0, 0.35),
-        inset 0 1px 1px rgba(255, 255, 255, 0.38);
-      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease;
+        0 8px 18px rgba(0, 0, 0, 0.32),
+        inset 0 1px 1px rgba(255, 255, 255, 0.32);
+      transition:
+        transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.22s ease,
+        background 0.22s ease,
+        border-color 0.22s ease;
       user-select: none;
       flex-shrink: 0;
     }
+    .macos-dock-item svg {
+      width: 21px;
+      height: 21px;
+      stroke-width: 1.85;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
     .macos-dock-item:hover {
-      transform: translateY(-10px) scale(1.22);
+      transform: translateY(-10px) scale(1.2);
       z-index: 2;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+      border-color: rgba(255, 255, 255, 0.36);
       box-shadow:
-        0 14px 26px rgba(0, 0, 0, 0.5),
-        inset 0 1px 1px rgba(255, 255, 255, 0.5);
+        0 14px 26px rgba(0, 0, 0, 0.48),
+        inset 0 1px 1px rgba(255, 255, 255, 0.45);
     }
     .macos-dock-item.neighbor {
-      transform: translateY(-4px) scale(1.09);
+      transform: translateY(-4px) scale(1.08);
     }
     .macos-dock-item:active {
       transform: translateY(-3px) scale(0.96);
     }
-    /* النقطة البيضاء المضيئة أسفل الأيقونة النشطة (macOS Open-App Indicator) */
+    /* لمسات زجاجية ملونة خفيفة عند التمرير أو التفعيل */
+    .dock-tint-emerald:hover, .dock-tint-emerald.open {
+      background: linear-gradient(145deg, rgba(16, 185, 129, 0.34), rgba(5, 150, 105, 0.14));
+      border-color: rgba(52, 211, 153, 0.45);
+      color: #6ee7b7;
+    }
+    .dock-tint-indigo:hover, .dock-tint-indigo.open {
+      background: linear-gradient(145deg, rgba(99, 102, 241, 0.34), rgba(67, 56, 202, 0.14));
+      border-color: rgba(129, 140, 248, 0.45);
+      color: #a5b4fc;
+    }
+    .dock-tint-amber:hover, .dock-tint-amber.open {
+      background: linear-gradient(145deg, rgba(245, 158, 11, 0.32), rgba(217, 119, 6, 0.14));
+      border-color: rgba(251, 191, 36, 0.45);
+      color: #fcd34d;
+    }
+    .dock-tint-rose:hover, .dock-tint-rose.open {
+      background: linear-gradient(145deg, rgba(244, 63, 94, 0.34), rgba(190, 18, 60, 0.14));
+      border-color: rgba(251, 113, 133, 0.45);
+      color: #fda4af;
+    }
+    .dock-tint-sky:hover, .dock-tint-sky.open {
+      background: linear-gradient(145deg, rgba(14, 165, 233, 0.34), rgba(3, 105, 161, 0.14));
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #7dd3fc;
+    }
+    .dock-tint-purple:hover, .dock-tint-purple.open {
+      background: linear-gradient(145deg, rgba(168, 85, 247, 0.34), rgba(126, 34, 206, 0.14));
+      border-color: rgba(192, 132, 252, 0.45);
+      color: #d8b4fe;
+    }
+
+    /* النقطة البيضاء المضيئة أسفل الأيقونة النشطة */
     .macos-dock-item::after {
       content: "";
       position: absolute;
@@ -112,15 +231,18 @@
     .macos-dock-item.open::after {
       transform: translateX(-50%) scale(1);
     }
-    /* تلميح الاسم العائم فوق الأيقونة مثل الماك */
+
+    /* تلميح الاسم الزجاجي فوق الأيقونة */
     .macos-dock-tooltip {
       position: absolute;
       top: -36px;
       left: 50%;
       transform: translateX(-50%) translateY(4px);
-      background: rgba(15, 23, 42, 0.94);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       color: #f8fafc;
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       padding: 3px 10px;
       border-radius: 8px;
       font-size: 11px;
@@ -137,14 +259,15 @@
     }
     .macos-dock-divider {
       width: 1px;
-      height: 34px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.28), rgba(255,255,255,0.06));
+      height: 32px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.25), rgba(255,255,255,0.04));
       margin: 0 2px;
       flex-shrink: 0;
     }
     @media (max-width: 420px) {
       .macos-dock { gap: 7px; padding: 8px 10px 12px; border-radius: 19px; }
-      .macos-dock-item { width: 42px; height: 42px; font-size: 19px; border-radius: 12px; }
+      .macos-dock-item { width: 42px; height: 42px; border-radius: 12px; }
+      .macos-dock-item svg { width: 19px; height: 19px; }
     }
   </style>
 </head>
@@ -161,7 +284,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 bg-slate-950/70 p-1.5 rounded-xl mb-6">
+      <div class="grid grid-cols-2 gap-2 bg-slate-950/60 border border-white/5 p-1.5 rounded-xl mb-6">
         <button id="tab-login-btn" onclick="switchAuthTab('login')" class="py-2 rounded-lg font-bold text-sm bg-emerald-600 text-white transition">
           تسجيل الدخول
         </button>
@@ -182,18 +305,18 @@
         <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow-lg transition">
           دخول للمنصة
         </button>
-        <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div class="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
           <span>دخول تجريبي سريع:</span>
           <div class="flex gap-2">
-            <button type="button" onclick="quickFill('patient','123')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400">حساب مراجع</button>
-            <button type="button" onclick="quickFill('doctor','123')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400">حساب دكتور</button>
+            <button type="button" onclick="quickFill('patient','123')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-emerald-400">حساب مراجع</button>
+            <button type="button" onclick="quickFill('doctor','123')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sky-400">حساب دكتور</button>
           </div>
         </div>
       </form>
 
       <form id="register-form" onsubmit="handleVerifyRegister(event)" class="space-y-3 hidden">
-        <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between">
-          <span>🌍 اللهجة التلقائية حسب مفتاح الدولة:</span>
+        <div class="p-3 rounded-xl bg-emerald-950/35 border border-emerald-500/25 text-xs text-emerald-300 flex items-center justify-between">
+          <span>اللهجة التلقائية حسب مفتاح الدولة:</span>
           <strong id="reg-dialect-preview">العراق • اللهجة العراقية</strong>
         </div>
 
@@ -201,24 +324,24 @@
           <div>
             <label class="block text-xs text-slate-400 mb-1">الدولة والرمز</label>
             <select id="reg-country" onchange="updateCountryPreview()" class="input-dark w-full text-xs">
-              <option value="+964" data-label="العراق • اللهجة العراقية">🇮🇶 +964 العراق</option>
-              <option value="+966" data-label="السعودية • اللهجة الخليجية">🇸🇦 +966 السعودية</option>
-              <option value="+971" data-label="الإمارات • اللهجة الخليجية">🇦🇪 +971 الإمارات</option>
-              <option value="+965" data-label="الكويت • اللهجة الخليجية">🇰🇼 +965 الكويت</option>
-              <option value="+974" data-label="قطر • اللهجة الخليجية">🇶🇦 +974 قطر</option>
-              <option value="+973" data-label="البحرين • اللهجة الخليجية">🇧🇭 +973 البحرين</option>
-              <option value="+968" data-label="عُمان • اللهجة الخليجية">🇴🇲 +968 عُمان</option>
-              <option value="+20" data-label="مصر • اللهجة المصرية">🇪🇬 +20 مصر</option>
-              <option value="+962" data-label="الأردن • اللهجة الشامية">🇯🇴 +962 الأردن</option>
-              <option value="+961" data-label="لبنان • اللهجة الشامية">🇱🇧 +961 لبنان</option>
-              <option value="+963" data-label="سوريا • اللهجة الشامية">🇸🇾 +963 سوريا</option>
-              <option value="+970" data-label="فلسطين • اللهجة الشامية">🇵🇸 +970 فلسطين</option>
-              <option value="+212" data-label="المغرب • العربية المبسطة">🇲🇦 +212 المغرب</option>
-              <option value="+213" data-label="الجزائر • العربية المبسطة">🇩🇿 +213 الجزائر</option>
-              <option value="+216" data-label="تونس • العربية المبسطة">🇹🇳 +216 تونس</option>
-              <option value="+1" data-label="USA/Canada • English">🇺🇸 +1 USA/CA</option>
-              <option value="+44" data-label="UK • English">🇬🇧 +44 UK</option>
-              <option value="+90" data-label="Turkey • English">🇹🇷 +90 Turkey</option>
+              <option value="+964" data-label="العراق • اللهجة العراقية">+964 العراق</option>
+              <option value="+966" data-label="السعودية • اللهجة الخليجية">+966 السعودية</option>
+              <option value="+971" data-label="الإمارات • اللهجة الخليجية">+971 الإمارات</option>
+              <option value="+965" data-label="الكويت • اللهجة الخليجية">+965 الكويت</option>
+              <option value="+974" data-label="قطر • اللهجة الخليجية">+974 قطر</option>
+              <option value="+973" data-label="البحرين • اللهجة الخليجية">+973 البحرين</option>
+              <option value="+968" data-label="عُمان • اللهجة الخليجية">+968 عُمان</option>
+              <option value="+20" data-label="مصر • اللهجة المصرية">+20 مصر</option>
+              <option value="+962" data-label="الأردن • اللهجة الشامية">+962 الأردن</option>
+              <option value="+961" data-label="لبنان • اللهجة الشامية">+961 لبنان</option>
+              <option value="+963" data-label="سوريا • اللهجة الشامية">+963 سوريا</option>
+              <option value="+970" data-label="فلسطين • اللهجة الشامية">+970 فلسطين</option>
+              <option value="+212" data-label="المغرب • العربية المبسطة">+212 المغرب</option>
+              <option value="+213" data-label="الجزائر • العربية المبسطة">+213 الجزائر</option>
+              <option value="+216" data-label="تونس • العربية المبسطة">+216 تونس</option>
+              <option value="+1" data-label="USA/Canada • English">+1 USA/CA</option>
+              <option value="+44" data-label="UK • English">+44 UK</option>
+              <option value="+90" data-label="Turkey • English">+90 Turkey</option>
             </select>
           </div>
           <div class="col-span-2">
@@ -232,9 +355,9 @@
           </div>
         </div>
 
-        <div id="otp-box" class="hidden p-3 rounded-xl bg-slate-900 border border-sky-500/40 space-y-2">
+        <div id="otp-box" class="hidden p-3 rounded-xl bg-slate-900/70 border border-sky-500/35 space-y-2">
           <div class="flex items-center justify-between text-xs">
-            <span class="text-sky-300 font-bold">📩 أدخل رمز التحقق المكون من 6 أرقام:</span>
+            <span class="text-sky-300 font-bold">أدخل رمز التحقق المكون من 6 أرقام:</span>
             <span id="demo-otp-hint" class="text-amber-300 font-mono font-bold"></span>
           </div>
           <input id="reg-otp" type="text" maxlength="6" placeholder="123456" class="input-dark w-full text-center tracking-widest font-mono text-lg" dir="ltr" />
@@ -298,10 +421,10 @@
   <!-- ==================== التطبيق الرئيسي ==================== -->
   <div id="app-shell" class="hidden min-h-screen flex flex-col">
 
-    <!-- الشريط العلوي الموحد -->
-    <header class="sticky top-0 z-40 bg-[#0f172a]/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+    <!-- الشريط العلوي الزجاجي -->
+    <header class="sticky top-0 z-40 bg-slate-950/65 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200" title="القائمة الجانبية">
+        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200" title="القائمة الجانبية">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -309,17 +432,17 @@
         <img src="/icon.svg" alt="سُكّري" class="w-8 h-8 rounded-lg" />
         <span class="font-black text-lg text-emerald-400">سُكّري</span>
         <span id="header-section-title" class="text-sm font-bold text-slate-200 hidden sm:inline">قياساتي</span>
-        <span id="header-role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300">مراجع</span>
-        <span id="header-dialect-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-500/30">
+        <span id="header-role-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300">مراجع</span>
+        <span id="header-dialect-badge" class="hidden md:inline-block px-2.5 py-0.5 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-400/25">
           العراق • اللهجة العراقية
         </span>
       </div>
 
       <div class="flex items-center gap-3">
         <span id="header-user-name" class="text-sm font-bold text-slate-200"></span>
-        <span class="text-slate-600">|</span>
+        <span class="text-white/15">|</span>
         <span id="live-clock" class="text-xs text-slate-400 font-mono"></span>
-        <button onclick="logout()" class="p-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 transition" title="تسجيل الخروج">
+        <button onclick="logout()" class="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 text-rose-400 transition" title="تسجيل الخروج">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" />
           </svg>
@@ -328,156 +451,201 @@
     </header>
 
     <div class="flex-1 flex relative">
-      <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+      <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 hidden lg:hidden"></div>
 
-      <!-- ==================== الشريط الجانبي الموحّد للمريض والطبيب ==================== -->
-      <aside id="unified-sidebar" class="fixed lg:sticky top-[57px] right-0 z-30 h-[calc(100vh-57px)] w-72 bg-[#0f172a] border-l border-slate-800 flex flex-col transition-transform duration-200 translate-x-full lg:translate-x-0 overflow-y-auto pb-28">
-        <div class="p-3 border-b border-slate-800/80 flex items-center justify-between">
+      <!-- ==================== الشريط الجانبي الزجاجي الموحّد ==================== -->
+      <aside id="unified-sidebar" class="fixed lg:sticky top-[57px] right-0 z-30 h-[calc(100vh-57px)] w-72 bg-slate-950/70 backdrop-blur-2xl border-l border-white/10 flex flex-col transition-transform duration-200 translate-x-full lg:translate-x-0 overflow-y-auto pb-28">
+        <div class="p-3 border-b border-white/10 flex items-center justify-between">
           <span id="sidebar-role-title" class="text-xs font-extrabold text-emerald-400 tracking-wide">الشريط الجانبي للأدوات</span>
           <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white text-sm px-2">✕</button>
         </div>
 
         <!-- الشريط الجانبي للمراجع -->
         <nav id="patient-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
-          <button onclick="scrollToPatientSection('pat-overview')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-600/20 text-emerald-300 font-bold flex items-center gap-2.5 hover:bg-emerald-600/30">
-            <span>📊</span><span>الرئيسية وتسجيل القياس</span>
+          <button onclick="scrollToPatientSection('pat-overview')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 font-bold flex items-center gap-2.5 hover:bg-emerald-500/25">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+            <span>الرئيسية وتسجيل القياس</span>
           </button>
 
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">الأوضاع الذكية السريعة</div>
-          <button onclick="togglePatientFlag('ramadanMode')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-between">
-            <span>🌙 وضع الصيام ورمضان</span>
-            <span id="sb-ramadan-state" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400">مغلق</span>
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الأوضاع الذكية السريعة</div>
+          <button onclick="togglePatientFlag('ramadanMode')" class="sidebar-btn justify-between">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              <span>وضع الصيام ورمضان</span>
+            </span>
+            <span id="sb-ramadan-state" class="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">مغلق</span>
           </button>
-          <button onclick="togglePatientFlag('sickDayMode')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-between">
-            <span>🤒 وضع أيام المرض والفلاونزا</span>
-            <span id="sb-sick-state" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400">مغلق</span>
+          <button onclick="togglePatientFlag('sickDayMode')" class="sidebar-btn justify-between">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
+              <span>وضع أيام المرض والفلاونزا</span>
+            </span>
+            <span id="sb-sick-state" class="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">مغلق</span>
           </button>
-          <button onclick="togglePatientFlag('seniorMode')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-between">
-            <span>👓 وضع كبار السن (خط كبير)</span>
-            <span id="sb-senior-state" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400">مغلق</span>
-          </button>
-
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">الذكاء الاصطناعي وتحليل الصور</div>
-          <button onclick="openToolModal('modal-ai-chat')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/25 hover:bg-emerald-900/50 flex items-center gap-2.5 text-emerald-300 font-bold">
-            <span>🤖</span><span>المساعد الطبي الذكي (محادثة)</span>
-          </button>
-          <button onclick="openToolModal('modal-meal-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📸</span><span>تحليل الوجبة بالصورة</span>
-          </button>
-          <button onclick="openToolModal('modal-label-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🏷️</span><span>قارئ ملصقات المعلّبات</span>
-          </button>
-          <button onclick="openToolModal('modal-lab-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🧪</span><span>قراءة التحاليل المختبرية</span>
-          </button>
-          <button onclick="openToolModal('modal-med-ai')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-sky-300">
-            <span>💊</span><span>التعرف على علبة الدواء بالصورة</span>
+          <button onclick="togglePatientFlag('seniorMode')" class="sidebar-btn justify-between">
+            <span class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+              <span>وضع كبار السن (خط كبير)</span>
+            </span>
+            <span id="sb-senior-state" class="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-slate-400">مغلق</span>
           </button>
 
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">الطوارئ والأمان</div>
-          <button onclick="openToolModal('modal-hypo15')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-rose-300">
-            <span>⏱️</span><span>مؤقت قاعدة (15-15) للهبوط</span>
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الذكاء الاصطناعي وتحليل الصور</div>
+          <button onclick="openToolModal('modal-ai-chat')" class="w-full text-right px-3 py-2.5 rounded-xl bg-indigo-500/15 border border-indigo-400/25 hover:bg-indigo-500/25 flex items-center gap-2.5 text-indigo-300 font-bold">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>
+            <span>المساعد الطبي الذكي (محادثة)</span>
           </button>
-          <button onclick="openToolModal('modal-bedtime')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🛌</span><span>فحص الأمان قبل النوم</span>
+          <button onclick="openToolModal('modal-meal-ai')" class="sidebar-btn">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>تحليل الوجبة بالصورة</span>
           </button>
-          <button onclick="openToolModal('modal-workout')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🏃</span><span>فحص الأمان قبل الرياضة</span>
+          <button onclick="openToolModal('modal-label-ai')" class="sidebar-btn">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <span>قارئ ملصقات المعلّبات</span>
           </button>
-          <button onclick="openToolModal('modal-lockscreen')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-amber-300">
-            <span>📱</span><span>توليد خلفية طوارئ لشاشة القفل</span>
+          <button onclick="openToolModal('modal-lab-ai')" class="sidebar-btn">
+            <svg class="text-purple-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6.5L5 18a2 2 0 001.7 3h10.6a2 2 0 001.7-3l-5-8.5V3"/></svg>
+            <span>قراءة التحاليل المختبرية</span>
           </button>
-          <button onclick="openToolModal('modal-cards')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🪪</span><span>بطاقة المدرسة / العمل / الأسنان</span>
-          </button>
-
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">التغذية والأدلة</div>
-          <button onclick="openToolModal('modal-bolus')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🧮</span><span>حاسبة الكارب والوجبة قبل الأكل</span>
-          </button>
-          <button onclick="openToolModal('modal-iraqi-food')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🍲</span><span>دليل الأكلات العراقية والبدائل</span>
-          </button>
-          <button onclick="openToolModal('modal-feast')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🎉</span><span>وضع العزايم والمناسبات</span>
-          </button>
-          <button onclick="openToolModal('modal-herbs')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🌿</span><span>دليل الأعشاب وتداخلها مع الأدوية</span>
+          <button onclick="openToolModal('modal-med-ai')" class="sidebar-btn text-sky-300">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 20.5L20.5 10.5a4.95 4.95 0 10-7-7L3.5 13.5a4.95 4.95 0 107 7zM8.5 8.5l7 7"/></svg>
+            <span>التعرف على علبة الدواء بالصورة</span>
           </button>
 
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">المتابعة العلاجية والفحوصات</div>
-          <button onclick="openToolModal('modal-injection')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>💉</span><span>خريطة تدوير أماكن الأنسولين</span>
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">الطوارئ والأمان</div>
+          <button onclick="openToolModal('modal-hypo15')" class="sidebar-btn text-rose-300">
+            <svg class="text-rose-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+            <span>مؤقت قاعدة (15-15) للهبوط</span>
           </button>
-          <button onclick="openToolModal('modal-inventory')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📦</span><span>مخزون الأشرطة وأقلام الأنسولين</span>
+          <button onclick="openToolModal('modal-bedtime')" class="sidebar-btn">
+            <svg class="text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2 17v-5a2 2 0 012-2h16a2 2 0 012 2v5M2 14h20M6 10V7a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+            <span>فحص الأمان قبل النوم</span>
           </button>
-          <button onclick="openToolModal('modal-periodic')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📅</span><span>جدول الفحوصات الدورية والمشي</span>
+          <button onclick="openToolModal('modal-workout')" class="sidebar-btn">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span>فحص الأمان قبل الرياضة</span>
           </button>
-          <button onclick="openToolModal('modal-neuropathy')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🦶</span><span>مقياس فحص الأعصاب واللثة</span>
+          <button onclick="openToolModal('modal-lockscreen')" class="sidebar-btn text-amber-300">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <span>توليد خلفية طوارئ لشاشة القفل</span>
           </button>
-          <button onclick="openToolModal('modal-calibration')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>⚖️</span><span>معايرة دقة الجهاز المنزلي</span>
-          </button>
-          <button onclick="openToolModal('modal-travel')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🧳</span><span>حقيبة السفر والتحضير للعيادة</span>
+          <button onclick="openToolModal('modal-cards')" class="sidebar-btn">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M14 10h4M14 14h4M6 16c0-1.5 4-1.5 4 0"/></svg>
+            <span>بطاقة المدرسة / العمل / الأسنان</span>
           </button>
 
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">التواصل والتقارير</div>
-          <button onclick="openToolModal('modal-doc-chat')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-sky-300">
-            <span>💬</span><span>محادثة الدكتور المشرف</span>
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">التغذية والأدلة</div>
+          <button onclick="openToolModal('modal-bolus')" class="sidebar-btn">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/></svg>
+            <span>حاسبة الكارب والوجبة قبل الأكل</span>
           </button>
-          <button onclick="sendWeeklySummaryToDoctor()" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📤</span><span>دز ملخص الأسبوع للدكتور</span>
+          <button onclick="openToolModal('modal-iraqi-food')" class="sidebar-btn">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11h18M4 11a8 8 0 0016 0M12 3v4M8 4v3M16 4v3"/></svg>
+            <span>دليل الأكلات العراقية والبدائل</span>
           </button>
-          <button onclick="shareCaregiverWhatsApp()" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-emerald-300">
-            <span>📲</span><span>مشاركة التقرير مع العائلة (واتساب)</span>
+          <button onclick="openToolModal('modal-feast')" class="sidebar-btn">
+            <svg class="text-purple-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>وضع العزايم والمناسبات</span>
           </button>
-          <button onclick="exportExcel()" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📑</span><span>تصدير السجل الكامل (Excel)</span>
+          <button onclick="openToolModal('modal-herbs')" class="sidebar-btn">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+            <span>دليل الأعشاب وتداخلها مع الأدوية</span>
           </button>
-          <button onclick="openToolModal('modal-profile')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>⚙️</span><span>إعدادات الملف واللهجة</span>
+
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">المتابعة العلاجية والفحوصات</div>
+          <button onclick="openToolModal('modal-injection')" class="sidebar-btn">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 2l4 4M17 7l3-3M19 9L8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5M9 11l4 4M5 19l-3 3"/></svg>
+            <span>خريطة تدوير أماكن الأنسولين</span>
+          </button>
+          <button onclick="openToolModal('modal-inventory')" class="sidebar-btn">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span>مخزون الأشرطة وأقلام الأنسولين</span>
+          </button>
+          <button onclick="openToolModal('modal-periodic')" class="sidebar-btn">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>جدول الفحوصات الدورية والمشي</span>
+          </button>
+          <button onclick="openToolModal('modal-neuropathy')" class="sidebar-btn">
+            <svg class="text-purple-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <span>مقياس فحص الأعصاب واللثة</span>
+          </button>
+          <button onclick="openToolModal('modal-calibration')" class="sidebar-btn">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><path d="M5 7h14M5 7l-3 6h6l-3-6zM19 7l-3 6h6l-3-6z"/></svg>
+            <span>معايرة دقة الجهاز المنزلي</span>
+          </button>
+          <button onclick="openToolModal('modal-travel')" class="sidebar-btn">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            <span>حقيبة السفر والتحضير للعيادة</span>
+          </button>
+
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">التواصل والتقارير</div>
+          <button onclick="openToolModal('modal-doc-chat')" class="sidebar-btn text-sky-300">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span>محادثة الدكتور المشرف</span>
+          </button>
+          <button onclick="sendWeeklySummaryToDoctor()" class="sidebar-btn">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span>دز ملخص الأسبوع للدكتور</span>
+          </button>
+          <button onclick="shareCaregiverWhatsApp()" class="sidebar-btn text-emerald-300">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <span>مشاركة التقرير مع العائلة (واتساب)</span>
+          </button>
+          <button onclick="exportExcel()" class="sidebar-btn">
+            <svg class="text-teal-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+            <span>تصدير السجل الكامل (Excel)</span>
+          </button>
+          <button onclick="openToolModal('modal-profile')" class="sidebar-btn">
+            <svg class="text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            <span>إعدادات الملف واللهجة</span>
           </button>
         </nav>
 
         <!-- الشريط الجانبي للطبيب -->
         <nav id="doctor-sidebar-nav" class="hidden p-2.5 space-y-1 text-xs">
-          <button onclick="scrollToDoctorSection('doc-overview')" class="w-full text-right px-3 py-2.5 rounded-xl bg-emerald-600/20 text-emerald-300 font-bold flex items-center gap-2.5 hover:bg-emerald-600/30">
-            <span>🏥</span><span>لوحة العيادة وملف المراجع</span>
+          <button onclick="scrollToDoctorSection('doc-overview')" class="w-full text-right px-3 py-2.5 rounded-xl bg-sky-500/15 border border-sky-400/25 text-sky-300 font-bold flex items-center gap-2.5 hover:bg-sky-500/25">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
+            <span>لوحة العيادة وملف المراجع</span>
           </button>
-          <button onclick="openToolModal('modal-doc-create-patient')" class="w-full text-right px-3 py-2.5 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-emerald-300 font-bold">
-            <span>➕</span><span>إضافة مراجع جديد</span>
-          </button>
-
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">أدوات متابعة المراجع المحدد</div>
-          <button onclick="scrollToDoctorSection('doc-notes-section')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🎙️</span><span>توجيهات الطبيب والإملاء الصوتي</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-chat-panel')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-sky-300">
-            <span>💬</span><span>محادثة المراجع المباشرة</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-labs-panel')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>🧪</span><span>تحاليل المراجع المختبرية</span>
-          </button>
-          <button onclick="openToolModal('modal-doc-qr-panel')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📱</span><span>بطاقة وباركود المراجع</span>
-          </button>
-          <button onclick="exportDoctorSelectedExcel()" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>📑</span><span>تصدير سجل المراجع (Excel)</span>
+          <button onclick="openToolModal('modal-doc-create-patient')" class="sidebar-btn text-emerald-300 font-bold">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <span>إضافة مراجع جديد</span>
           </button>
 
-          <div class="pt-2 pb-1 px-2 text-[11px] font-bold text-slate-500">إدارة الحساب والبيانات</div>
-          <button onclick="openEditPatientModal()" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5">
-            <span>✏️</span><span>تعديل بيانات المراجع</span>
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">أدوات متابعة المراجع المحدد</div>
+          <button onclick="scrollToDoctorSection('doc-notes-section')" class="sidebar-btn">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+            <span>توجيهات الطبيب والإملاء الصوتي</span>
           </button>
-          <button onclick="openToolModal('modal-doc-reset-pass')" class="w-full text-right px-3 py-2 rounded-xl hover:bg-slate-800/80 flex items-center gap-2.5 text-amber-300">
-            <span>🔑</span><span>تغيير الرمز السري للمراجع</span>
+          <button onclick="openToolModal('modal-doc-chat-panel')" class="sidebar-btn text-sky-300">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span>محادثة المراجع المباشرة</span>
           </button>
-          <button onclick="deleteSelectedPatient()" class="w-full text-right px-3 py-2 rounded-xl hover:bg-rose-950/50 flex items-center gap-2.5 text-rose-400">
-            <span>🗑️</span><span>حذف ملف المراجع</span>
+          <button onclick="openToolModal('modal-doc-labs-panel')" class="sidebar-btn">
+            <svg class="text-purple-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6.5L5 18a2 2 0 001.7 3h10.6a2 2 0 001.7-3l-5-8.5V3"/></svg>
+            <span>تحاليل المراجع المختبرية</span>
+          </button>
+          <button onclick="openToolModal('modal-doc-qr-panel')" class="sidebar-btn">
+            <svg class="text-teal-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/></svg>
+            <span>بطاقة وباركود المراجع</span>
+          </button>
+          <button onclick="exportDoctorSelectedExcel()" class="sidebar-btn">
+            <svg class="text-emerald-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>تصدير سجل المراجع (Excel)</span>
+          </button>
+
+          <div class="pt-2.5 pb-1 px-2 text-[11px] font-bold text-slate-500">إدارة الحساب والبيانات</div>
+          <button onclick="openEditPatientModal()" class="sidebar-btn">
+            <svg class="text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>تعديل بيانات المراجع</span>
+          </button>
+          <button onclick="openToolModal('modal-doc-reset-pass')" class="sidebar-btn text-amber-300">
+            <svg class="text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            <span>تغيير الرمز السري للمراجع</span>
+          </button>
+          <button onclick="deleteSelectedPatient()" class="sidebar-btn hover:bg-rose-950/40 text-rose-400">
+            <svg class="text-rose-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            <span>حذف ملف المراجع</span>
           </button>
         </nav>
       </aside>
@@ -489,21 +657,24 @@
         <!-- شريط التنبيهات السريرية الذكية -->
         <div id="patient-alerts-area" class="space-y-2"></div>
 
-        <!-- بطاقة الاختصار السريع للذكاء الاصطناعي وتحليل الصور -->
-        <div class="card p-4 bg-gradient-to-l from-emerald-950/40 via-[#131c31] to-sky-950/40 border-emerald-500/25 flex flex-wrap items-center justify-between gap-3">
+        <!-- بطاقة الاختصار الزجاجية للذكاء الاصطناعي وتحليل الصور -->
+        <div class="card p-4 bg-gradient-to-l from-emerald-500/10 via-white/[0.02] to-sky-500/10 border-emerald-400/20 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div class="text-sm font-black text-emerald-300">🤖 مساعدك الذكي ومحلل الصور الطبي</div>
+            <div class="text-sm font-black text-emerald-300">مساعدك الذكي ومحلل الصور الطبي</div>
             <div class="text-xs text-slate-400">مربوط بقياساتك ومعامل الكارب الخاص بك — اسأله أو صوّر وجبتك وتحاليلك</div>
           </div>
           <div class="flex flex-wrap gap-2 text-xs">
-            <button onclick="openToolModal('modal-ai-chat')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
-              💬 اسأل المساعد الذكي
+            <button onclick="openToolModal('modal-ai-chat')" class="px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/30 text-white font-bold flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <span>اسأل المساعد الذكي</span>
             </button>
-            <button onclick="openToolModal('modal-meal-ai')" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black">
-              📸 صوّر وجبتك
+            <button onclick="openToolModal('modal-meal-ai')" class="px-3.5 py-2 rounded-xl bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-black flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>صوّر وجبتك</span>
             </button>
-            <button onclick="openToolModal('modal-lab-ai')" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold">
-              🧪 اقرأ تحليلك
+            <button onclick="openToolModal('modal-lab-ai')" class="px-3.5 py-2 rounded-xl bg-sky-600/90 hover:bg-sky-500 border border-sky-400/30 text-white font-bold flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6.5L5 18a2 2 0 001.7 3h10.6a2 2 0 001.7-3l-5-8.5V3"/></svg>
+              <span>اقرأ تحليلك</span>
             </button>
           </div>
         </div>
@@ -512,10 +683,10 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="card p-4">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-slate-300">🎯 مؤشر النطاق الآمن (70–180)</span>
+              <span class="text-xs font-bold text-slate-300">مؤشر النطاق الآمن (70–180)</span>
               <span id="tir-in-pct" class="text-sm font-black text-emerald-400">0%</span>
             </div>
-            <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden flex">
+            <div class="w-full h-3 rounded-full bg-white/10 overflow-hidden flex">
               <div id="tir-bar-low" class="bg-rose-500 h-full" style="width:0%"></div>
               <div id="tir-bar-in" class="bg-emerald-500 h-full" style="width:0%"></div>
               <div id="tir-bar-high" class="bg-amber-500 h-full" style="width:0%"></div>
@@ -528,7 +699,7 @@
 
           <div class="card p-4 flex flex-col justify-between">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-300">🔥 سلسلة الالتزام والأوسمة</span>
+              <span class="text-xs font-bold text-slate-300">سلسلة الالتزام والأوسمة</span>
               <span id="pat-streak-val" class="text-sm font-black text-amber-400">0 يوم</span>
             </div>
             <div id="pat-badges-list" class="flex flex-wrap gap-1.5 mt-2">
@@ -538,7 +709,7 @@
 
           <div class="card p-4 flex flex-col justify-between">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-300">🩺 المراجعة القادمة والمخزون</span>
+              <span class="text-xs font-bold text-slate-300">المراجعة القادمة والمخزون</span>
               <span id="pat-next-visit" class="text-xs font-bold text-sky-400">غير محدد</span>
             </div>
             <div class="flex items-center justify-between text-xs text-slate-400 mt-2">
@@ -551,9 +722,9 @@
         <!-- بطاقة تسجيل قياس سكر جديد -->
         <div class="card p-5">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 class="text-base font-extrabold text-emerald-400">➕ تسجيل قياس سكر جديد</h2>
-            <span id="ramadan-indicator-badge" class="hidden px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300">
-              🌙 وضع الصيام ورمضان مفعّل
+            <h2 class="text-base font-extrabold text-emerald-400">تسجيل قياس سكر جديد</h2>
+            <span id="ramadan-indicator-badge" class="hidden px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-400/25 text-amber-300">
+              وضع الصيام ورمضان مفعّل
             </span>
           </div>
 
@@ -577,11 +748,11 @@
             <div>
               <label class="block text-xs text-slate-400 mb-1">الحالة المزاجية / النوم</label>
               <select id="log-mood" class="input-dark w-full">
-                <option value="عادي">😊 طبيعي ومستقر</option>
-                <option value="نوم زين">😴 نوم زين ومرتاح</option>
-                <option value="سهر وتعب">🥱 سهر وتعب</option>
-                <option value="قلق وتوتر">😰 قلق وتوتر</option>
-                <option value="مريض/فلاونزا">🤒 مريض / فلاونزا</option>
+                <option value="عادي">طبيعي ومستقر</option>
+                <option value="نوم زين">نوم زين ومرتاح</option>
+                <option value="سهر وتعب">سهر وتعب</option>
+                <option value="قلق وتوتر">قلق وتوتر</option>
+                <option value="مريض/فلاونزا">مريض / فلاونزا</option>
               </select>
             </div>
             <div>
@@ -602,7 +773,7 @@
               </select>
             </div>
             <div class="flex items-end">
-              <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow transition">
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-950/40 transition">
                 حفظ القياس ✓
               </button>
             </div>
@@ -613,20 +784,20 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div class="card p-5 space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-sky-400">💧 عدّاد شرب الماء والمشي اليومي</h3>
+              <h3 class="text-sm font-extrabold text-sky-400">عدّاد شرب الماء والمشي اليومي</h3>
             </div>
-            <div class="flex items-center justify-between bg-slate-900/80 p-3.5 rounded-xl">
-              <button onclick="incrementDaily('water', 1)" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs">
-                + كوب ماي 💧
+            <div class="flex items-center justify-between bg-white/[0.03] border border-white/10 p-3.5 rounded-xl">
+              <button onclick="incrementDaily('water', 1)" class="px-4 py-2 rounded-xl bg-sky-600/90 hover:bg-sky-500 text-white font-bold text-xs">
+                + كوب ماي
               </button>
               <div class="text-left">
                 <div class="text-xs text-slate-400">شرب الماء اليوم</div>
                 <div class="text-base font-black text-white"><span id="water-count">0</span> / 8 أكواب</div>
               </div>
             </div>
-            <div class="flex items-center justify-between bg-slate-900/80 p-3.5 rounded-xl">
-              <button onclick="incrementDaily('walk', 15)" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
-                + 15 دقيقة مشي 🚶
+            <div class="flex items-center justify-between bg-white/[0.03] border border-white/10 p-3.5 rounded-xl">
+              <button onclick="incrementDaily('walk', 15)" class="px-4 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs">
+                + 15 دقيقة مشي
               </button>
               <div class="text-left">
                 <div class="text-xs text-slate-400">المشي والرياضة اليوم</div>
@@ -637,15 +808,15 @@
 
           <div class="card p-5 space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-purple-400">💊 الالتزام بالعلاج والأعراض الجانبية</h3>
-              <span id="adherence-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300">الالتزام: 100%</span>
+              <h3 class="text-sm font-extrabold text-purple-400">الالتزام بالعلاج والأعراض الجانبية</h3>
+              <span id="adherence-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/15 border border-purple-400/25 text-purple-300">الالتزام: 100%</span>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <button id="btn-med-morning" onclick="toggleMedDose('morning')" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition">
-                <span>☀️ علاج الصباح</span>
+              <button id="btn-med-morning" onclick="toggleMedDose('morning')" class="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center justify-center gap-2 transition">
+                <span>علاج الصباح</span>
               </button>
-              <button id="btn-med-evening" onclick="toggleMedDose('evening')" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition">
-                <span>🌙 علاج المساء</span>
+              <button id="btn-med-evening" onclick="toggleMedDose('evening')" class="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center justify-center gap-2 transition">
+                <span>علاج المساء</span>
               </button>
             </div>
             <div>
@@ -658,7 +829,7 @@
                   <option value="دوخة أو هبوط متكرر">دوخة أو هبوط متكرر</option>
                   <option value="تورم بالقدمين">تورم بالقدمين</option>
                 </select>
-                <button onclick="saveSideEffects()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold">
+                <button onclick="saveSideEffects()" class="px-4 py-2 rounded-xl bg-purple-600/90 hover:bg-purple-500 text-white text-xs font-bold">
                   حفظ
                 </button>
               </div>
@@ -667,12 +838,12 @@
 
           <div class="card p-5 space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-sky-400">🧮 حاسبة الجرعة التصحيحية للأنسولين</h3>
+              <h3 class="text-sm font-extrabold text-sky-400">حاسبة الجرعة التصحيحية للأنسولين</h3>
               <span id="corr-params-lbl" class="text-[11px] text-slate-400">المستهدف: 120 | المعامل: 40</span>
             </div>
             <div class="flex gap-2">
               <input id="corr-input-val" type="number" placeholder="اكتب قراءة السكر الصاعدة هنا" class="input-dark w-full text-xs" />
-              <button onclick="calcCorrectionDose()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold">
+              <button onclick="calcCorrectionDose()" class="px-5 py-2 rounded-xl bg-sky-600/90 hover:bg-sky-500 text-white text-xs font-bold">
                 احسب
               </button>
             </div>
@@ -681,35 +852,35 @@
 
           <div class="card p-5 space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-amber-400">⏳ مؤقت القياس بعد الأكل (ساعتين / 4 ساعات دسم)</h3>
+              <h3 class="text-sm font-extrabold text-amber-400">مؤقت القياس بعد الأكل (ساعتين / 4 ساعات دسم)</h3>
             </div>
             <div class="flex items-center justify-between">
               <span id="postmeal-timer-display" class="text-sm font-black text-slate-200">غير مفعّل حالياً</span>
               <div class="flex gap-2">
-                <button onclick="startPostMealTimer(120)" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">ساعتين</button>
-                <button onclick="startPostMealTimer(240)" class="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs">4 ساعات دسم</button>
+                <button onclick="startPostMealTimer(120)" class="px-3 py-1.5 rounded-xl bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold text-xs">ساعتين</button>
+                <button onclick="startPostMealTimer(240)" class="px-3 py-1.5 rounded-xl bg-orange-600/90 hover:bg-orange-500 text-white font-bold text-xs">4 ساعات دسم</button>
               </div>
             </div>
-            <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+            <div class="pt-2 border-t border-white/10 flex items-center justify-between">
               <div>
-                <div class="text-xs font-bold text-emerald-400">🦶 التذكير الأسبوعي لفحص القدمين</div>
+                <div class="text-xs font-bold text-emerald-400">التذكير الأسبوعي لفحص القدمين</div>
                 <div id="foot-check-status" class="text-[11px] text-slate-400">ينصح بفحص القدمين أسبوعياً للوقاية</div>
               </div>
-              <button onclick="markFootChecked()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+              <button onclick="markFootChecked()" class="px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold">
                 تم الفحص ✓
               </button>
             </div>
           </div>
 
           <div class="card p-5 space-y-3">
-            <h3 class="text-sm font-extrabold text-emerald-400">🍽️ مكتشف استجابة جسمك الشخصية للأكل</h3>
+            <h3 class="text-sm font-extrabold text-emerald-400">مكتشف استجابة جسمك الشخصية للأكل</h3>
             <div class="grid grid-cols-2 gap-3 text-xs">
-              <div class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/25">
-                <div class="font-bold text-emerald-400 mb-1">✅ أكلات مناسبة لجسمك:</div>
+              <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/20">
+                <div class="font-bold text-emerald-400 mb-1">أكلات مناسبة لجسمك:</div>
                 <div id="safe-foods-list" class="text-slate-300">لا توجد بيانات كافية بعد</div>
               </div>
-              <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/25">
-                <div class="font-bold text-rose-400 mb-1">⚠️ أكلات تسبّبلك طفرة:</div>
+              <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-400/20">
+                <div class="font-bold text-rose-400 mb-1">أكلات تسبّبلك طفرة:</div>
                 <div id="spike-foods-list" class="text-slate-300">لا توجد طفرات مسجلة</div>
               </div>
             </div>
@@ -717,7 +888,7 @@
 
           <div class="card p-5 space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-extrabold text-sky-400">🎚️ محاكي السكر التراكمي التفاعلي (eA1c)</h3>
+              <h3 class="text-sm font-extrabold text-sky-400">محاكي السكر التراكمي التفاعلي (eA1c)</h3>
               <span id="ea1c-sim-val" class="text-lg font-black text-sky-400">6.1%</span>
             </div>
             <p class="text-xs text-slate-400">حرّك الشريط لتشاهد كيف ينخفض تراكميك إذا نزّلت معدل سكرك اليومي:</p>
@@ -732,12 +903,13 @@
         <!-- ملاحظات الدكتور المشرف -->
         <div class="card p-5">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-extrabold text-emerald-400">🩺 توجيهات وملاحظات الدكتور المشرف</h3>
-            <button onclick="speakText(document.getElementById('pat-doctor-notes').innerText)" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold flex items-center gap-1.5">
-              <span>🔊</span><span>اسمع الملاحظات</span>
+            <h3 class="text-sm font-extrabold text-emerald-400">توجيهات وملاحظات الدكتور المشرف</h3>
+            <button onclick="speakText(document.getElementById('pat-doctor-notes').innerText)" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-amber-300 text-xs font-bold flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg>
+              <span>اسمع الملاحظات</span>
             </button>
           </div>
-          <p id="pat-doctor-notes" class="text-sm text-slate-200 leading-relaxed bg-slate-900/70 p-3.5 rounded-xl">
+          <p id="pat-doctor-notes" class="text-sm text-slate-200 leading-relaxed bg-white/[0.03] border border-white/10 p-3.5 rounded-xl">
             لا توجد ملاحظات مسجلة حالياً.
           </p>
         </div>
@@ -745,13 +917,13 @@
         <!-- الرسم البياني وسجل القياسات -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div class="card p-5 lg:col-span-2">
-            <h3 class="text-sm font-extrabold text-slate-200 mb-3">📈 منحنى قياسات السكر</h3>
+            <h3 class="text-sm font-extrabold text-slate-200 mb-3">منحنى قياسات السكر</h3>
             <div class="h-60">
               <canvas id="patient-chart"></canvas>
             </div>
           </div>
           <div class="card p-5 overflow-x-auto">
-            <h3 class="text-sm font-extrabold text-slate-200 mb-3">📋 آخر القياسات</h3>
+            <h3 class="text-sm font-extrabold text-slate-200 mb-3">آخر القياسات</h3>
             <div id="patient-logs-list" class="space-y-2 max-h-60 overflow-y-auto text-xs"></div>
           </div>
         </div>
@@ -783,16 +955,16 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div class="card p-4 lg:col-span-4 space-y-3 h-fit">
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-extrabold text-sky-400">👥 قائمة المراجعين</h2>
-              <span id="doc-filtered-badge" class="px-2 py-0.5 rounded-full text-xs bg-sky-500/20 text-sky-300 font-bold">0</span>
+              <h2 class="text-sm font-extrabold text-sky-400">قائمة المراجعين</h2>
+              <span id="doc-filtered-badge" class="px-2 py-0.5 rounded-full text-xs bg-sky-500/15 border border-sky-400/25 text-sky-300 font-bold">0</span>
             </div>
             <input id="doc-search-input" type="text" oninput="renderDoctorPatientsList()" placeholder="ابحث بالاسم أو رقم الهاتف..." class="input-dark w-full text-xs" />
             <div class="flex flex-wrap gap-1.5 text-[11px]">
               <button onclick="setDocFilter('all')" id="flt-all" class="px-2.5 py-1 rounded-lg bg-sky-600 text-white font-bold">الكل</button>
-              <button onclick="setDocFilter('critical')" id="flt-critical" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">حرجة فقط</button>
-              <button onclick="setDocFilter('inactive')" id="flt-inactive" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">منقطعين</button>
-              <button onclick="setDocFilter('type1')" id="flt-type1" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">النوع الأول</button>
-              <button onclick="setDocFilter('gestational')" id="flt-gestational" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">سكري الحمل</button>
+              <button onclick="setDocFilter('critical')" id="flt-critical" class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">حرجة فقط</button>
+              <button onclick="setDocFilter('inactive')" id="flt-inactive" class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">منقطعين</button>
+              <button onclick="setDocFilter('type1')" id="flt-type1" class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">النوع الأول</button>
+              <button onclick="setDocFilter('gestational')" id="flt-gestational" class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">سكري الحمل</button>
             </div>
             <div id="doc-patients-list" class="space-y-2 max-h-[520px] overflow-y-auto"></div>
           </div>
@@ -803,22 +975,22 @@
                 <div>
                   <div class="flex items-center gap-2">
                     <h2 id="dp-name" class="text-xl font-black text-white">-</h2>
-                    <span id="dp-country-badge" class="px-2.5 py-0.5 rounded-full text-xs bg-sky-500/20 text-sky-300">-</span>
+                    <span id="dp-country-badge" class="px-2.5 py-0.5 rounded-full text-xs bg-sky-500/15 border border-sky-400/25 text-sky-300">-</span>
                   </div>
                   <p id="dp-meta" class="text-xs text-slate-400 mt-1">-</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button onclick="exportDoctorSelectedExcel()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5">
-                    <span>📑</span><span>Excel</span>
+                  <button onclick="exportDoctorSelectedExcel()" class="px-3.5 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5">
+                    <span>تصدير Excel</span>
                   </button>
-                  <button onclick="openToolModal('modal-doc-qr-panel')" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5">
-                    <span>📱</span><span>الباركود</span>
+                  <button onclick="openToolModal('modal-doc-qr-panel')" class="px-3.5 py-2 rounded-xl bg-teal-600/90 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5">
+                    <span>الباركود</span>
                   </button>
                 </div>
               </div>
 
-              <div class="mt-4 p-4 rounded-xl bg-amber-950/25 border border-amber-500/30">
-                <div class="text-xs font-extrabold text-amber-400 mb-2.5">⚡ ملخص الـ 5 ثواني قبل دخول المراجع لغرفة الفحص:</div>
+              <div class="mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-400/25">
+                <div class="text-xs font-extrabold text-amber-400 mb-2.5">ملخص الـ 5 ثواني قبل دخول المراجع لغرفة الفحص:</div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div>
                     <div class="text-[11px] text-slate-400">متوسط الصائم</div>
@@ -844,13 +1016,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="card p-4">
-                <h3 class="text-xs font-extrabold text-emerald-400 mb-3">📊 مقارنة الأداء الأسبوعي (Before & After)</h3>
+                <h3 class="text-xs font-extrabold text-emerald-400 mb-3">مقارنة الأداء الأسبوعي (Before & After)</h3>
                 <div class="grid grid-cols-2 gap-3 text-center">
-                  <div class="p-3 rounded-xl bg-slate-900">
+                  <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
                     <div class="text-[11px] text-slate-400">الأسبوع الماضي</div>
                     <div id="dp-last-week-avg" class="text-sm font-black text-slate-300 mt-1">لا توجد بيانات</div>
                   </div>
-                  <div class="p-3 rounded-xl bg-slate-900">
+                  <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
                     <div class="text-[11px] text-slate-400">الأسبوع الحالي</div>
                     <div id="dp-this-week-avg" class="text-sm font-black text-sky-400 mt-1">-</div>
                   </div>
@@ -858,16 +1030,17 @@
               </div>
 
               <div class="card p-4">
-                <h3 class="text-xs font-extrabold text-purple-400 mb-3">🕒 تحليل أوقات اليوم (Time-of-Day Pattern)</h3>
+                <h3 class="text-xs font-extrabold text-purple-400 mb-3">تحليل أوقات اليوم (Time-of-Day Pattern)</h3>
                 <div id="dp-time-of-day" class="space-y-1.5 text-xs"></div>
               </div>
             </div>
 
             <div id="doc-notes-section" class="card p-5 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h3 class="text-sm font-extrabold text-emerald-400">📝 خطة العلاج وتوجيهات الطبيب</h3>
-                <button type="button" onclick="startDoctorVoiceDictation()" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5">
-                  <span>🎙️</span><span id="voice-dict-btn-lbl">إملاء صوتي للملاحظات</span>
+                <h3 class="text-sm font-extrabold text-emerald-400">خطة العلاج وتوجيهات الطبيب</h3>
+                <button type="button" onclick="startDoctorVoiceDictation()" class="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-400/25 text-xs font-bold flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+                  <span id="voice-dict-btn-lbl">إملاء صوتي للملاحظات</span>
                 </button>
               </div>
               <textarea id="dp-notes-input" rows="3" placeholder="اكتب توجيهاتك العلاجية والغذائية للمراجع..." class="input-dark w-full text-xs"></textarea>
@@ -889,18 +1062,18 @@
                   <input id="dp-next-visit" type="date" class="input-dark w-full" />
                 </div>
               </div>
-              <button onclick="saveDoctorNotes()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+              <button onclick="saveDoctorNotes()" class="px-5 py-2.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-bold">
                 حفظ الخطة والموعد للمراجع ✓
               </button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="card p-4">
-                <h3 class="text-xs font-extrabold text-slate-200 mb-2">📈 منحنى سكر المراجع</h3>
+                <h3 class="text-xs font-extrabold text-slate-200 mb-2">منحنى سكر المراجع</h3>
                 <div class="h-52"><canvas id="doctor-chart"></canvas></div>
               </div>
               <div class="card p-4">
-                <h3 class="text-xs font-extrabold text-slate-200 mb-2">📋 سجل قياسات المراجع</h3>
+                <h3 class="text-xs font-extrabold text-slate-200 mb-2">سجل قياسات المراجع</h3>
                 <div id="dp-logs-list" class="space-y-2 max-h-52 overflow-y-auto text-xs"></div>
               </div>
             </div>
@@ -909,66 +1082,66 @@
       </main>
     </div>
 
-    <!-- ==================== الشريط العائم السفلي للمراجع (macOS Dock Style) ==================== -->
+    <!-- ==================== الشريط الزجاجي العائم السفلي للمراجع (بدون إيموجي) ==================== -->
     <div id="patient-floating-dock" class="hidden macos-dock-wrap">
       <div class="macos-dock" data-macos-dock>
-        <button onclick="setDockActive('pat-home'); scrollToPatientSection('pat-overview')" data-dock-id="pat-home" class="macos-dock-item open" style="background: linear-gradient(135deg, #10b981, #047857);" title="قياساتي">
+        <button onclick="setDockActive('pat-home'); scrollToPatientSection('pat-overview')" data-dock-id="pat-home" class="macos-dock-item dock-tint-emerald open" title="قياساتي">
           <span class="macos-dock-tooltip">قياساتي</span>
-          <span>📊</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-8 4 16 3-8h4"/></svg>
         </button>
 
         <div class="macos-dock-divider"></div>
 
-        <button onclick="setDockActive('pat-ai'); openToolModal('modal-ai-chat')" data-dock-id="pat-ai" class="macos-dock-item" style="background: linear-gradient(135deg, #6366f1, #4338ca);" title="المساعد الذكي">
+        <button onclick="setDockActive('pat-ai'); openToolModal('modal-ai-chat')" data-dock-id="pat-ai" class="macos-dock-item dock-tint-indigo" title="المساعد الذكي">
           <span class="macos-dock-tooltip">المساعد الذكي</span>
-          <span>🤖</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>
         </button>
-        <button onclick="setDockActive('pat-meal'); openToolModal('modal-meal-ai')" data-dock-id="pat-meal" class="macos-dock-item" style="background: linear-gradient(135deg, #f59e0b, #d97706);" title="صوّر وجبتك">
+        <button onclick="setDockActive('pat-meal'); openToolModal('modal-meal-ai')" data-dock-id="pat-meal" class="macos-dock-item dock-tint-amber" title="صوّر وجبتك">
           <span class="macos-dock-tooltip">صوّر وجبتك</span>
-          <span>📸</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
-        <button onclick="setDockActive('pat-hypo'); openToolModal('modal-hypo15')" data-dock-id="pat-hypo" class="macos-dock-item" style="background: linear-gradient(135deg, #f43f5e, #be123c);" title="طوارئ 15-15">
+        <button onclick="setDockActive('pat-hypo'); openToolModal('modal-hypo15')" data-dock-id="pat-hypo" class="macos-dock-item dock-tint-rose" title="طوارئ 15-15">
           <span class="macos-dock-tooltip">طوارئ 15-15</span>
-          <span>⏱️</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4l2.5 2.5M9 2h6"/></svg>
         </button>
 
         <div class="macos-dock-divider"></div>
 
-        <button onclick="setDockActive('pat-chat'); openToolModal('modal-doc-chat')" data-dock-id="pat-chat" class="macos-dock-item" style="background: linear-gradient(135deg, #0ea5e9, #0369a1);" title="الدكتور">
+        <button onclick="setDockActive('pat-chat'); openToolModal('modal-doc-chat')" data-dock-id="pat-chat" class="macos-dock-item dock-tint-sky" title="الدكتور">
           <span class="macos-dock-tooltip">الدكتور</span>
-          <span>💬</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- ==================== الشريط العائم السفلي للطبيب (macOS Dock Style) ==================== -->
+    <!-- ==================== الشريط الزجاجي العائم السفلي للطبيب (بدون إيموجي) ==================== -->
     <div id="doctor-floating-dock" class="hidden macos-dock-wrap">
       <div class="macos-dock" data-macos-dock>
-        <button onclick="setDockActive('doc-home'); scrollToDoctorSection('doc-overview')" data-dock-id="doc-home" class="macos-dock-item open" style="background: linear-gradient(135deg, #0ea5e9, #0369a1);" title="العيادة">
+        <button onclick="setDockActive('doc-home'); scrollToDoctorSection('doc-overview')" data-dock-id="doc-home" class="macos-dock-item dock-tint-sky open" title="العيادة">
           <span class="macos-dock-tooltip">العيادة</span>
-          <span>🏥</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
         </button>
 
         <div class="macos-dock-divider"></div>
 
-        <button onclick="setDockActive('doc-new'); openToolModal('modal-doc-create-patient')" data-dock-id="doc-new" class="macos-dock-item" style="background: linear-gradient(135deg, #10b981, #047857);" title="مراجع جديد">
+        <button onclick="setDockActive('doc-new'); openToolModal('modal-doc-create-patient')" data-dock-id="doc-new" class="macos-dock-item dock-tint-emerald" title="مراجع جديد">
           <span class="macos-dock-tooltip">مراجع جديد</span>
-          <span>➕</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
         </button>
-        <button onclick="setDockActive('doc-notes'); scrollToDoctorSection('doc-notes-section')" data-dock-id="doc-notes" class="macos-dock-item" style="background: linear-gradient(135deg, #f59e0b, #d97706);" title="التوجيهات">
+        <button onclick="setDockActive('doc-notes'); scrollToDoctorSection('doc-notes-section')" data-dock-id="doc-notes" class="macos-dock-item dock-tint-amber" title="التوجيهات">
           <span class="macos-dock-tooltip">التوجيهات</span>
-          <span>📝</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button onclick="setDockActive('doc-labs'); openToolModal('modal-doc-labs-panel')" data-dock-id="doc-labs" class="macos-dock-item" style="background: linear-gradient(135deg, #a855f7, #7e22ce);" title="التحاليل">
+        <button onclick="setDockActive('doc-labs'); openToolModal('modal-doc-labs-panel')" data-dock-id="doc-labs" class="macos-dock-item dock-tint-purple" title="التحاليل">
           <span class="macos-dock-tooltip">التحاليل</span>
-          <span>🧪</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6.5L5 18a2 2 0 001.7 3h10.6a2 2 0 001.7-3l-5-8.5V3"/></svg>
         </button>
 
         <div class="macos-dock-divider"></div>
 
-        <button onclick="setDockActive('doc-chat'); openToolModal('modal-doc-chat-panel')" data-dock-id="doc-chat" class="macos-dock-item" style="background: linear-gradient(135deg, #14b8a6, #0f766e);" title="المحادثة">
+        <button onclick="setDockActive('doc-chat'); openToolModal('modal-doc-chat-panel')" data-dock-id="doc-chat" class="macos-dock-item dock-tint-emerald" title="المحادثة">
           <span class="macos-dock-tooltip">المحادثة</span>
-          <span>💬</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         </button>
       </div>
     </div>
@@ -978,40 +1151,40 @@
   <!-- ==================== النوافذ المنبثقة للذكاء الاصطناعي وتحليل الصور ==================== -->
 
   <!-- المساعد الطبي الذكي -->
-  <div id="modal-ai-chat" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-xl p-5 space-y-3">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+  <div id="modal-ai-chat" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-xl p-5 space-y-3 border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
         <div>
-          <h3 class="text-base font-black text-emerald-400">🤖 المساعد الطبي الذكي</h3>
+          <h3 class="text-base font-black text-emerald-400">المساعد الطبي الذكي</h3>
           <p class="text-[11px] text-slate-400">مرتبط بملفك الطبي وقياساتك الأخيرة</p>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="clearAiChatHistory()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 text-[11px]">
-            🗑️ مسح المحادثة
+          <button onclick="clearAiChatHistory()" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-rose-500/20 border border-white/10 text-slate-300 hover:text-rose-300 text-[11px]">
+            مسح المحادثة
           </button>
           <button onclick="closeAllModals()" class="text-slate-400 hover:text-white px-2">✕</button>
         </div>
       </div>
 
       <div class="flex flex-wrap gap-1.5 text-[11px]">
-        <button type="button" onclick="sendQuickAiPrompt('حلّل لي آخر قياساتي ونصيحتك إلي شنو؟')" class="px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/60">
-          📊 حلّل آخر قياساتي
+        <button type="button" onclick="sendQuickAiPrompt('حلّل لي آخر قياساتي ونصيحتك إلي شنو؟')" class="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 hover:bg-emerald-500/25">
+          حلّل آخر قياساتي
         </button>
-        <button type="button" onclick="sendQuickAiPrompt('شنو أتعشى اليوم بدون ما يصعد سكري؟')" class="px-2.5 py-1 rounded-full bg-sky-950/60 border border-sky-500/30 text-sky-300 hover:bg-sky-900/60">
-          🥗 اقتراح وجبة خفيفة
+        <button type="button" onclick="sendQuickAiPrompt('شنو أتعشى اليوم بدون ما يصعد سكري؟')" class="px-2.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/25 text-sky-300 hover:bg-sky-500/25">
+          اقتراح وجبة خفيفة
         </button>
-        <button type="button" onclick="sendQuickAiPrompt('شلون أتعامل إذا حسيت برجفة وهبوط مفاجئ؟')" class="px-2.5 py-1 rounded-full bg-rose-950/60 border border-rose-500/30 text-rose-300 hover:bg-rose-900/60">
-          🚨 تصرف الهبوط المفاجئ
+        <button type="button" onclick="sendQuickAiPrompt('شلون أتعامل إذا حسيت برجفة وهبوط مفاجئ؟')" class="px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-400/25 text-rose-300 hover:bg-rose-500/25">
+          تصرف الهبوط المفاجئ
         </button>
       </div>
 
-      <div id="ai-chat-history" class="h-72 overflow-y-auto p-3 rounded-xl bg-slate-900 space-y-2.5 text-xs leading-relaxed">
+      <div id="ai-chat-history" class="h-72 overflow-y-auto p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-2.5 text-xs leading-relaxed">
         <div class="text-slate-400">هلا بيك! اسألني أي سؤال عن قياساتك، أكلك، أو علاجك...</div>
       </div>
 
       <form onsubmit="askAiAssistant(event)" class="flex gap-2">
-        <button type="button" onclick="startPatientVoiceQuestion()" id="btn-pat-voice" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs" title="تحدث بصوتك">
-          🎤
+        <button type="button" onclick="startPatientVoiceQuestion()" id="btn-pat-voice" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-amber-300 font-bold text-xs" title="تحدث بصوتك">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
         </button>
         <input id="ai-question-input" type="text" required placeholder="اكتب سؤالك أو اضغط المايكروفون..." class="input-dark w-full text-xs" />
         <button type="submit" id="btn-ask-ai" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
@@ -1022,96 +1195,96 @@
   </div>
 
   <!-- تحليل الوجبة بالكاميرا -->
-  <div id="modal-meal-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+  <div id="modal-meal-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">📸 تحليل الوجبة بالذكاء الاصطناعي</h3>
+        <h3 class="text-base font-black text-amber-400">تحليل الوجبة بالذكاء الاصطناعي</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="meal-img-input" type="file" accept="image/*" onchange="previewSelectedImage('meal-img-input','meal-img-preview')" class="input-dark w-full text-xs" />
-      <img id="meal-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <img id="meal-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-white/15" />
       <input id="meal-note-input" type="text" placeholder="ملاحظة اختيارية (مثلاً: وجبة غدا / صايم)" class="input-dark w-full text-xs" />
       <button onclick="analyzeMealImage()" id="btn-meal-ai" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">
         تحليل الصورة الآن
       </button>
-      <div id="meal-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+      <div id="meal-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 space-y-2 hidden"></div>
     </div>
   </div>
 
   <!-- قارئ ملصقات المعلّبات -->
-  <div id="modal-label-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+  <div id="modal-label-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">🏷️ قارئ جدول القيم الغذائية للمعلّبات</h3>
+        <h3 class="text-base font-black text-sky-400">قارئ جدول القيم الغذائية للمعلّبات</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="label-img-input" type="file" accept="image/*" onchange="previewSelectedImage('label-img-input','label-img-preview')" class="input-dark w-full text-xs" />
-      <img id="label-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <img id="label-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-white/15" />
       <button onclick="analyzeNutritionLabel()" id="btn-label-ai" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs">
         فحص العلبة والسكريات المخفية
       </button>
-      <div id="label-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+      <div id="label-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 space-y-2 hidden"></div>
     </div>
   </div>
 
   <!-- قراءة التحاليل المختبرية بالكاميرا -->
-  <div id="modal-lab-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+  <div id="modal-lab-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">🧪 قراءة التحاليل المختبرية</h3>
+        <h3 class="text-base font-black text-sky-400">قراءة التحاليل المختبرية</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="lab-img-input" type="file" accept="image/*" onchange="previewSelectedImage('lab-img-input','lab-img-preview')" class="input-dark w-full text-xs" />
-      <img id="lab-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <img id="lab-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-white/15" />
       <button onclick="analyzeLabImage()" id="btn-lab-ai" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs">
         قراءة وشرح التحليل وحفظه للدكتور
       </button>
-      <div id="lab-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+      <div id="lab-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 space-y-2 hidden"></div>
     </div>
   </div>
 
   <!-- التعرف على علبة الدواء والأنسولين بالصورة -->
-  <div id="modal-med-ai" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+  <div id="modal-med-ai" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">💊 التعرف على علبة الدواء بالصورة</h3>
+        <h3 class="text-base font-black text-emerald-400">التعرف على علبة الدواء بالصورة</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="med-img-input" type="file" accept="image/*" onchange="previewSelectedImage('med-img-input','med-img-preview')" class="input-dark w-full text-xs" />
-      <img id="med-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-slate-700" />
+      <img id="med-img-preview" class="hidden w-full h-40 object-cover rounded-xl border border-white/15" />
       <button onclick="analyzeMedicationImage()" id="btn-med-ai" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
         تعرّف على العلاج
       </button>
-      <div id="med-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-900 text-slate-200 space-y-2 hidden"></div>
+      <div id="med-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 space-y-2 hidden"></div>
     </div>
   </div>
 
   <!-- ==================== بقية النوافذ التفاعلية للمراجع والطبيب ==================== -->
 
-  <div id="modal-hypo15" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
+  <div id="modal-hypo15" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-rose-400">⏱️ قاعدة (15-15) لعلاج هبوط السكر</h3>
+        <h3 class="text-base font-black text-rose-400">قاعدة (15-15) لعلاج هبوط السكر</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
         1. تناول فوراً <strong>15 غرام كارب سريع</strong> (نص كلاص عصير محلى، أو 3 تمرات، أو ملعقة كبيرة عسل/سكر).<br/>
         2. اضغط بدء المؤقت وانتظر <strong>15 دقيقة</strong> ثم أعد فحص السكر.
       </p>
-      <div class="text-center py-4 bg-slate-900 rounded-2xl">
+      <div class="text-center py-4 bg-slate-950/60 border border-white/10 rounded-2xl">
         <div id="hypo15-timer-lbl" class="text-4xl font-black text-rose-400 font-mono">15:00</div>
       </div>
       <div class="flex gap-2">
         <button onclick="startHypo15Timer()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs">بدء الـ 15 دقيقة</button>
-        <button onclick="resetHypo15Timer()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs">إعادة ضبط</button>
+        <button onclick="resetHypo15Timer()" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs">إعادة ضبط</button>
       </div>
     </div>
   </div>
 
-  <div id="modal-bedtime" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
+  <div id="modal-bedtime" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-indigo-400">🛌 فحص الأمان قبل النوم</h3>
+        <h3 class="text-base font-black text-indigo-400">فحص الأمان قبل النوم</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="bed-glucose" type="number" placeholder="قياس سكرك الحالي قبل النوم" class="input-dark w-full" />
@@ -1120,56 +1293,56 @@
         <span>بذلت مجهود بدني أو مشيت هواي اليوم</span>
       </label>
       <button onclick="checkBedtimeSafety()" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs">افحص الأمان</button>
-      <div id="bed-result" class="text-xs p-3 rounded-xl bg-slate-900 text-slate-200 hidden"></div>
+      <div id="bed-result" class="text-xs p-3 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 hidden"></div>
     </div>
   </div>
 
-  <div id="modal-workout" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
+  <div id="modal-workout" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">🏃 فحص الأمان قبل الرياضة والمشي</h3>
+        <h3 class="text-base font-black text-emerald-400">فحص الأمان قبل الرياضة والمشي</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="work-glucose" type="number" placeholder="قياس سكرك قبل التمرين" class="input-dark w-full" />
       <button onclick="checkWorkoutSafety()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs">تقييم جاهزية التمرين</button>
-      <div id="work-result" class="text-xs p-3 rounded-xl bg-slate-900 text-slate-200 hidden"></div>
+      <div id="work-result" class="text-xs p-3 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 hidden"></div>
     </div>
   </div>
 
-  <div id="modal-lockscreen" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4 text-center">
+  <div id="modal-lockscreen" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 text-center border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">📱 بطاقة طوارئ لشاشة قفل الموبايل</h3>
+        <h3 class="text-base font-black text-amber-400">بطاقة طوارئ لشاشة قفل الموبايل</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <canvas id="lockscreen-canvas" width="360" height="560" class="mx-auto rounded-2xl border border-slate-700 max-h-80"></canvas>
+      <canvas id="lockscreen-canvas" width="360" height="560" class="mx-auto rounded-2xl border border-white/15 max-h-80"></canvas>
       <button onclick="downloadLockScreenCard()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs">
-        ⬇️ تحميل الصورة لتعيينها كخلفية قفل
+        تحميل الصورة لتعيينها كخلفية قفل
       </button>
     </div>
   </div>
 
-  <div id="modal-cards" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+  <div id="modal-cards" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-4 max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">🪪 بطاقات الطوارئ والتوعية الجاهزة</h3>
+        <h3 class="text-base font-black text-sky-400">بطاقات الطوارئ والتوعية الجاهزة</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div class="p-4 rounded-xl bg-rose-950/30 border border-rose-500/30 space-y-1.5 text-xs">
-        <div class="font-black text-rose-400">🏫 بطاقة المدرسة ومكان العمل (لزملاء الدوام والإدارة):</div>
+      <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-400/25 space-y-1.5 text-xs">
+        <div class="font-black text-rose-400">بطاقة المدرسة ومكان العمل (لزملاء الدوام والإدارة):</div>
         <p class="text-slate-200">هذا الشخص مصاب بالسكري. في حال ظهور رجفة، تعرّق بارد، أو تشوش: أعطه فوراً عصيراً محلى أو تمراً. <strong>تحذير: ممنوع إعطاء الأنسولين إطلاقاً في حالة الإغماء أو الهبوط!</strong></p>
       </div>
-      <div class="p-4 rounded-xl bg-sky-950/30 border border-sky-500/30 space-y-1.5 text-xs">
-        <div class="font-black text-sky-400">🦷 بطاقة التنبيه لطبيب الأسنان والعمليات الصغرى:</div>
+      <div class="p-4 rounded-xl bg-sky-500/10 border border-sky-400/25 space-y-1.5 text-xs">
+        <div class="font-black text-sky-400">بطاقة التنبيه لطبيب الأسنان والعمليات الصغرى:</div>
         <p class="text-slate-200">يرجى فحص السكر قبل التخدير، تحديد موعد الجلسة صباحاً بعد الإفطار والعلاج لتجنب هبوط السكر، والاهتمام بتعقيم الجروح لسرعة الالتئام.</p>
       </div>
     </div>
   </div>
 
-  <div id="modal-bolus" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
+  <div id="modal-bolus" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">🧮 حاسبة الكارب والجرعة قبل الأكل</h3>
+        <h3 class="text-base font-black text-emerald-400">حاسبة الكارب والجرعة قبل الأكل</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-2 text-xs">
@@ -1183,14 +1356,14 @@
         <input id="bolus-glucose" type="number" placeholder="مثال: 150" class="input-dark w-full" />
       </div>
       <button onclick="calculateMealBolus()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs">احسب الكارب والجرعة</button>
-      <div id="bolus-result" class="text-xs p-3 rounded-xl bg-slate-900 text-emerald-300 font-bold hidden"></div>
+      <div id="bolus-result" class="text-xs p-3 rounded-xl bg-slate-950/60 border border-white/10 text-emerald-300 font-bold hidden"></div>
     </div>
   </div>
 
-  <div id="modal-iraqi-food" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+  <div id="modal-iraqi-food" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">🍲 دليل الأكلات العراقية والبدائل الذكية</h3>
+        <h3 class="text-base font-black text-emerald-400">دليل الأكلات العراقية والبدائل الذكية</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="iraqi-food-search" type="text" oninput="filterIraqiFoods()" placeholder="ابحث عن أكلة: تمن، كبة، دولمة، خبز، تمر، باجة..." class="input-dark w-full text-xs" />
@@ -1198,13 +1371,13 @@
     </div>
   </div>
 
-  <div id="modal-feast" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs">
+  <div id="modal-feast" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-purple-400">🎉 خطة العزايم والأعراس الذكية</h3>
+        <h3 class="text-base font-black text-purple-400">خطة العزايم والأعراس الذكية</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div class="p-3 rounded-xl bg-slate-900 space-y-2 text-slate-200 leading-relaxed">
+      <div class="p-3.5 rounded-xl bg-slate-950/60 border border-white/10 space-y-2 text-slate-200 leading-relaxed">
         <p><strong>1. قبل العزيمة:</strong> اشرب كوبين ماء ولا تروح جوعان كلش حتى ما تاكل بسرعة.</p>
         <p><strong>2. تقسيم الصحن:</strong> ابدأ بالزلاطة والخضار أولاً، ثم البروتين (دجاج/لحم مشوي)، وخلّي التمن بحدود 6-8 خواشيك فقط.</p>
         <p><strong>3. بعد العزيمة:</strong> امشِ 20-30 دقيقة وقس سكرك بعد 3-4 ساعات لأن الأكل الدسم يرفع السكر متأخراً.</p>
@@ -1212,22 +1385,22 @@
     </div>
   </div>
 
-  <div id="modal-herbs" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
+  <div id="modal-herbs" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">🌿 دليل الأعشاب العراقية وتداخلها مع العلاج</h3>
+        <h3 class="text-base font-black text-emerald-400">دليل الأعشاب العراقية وتداخلها مع العلاج</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-2">
-        <div class="p-3 rounded-xl bg-slate-900 border-r-4 border-amber-500">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-amber-500">
           <div class="font-bold text-amber-300">الحلبة:</div>
           <p class="text-slate-300">تبطئ امتصاص السكر، لكن الإكثار منها مع الأنسولين أو الكليبنكلاميد قد يسبب <strong>هبوطاً مفاجئاً</strong>.</p>
         </div>
-        <div class="p-3 rounded-xl bg-slate-900 border-r-4 border-emerald-500">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-emerald-500">
           <div class="font-bold text-emerald-300">الدارسين (القرفة):</div>
           <p class="text-slate-300">يحسّن حساسية الأنسولين بكميات معتدلة (رشة على الشاي أو اللبن)، تجنب الجرعات المركزة بدون استشارة الطبيب.</p>
         </div>
-        <div class="p-3 rounded-xl bg-slate-900 border-r-4 border-rose-500">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-rose-500">
           <div class="font-bold text-rose-300">ورق الزيتون والمرمية:</div>
           <p class="text-slate-300">قد تخفض السكر والضغط معاً؛ راقب قياسك جيداً عند شربها مع أدويتك.</p>
         </div>
@@ -1235,28 +1408,28 @@
     </div>
   </div>
 
-  <div id="modal-injection" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
+  <div id="modal-injection" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">💉 تدوير أماكن حقن الأنسولين</h3>
+        <h3 class="text-base font-black text-sky-400">تدوير أماكن حقن الأنسولين</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <p class="text-xs text-slate-400">آخر مكان حقن مسجل: <strong id="last-inj-site-lbl" class="text-emerald-400">غير محدد</strong></p>
       <div class="grid grid-cols-2 gap-2 text-xs">
-        <button onclick="saveInjectionSite('البطن - يمين')" class="p-3 rounded-xl bg-slate-800 hover:bg-sky-600 font-bold">البطن - يمين</button>
-        <button onclick="saveInjectionSite('البطن - يسار')" class="p-3 rounded-xl bg-slate-800 hover:bg-sky-600 font-bold">البطن - يسار</button>
-        <button onclick="saveInjectionSite('الذراع الأيمن')" class="p-3 rounded-xl bg-slate-800 hover:bg-sky-600 font-bold">الذراع الأيمن</button>
-        <button onclick="saveInjectionSite('الذراع الأيسر')" class="p-3 rounded-xl bg-slate-800 hover:bg-sky-600 font-bold">الذراع الأيسر</button>
-        <button onclick="saveInjectionSite('الفخذ الأيمن')" class="p-3 rounded-xl bg-slate-800 hover:bg-sky-600 font-bold">الفخذ الأيمن</button>
-        <button onclick="saveInjectionSite('الفخذ الأيسر')" class="p-3 rounded-xl bg-slate-800 hover:bg-sky-600 font-bold">الفخذ الأيسر</button>
+        <button onclick="saveInjectionSite('البطن - يمين')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">البطن - يمين</button>
+        <button onclick="saveInjectionSite('البطن - يسار')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">البطن - يسار</button>
+        <button onclick="saveInjectionSite('الذراع الأيمن')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الذراع الأيمن</button>
+        <button onclick="saveInjectionSite('الذراع الأيسر')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الذراع الأيسر</button>
+        <button onclick="saveInjectionSite('الفخذ الأيمن')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الفخذ الأيمن</button>
+        <button onclick="saveInjectionSite('الفخذ الأيسر')" class="p-3 rounded-xl bg-white/5 hover:bg-sky-600/80 border border-white/10 font-bold">الفخذ الأيسر</button>
       </div>
     </div>
   </div>
 
-  <div id="modal-inventory" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4">
+  <div id="modal-inventory" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">📦 حاسبة مخزون الأشرطة والأنسولين</h3>
+        <h3 class="text-base font-black text-amber-400">حاسبة مخزون الأشرطة والأنسولين</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-3 text-xs">
@@ -1273,38 +1446,38 @@
     </div>
   </div>
 
-  <div id="modal-periodic" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4 text-xs max-h-[85vh] overflow-y-auto">
+  <div id="modal-periodic" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-4 text-xs max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">📅 الفحوصات الدورية وخطة التدرج بالمشي</h3>
+        <h3 class="text-base font-black text-emerald-400">الفحوصات الدورية وخطة التدرج بالمشي</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-2">
-        <div class="p-3 rounded-xl bg-slate-900 flex justify-between items-center">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center">
           <span>فحص التراكمي (HbA1c) — كل 3 أشهر</span>
           <input id="chk-hba1c" type="date" class="input-dark text-xs" />
         </div>
-        <div class="p-3 rounded-xl bg-slate-900 flex justify-between items-center">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center">
           <span>فحص وظائف الكلى والزلال — كل 6 أشهر</span>
           <input id="chk-kidney" type="date" class="input-dark text-xs" />
         </div>
-        <div class="p-3 rounded-xl bg-slate-900 flex justify-between items-center">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center">
           <span>فحص قاع العين والدهون — سنوياً</span>
           <input id="chk-eye" type="date" class="input-dark text-xs" />
         </div>
         <button onclick="savePeriodicChecks()" class="w-full py-2 rounded-xl bg-emerald-600 text-white font-bold">حفظ تواريخ الفحوصات</button>
       </div>
-      <div class="p-3.5 rounded-xl bg-sky-950/30 border border-sky-500/30 space-y-2">
-        <div class="font-bold text-sky-300">🚶 خطة التدرج بالمشي الأسبوعي:</div>
+      <div class="p-3.5 rounded-xl bg-sky-500/10 border border-sky-400/25 space-y-2">
+        <div class="font-bold text-sky-300">خطة التدرج بالمشي الأسبوعي:</div>
         <p class="text-slate-300">الأسبوع 1: 10 دقائق بعد الغداء • الأسبوع 2: 15 دقيقة • الأسبوع 3: 25 دقيقة • الأسبوع 4: 30 دقيقة يومياً.</p>
       </div>
     </div>
   </div>
 
-  <div id="modal-neuropathy" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs">
+  <div id="modal-neuropathy" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-purple-400">🦶 فحص تنميل الأعصاب وصحة اللثة والجلد</h3>
+        <h3 class="text-base font-black text-purple-400">فحص تنميل الأعصاب وصحة اللثة والجلد</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل تشعر بخدر أو تنميل في القدمين؟</label>
@@ -1312,27 +1485,27 @@
       <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل يزعجك ملامسة الغطاء للقدمين؟</label>
       <label class="flex items-center gap-2"><input type="checkbox" class="neuro-q accent-purple-500" /> هل لاحظت جفافاً أو تشققاً بالكعبين أو التهاب لثة؟</label>
       <button onclick="submitNeuropathyCheck()" class="w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold">حساب النتيجة وإرسالها للدكتور</button>
-      <div id="neuro-result" class="p-3 rounded-xl bg-slate-900 text-slate-200 hidden"></div>
+      <div id="neuro-result" class="p-3 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 hidden"></div>
     </div>
   </div>
 
-  <div id="modal-calibration" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-4 text-xs">
+  <div id="modal-calibration" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">⚖️ مقياس دقة الجهاز المنزلي مقابل المختبر</h3>
+        <h3 class="text-base font-black text-sky-400">مقياس دقة الجهاز المنزلي مقابل المختبر</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="cal-meter" type="number" placeholder="قراءة جهازك المنزلي" class="input-dark w-full" />
       <input id="cal-lab" type="number" placeholder="قراءة المختبر بنفس الوقت" class="input-dark w-full" />
       <button onclick="submitCalibration()" class="w-full py-2.5 rounded-xl bg-sky-600 text-white font-bold">احسب نسبة الدقة</button>
-      <div id="cal-result" class="p-3 rounded-xl bg-slate-900 text-emerald-300 font-bold hidden"></div>
+      <div id="cal-result" class="p-3 rounded-xl bg-slate-950/60 border border-white/10 text-emerald-300 font-bold hidden"></div>
     </div>
   </div>
 
-  <div id="modal-travel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs">
+  <div id="modal-travel" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">🧳 حقيبة السفر والتحضير لموعد العيادة</h3>
+        <h3 class="text-base font-black text-amber-400">حقيبة السفر والتحضير لموعد العيادة</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="space-y-2">
@@ -1344,13 +1517,13 @@
     </div>
   </div>
 
-  <div id="modal-doc-chat" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4">
+  <div id="modal-doc-chat" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">💬 محادثة الدكتور المشرف</h3>
+        <h3 class="text-base font-black text-sky-400">محادثة الدكتور المشرف</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div id="pat-chat-messages" class="h-64 overflow-y-auto p-3 rounded-xl bg-slate-900 space-y-2 text-xs"></div>
+      <div id="pat-chat-messages" class="h-64 overflow-y-auto p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-2 text-xs"></div>
       <form onsubmit="sendPatientChatMessage(event)" class="flex gap-2">
         <input id="pat-chat-input" type="text" required placeholder="اكتب رسالتك للدكتور..." class="input-dark w-full text-xs" />
         <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs">إرسال</button>
@@ -1358,10 +1531,10 @@
     </div>
   </div>
 
-  <div id="modal-profile" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs">
+  <div id="modal-profile" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">⚙️ إعدادات الملف واللهجة</h3>
+        <h3 class="text-base font-black text-emerald-400">إعدادات الملف واللهجة</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div>
@@ -1389,10 +1562,10 @@
   </div>
 
   <!-- نوافذ الطبيب -->
-  <div id="modal-doc-create-patient" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs">
+  <div id="modal-doc-create-patient" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-emerald-400">➕ إضافة مراجع جديد للعيادة</h3>
+        <h3 class="text-base font-black text-emerald-400">إضافة مراجع جديد للعيادة</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="newp-name" type="text" placeholder="الاسم الكامل للمراجع" class="input-dark w-full" />
@@ -1425,10 +1598,10 @@
     </div>
   </div>
 
-  <div id="modal-doc-edit-patient" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-md p-6 space-y-3 text-xs">
+  <div id="modal-doc-edit-patient" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">✏️ تعديل بيانات المراجع</h3>
+        <h3 class="text-base font-black text-sky-400">تعديل بيانات المراجع</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="editp-name" type="text" class="input-dark w-full" />
@@ -1449,10 +1622,10 @@
     </div>
   </div>
 
-  <div id="modal-doc-reset-pass" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-sm p-6 space-y-3 text-xs">
+  <div id="modal-doc-reset-pass" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-sm p-6 space-y-3 text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-amber-400">🔑 تغيير الرمز السري للمراجع</h3>
+        <h3 class="text-base font-black text-amber-400">تغيير الرمز السري للمراجع</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <input id="resetp-newpass" type="text" placeholder="اكتب الرمز السري الجديد" class="input-dark w-full" />
@@ -1460,13 +1633,13 @@
     </div>
   </div>
 
-  <div id="modal-doc-chat-panel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-4">
+  <div id="modal-doc-chat-panel" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-4 border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-sky-400">💬 محادثة المراجع: <span id="doc-chat-pat-name"></span></h3>
+        <h3 class="text-base font-black text-sky-400">محادثة المراجع: <span id="doc-chat-pat-name"></span></h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div id="doc-chat-messages" class="h-64 overflow-y-auto p-3 rounded-xl bg-slate-900 space-y-2 text-xs"></div>
+      <div id="doc-chat-messages" class="h-64 overflow-y-auto p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-2 text-xs"></div>
       <form onsubmit="sendDoctorChatMessage(event)" class="flex gap-2">
         <input id="doc-chat-input" type="text" required placeholder="اكتب رسالتك للمراجع..." class="input-dark w-full text-xs" />
         <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-bold text-xs">إرسال</button>
@@ -1474,23 +1647,23 @@
     </div>
   </div>
 
-  <div id="modal-doc-labs-panel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto">
+  <div id="modal-doc-labs-panel" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-purple-400">🧪 تحاليل المراجع المختبرية</h3>
+        <h3 class="text-base font-black text-purple-400">تحاليل المراجع المختبرية</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div id="doc-labs-container" class="space-y-2"></div>
     </div>
   </div>
 
-  <div id="modal-doc-qr-panel" class="tool-modal hidden fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-    <div class="card w-full max-w-sm p-6 space-y-3 text-center text-xs">
+  <div id="modal-doc-qr-panel" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-sm p-6 space-y-3 text-center text-xs border-white/15">
       <div class="flex justify-between items-center">
-        <h3 class="text-base font-black text-teal-400">📱 بطاقة وهوية المراجع</h3>
+        <h3 class="text-base font-black text-teal-400">بطاقة وهوية المراجع</h3>
         <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <div id="doc-qr-box" class="p-4 rounded-xl bg-slate-900 space-y-2"></div>
+      <div id="doc-qr-box" class="p-4 rounded-xl bg-slate-950/60 border border-white/10 space-y-2"></div>
     </div>
   </div>
 
@@ -1508,15 +1681,15 @@
     let postMealTimeout = null;
 
     const IRAQI_FOODS = [
-      { name: "تمن ومرك فاصوليا / بامية", tag: "🟡 باعتدال", tip: "اكتفِ بـ 6 إلى 8 ملاعق تمن مع الإكثار من المرك والزلاطة." },
-      { name: "خبز تنور أبيض حار", tag: "🔴 يرفع السكر بسرعة", tip: "استبدله بربع رغيف خبز شعير أو شوفان محمّص." },
-      { name: "كبة حلب / كبة برغل مقلية", tag: "🟡 باعتدال", tip: "تناول حبة أو حبتين مشوية أو مسلوقة بدل المقلية مع سلطة." },
-      { name: "دولمة عراقية", tag: "🟡 باعتدال", tip: "السلق والباذنجان ممتازان، قلل من التمن داخل الحشوة." },
-      { name: "تشريب لحم أو دجاج", tag: "🔴 يرفع السكر بسرعة", tip: "الخبز المنقوع يمتص بسرعة؛ تناول اللحم والمرق مع خبز شعير قليل." },
-      { name: "تمر (خستاوي / زهدي)", tag: "🟡 باعتدال", tip: "حبتان إلى 3 حبات كحد أقصى ويفضل مع لبن أو جوز لإبطاء الامتصاص." },
-      { name: "كاهي وكيمر", tag: "🔴 يرفع السكر والدسم", tip: "يرفع السكر بقوة ولفترة طويلة؛ تجنبه قدر الإمكان." },
-      { name: "سمك مسكوف مع زلاطة", tag: "🟢 آمن وممتاز", tip: "وجبة بروتينية ممتازة لا ترفع السكر إذا قُلّل الخبز معها." },
-      { name: "شنينة / لبن أربيل بارد", tag: "🟢 آمن ومفيد", tip: "بديل رائع للمشروبات الغازية والعصائر الصناعية." }
+      { name: "تمن ومرك فاصوليا / بامية", tag: "باعتدال", level: "amber", tip: "اكتفِ بـ 6 إلى 8 ملاعق تمن مع الإكثار من المرك والزلاطة." },
+      { name: "خبز تنور أبيض حار", tag: "يرفع السكر بسرعة", level: "rose", tip: "استبدله بربع رغيف خبز شعير أو شوفان محمّص." },
+      { name: "كبة حلب / كبة برغل مقلية", tag: "باعتدال", level: "amber", tip: "تناول حبة أو حبتين مشوية أو مسلوقة بدل المقلية مع سلطة." },
+      { name: "دولمة عراقية", tag: "باعتدال", level: "amber", tip: "السلق والباذنجان ممتازان، قلل من التمن داخل الحشوة." },
+      { name: "تشريب لحم أو دجاج", tag: "يرفع السكر بسرعة", level: "rose", tip: "الخبز المنقوع يمتص بسرعة؛ تناول اللحم والمرق مع خبز شعير قليل." },
+      { name: "تمر (خستاوي / زهدي)", tag: "باعتدال", level: "amber", tip: "حبتان إلى 3 حبات كحد أقصى ويفضل مع لبن أو جوز لإبطاء الامتصاص." },
+      { name: "كاهي وكيمر", tag: "يرفع السكر والدسم", level: "rose", tip: "يرفع السكر بقوة ولفترة طويلة؛ تجنبه قدر الإمكان." },
+      { name: "سمك مسكوف مع زلاطة", tag: "آمن وممتاز", level: "emerald", tip: "وجبة بروتينية ممتازة لا ترفع السكر إذا قُلّل الخبز معها." },
+      { name: "شنينة / لبن أربيل بارد", tag: "آمن ومفيد", level: "emerald", tip: "بديل رائع للمشروبات الغازية والعصائر الصناعية." }
     ];
 
     setInterval(() => {
@@ -1524,7 +1697,7 @@
       if (el) el.textContent = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
     }, 1000);
 
-    // ================= تأثيرات شريط macOS Dock التفاعلية =================
+    // ================= تأثيرات شريط macOS Glass Dock التفاعلية =================
     function setDockActive(dockId) {
       document.querySelectorAll('.macos-dock-item').forEach(btn => {
         btn.classList.toggle('open', btn.getAttribute('data-dock-id') === dockId);
@@ -1784,7 +1957,7 @@
     function renderAiBubble(role, content, timeStr = '') {
       if (role === 'user') {
         return `
-          <div class="p-2.5 rounded-xl bg-emerald-900/40 border border-emerald-500/20 text-emerald-100 mr-8">
+          <div class="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-400/25 text-emerald-100 mr-8">
             <div class="text-[10px] text-emerald-400 font-bold mb-0.5">أنت ${timeStr ? '• ' + timeStr : ''}</div>
             <div>${formatAiText(content)}</div>
           </div>
@@ -1792,10 +1965,10 @@
       }
       const plain = String(content).replace(/[`*"'\\\r\n]/g, ' ');
       return `
-        <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700/70 text-slate-200 ml-6 space-y-1.5">
+        <div class="p-3 rounded-xl bg-white/[0.04] border border-white/10 text-slate-200 ml-6 space-y-1.5">
           <div class="flex items-center justify-between text-[10px] text-sky-400 font-bold">
-            <span>🤖 المساعد الذكي ${timeStr ? '• ' + timeStr : ''}</span>
-            <button type="button" onclick="speakText('${plain}')" class="text-amber-300 hover:underline">🔊 اسمع الرد</button>
+            <span>المساعد الذكي ${timeStr ? '• ' + timeStr : ''}</span>
+            <button type="button" onclick="speakText('${plain}')" class="text-amber-300 hover:underline">استماع للرد</button>
           </div>
           <div>${formatAiText(content)}</div>
         </div>
@@ -1826,7 +1999,7 @@
       const box = document.getElementById('ai-chat-history');
       box.innerHTML += renderAiBubble('user', q);
       const typingId = 'typing-' + Date.now();
-      box.innerHTML += `<div id="${typingId}" class="p-2.5 rounded-xl bg-slate-800/60 text-slate-400 ml-12 animate-pulse">🤖 جاري تحليل ملفك وكتابة الإجابة...</div>`;
+      box.innerHTML += `<div id="${typingId}" class="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-400 ml-12 animate-pulse">جاري تحليل ملفك وكتابة الإجابة...</div>`;
       box.scrollTop = box.scrollHeight;
 
       try {
@@ -1852,12 +2025,12 @@
       const rec = new SR();
       rec.lang = (currentUser && currentUser.lang === 'en') ? 'en-US' : 'ar-IQ';
       const btn = document.getElementById('btn-pat-voice');
-      btn.textContent = '🔴';
+      btn.classList.add('text-rose-400', 'border-rose-400/50');
       rec.onresult = (ev) => {
         document.getElementById('ai-question-input').value = ev.results[0][0].transcript;
       };
       rec.onend = () => {
-        btn.textContent = '🎤';
+        btn.classList.remove('text-rose-400', 'border-rose-400/50');
       };
       rec.start();
     }
@@ -1892,23 +2065,23 @@
 
         box.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="font-black text-amber-300 text-sm">🍽️ ${data.meal_name}</span>
-            <span class="px-2 py-0.5 rounded bg-slate-800 font-bold">${data.glycemic_impact}</span>
+            <span class="font-black text-amber-300 text-sm">${data.meal_name}</span>
+            <span class="px-2 py-0.5 rounded bg-white/10 font-bold">${data.glycemic_impact}</span>
           </div>
-          <div class="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-950/70">
+          <div class="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-white/[0.03] border border-white/10">
             <div>الكربوهيدرات: <strong class="text-white">${data.carbs}</strong></div>
             <div>السعرات: <strong class="text-white">${data.calories}</strong></div>
           </div>
-          <div class="text-slate-300">🥩 الدهون والبروتين: <strong>${data.protein_fat}</strong></div>
-          <div class="text-sky-300">💉 الجرعة / الحصة المقترحة: <strong>${data.insulin_dose}</strong></div>
-          <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-200">${data.tips}</div>
+          <div class="text-slate-300">الدهون والبروتين: <strong>${data.protein_fat}</strong></div>
+          <div class="text-sky-300">الجرعة / الحصة المقترحة: <strong>${data.insulin_dose}</strong></div>
+          <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-400/20 text-emerald-200">${data.tips}</div>
           <div class="flex flex-wrap gap-2 pt-1">
-            <button type="button" onclick="speakText('${safeSummary}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع النتيجة</button>
+            <button type="button" onclick="speakText('${safeSummary}')" class="px-3 py-1.5 rounded-lg bg-white/10 text-amber-300 font-bold">استماع للنتيجة</button>
             <button type="button" onclick="startPostMealTimer(${timerMins}); closeAllModals();" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold">
-              ⏳ منبّه الفحص (${timerMins === 240 ? '4 ساعات للدسم' : 'ساعتين'})
+              منبّه الفحص (${timerMins === 240 ? '4 ساعات للدسم' : 'ساعتين'})
             </button>
             <button type="button" onclick="document.getElementById('log-meal').value='${safeMealName}'; closeAllModals(); scrollToPatientSection('pat-overview');" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold">
-              ➕ سجلها بقياساتي
+              تسجيل بقياساتي
             </button>
           </div>
         `;
@@ -1944,14 +2117,14 @@
         const safeTxt = `${data.product_name}. الحكم: ${data.verdict}. ${data.advice}`.replace(/[`*"'\\\r\n]/g, ' ');
         box.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="font-black text-sky-300 text-sm">🏷️ ${data.product_name}</span>
-            <span class="px-2 py-0.5 rounded bg-slate-800 font-bold">${data.verdict}</span>
+            <span class="font-black text-sky-300 text-sm">${data.product_name}</span>
+            <span class="px-2 py-0.5 rounded bg-white/10 font-bold">${data.verdict}</span>
           </div>
           <div>حجم الحصة: <strong>${data.serving_size}</strong></div>
           <div>الكربوهيدرات: <strong>${data.carbs}</strong> | السكريات: <strong>${data.sugars}</strong></div>
-          <div class="text-amber-300">🔍 السكريات المخفية: <strong>${data.hidden_sugars}</strong></div>
-          <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-200">${data.advice}</div>
-          <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع النتيجة</button>
+          <div class="text-amber-300">السكريات المخفية: <strong>${data.hidden_sugars}</strong></div>
+          <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-400/20 text-emerald-200">${data.advice}</div>
+          <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1.5 rounded-lg bg-white/10 text-amber-300 font-bold">استماع للنتيجة</button>
         `;
       } finally {
         btn.disabled = false;
@@ -1984,13 +2157,13 @@
 
         const safeTxt = `${data.title}. ${data.summary}. ${data.advice}`.replace(/[`*"'\\\r\n]/g, ' ');
         box.innerHTML = `
-          <div class="font-black text-sky-300 text-sm">🧪 ${data.title}</div>
+          <div class="font-black text-sky-300 text-sm">${data.title}</div>
           <div class="leading-relaxed">${data.summary}</div>
-          <div class="p-2 rounded-lg bg-amber-950/40 border border-amber-500/25 text-amber-300">⚠️ القيم غير الطبيعية: ${data.abnormal}</div>
-          <div class="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-200">🩺 ${data.advice}</div>
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-400/20 text-amber-300">القيم غير الطبيعية: ${data.abnormal}</div>
+          <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-400/20 text-emerald-200">${data.advice}</div>
           <div class="flex items-center justify-between pt-1">
             <span class="text-[11px] text-slate-400">✓ تم حفظ التقرير بملف الدكتور</span>
-            <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع الشرح</button>
+            <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1 rounded-lg bg-white/10 text-amber-300 font-bold">استماع للشرح</button>
           </div>
         `;
       } finally {
@@ -2024,12 +2197,12 @@
 
         const safeTxt = `${data.med_name}. ${data.usage}. ${data.advice}`.replace(/[`*"'\\\r\n]/g, ' ');
         box.innerHTML = `
-          <div class="font-black text-emerald-300 text-sm">💊 ${data.med_name}</div>
+          <div class="font-black text-emerald-300 text-sm">${data.med_name}</div>
           <div>المادة الفعالة: <strong>${data.active_ingredient}</strong></div>
           <div>طريقة الاستخدام: <strong>${data.usage}</strong></div>
-          <div class="text-amber-300">⚠️ خطر الهبوط: <strong>${data.hypo_risk}</strong></div>
-          <div class="p-2.5 rounded-lg bg-slate-950/70 text-slate-200">${data.advice}</div>
-          <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1 rounded-lg bg-slate-800 text-amber-300 font-bold">🔊 اسمع الشرح</button>
+          <div class="text-amber-300">خطر الهبوط: <strong>${data.hypo_risk}</strong></div>
+          <div class="p-2.5 rounded-lg bg-white/[0.03] border border-white/10 text-slate-200">${data.advice}</div>
+          <button type="button" onclick="speakText('${safeTxt}')" class="px-3 py-1 rounded-lg bg-white/10 text-amber-300 font-bold">استماع للشرح</button>
         `;
       } finally {
         btn.disabled = false;
@@ -2094,14 +2267,14 @@
 
       const alertsBox = document.getElementById('patient-alerts-area');
       const alerts = [];
-      if (u.sickDayMode) alerts.push('🤒 <strong>بروتوكول أيام المرض مفعّل:</strong> اشرب كوب ماء كل ساعة وقس سكرك كل 3 ساعات.');
-      if (a.dawnPhenomenon) alerts.push(`🌅 <strong>كاشف ظاهرة الفجر:</strong> ${a.dawnMsg}`);
-      if (a.basalTitrationAlert) alerts.push(`💉 <strong>مساعد ضبط الجرعة الصباحية:</strong> قياسك الصائم أعلى من الهدف (${u.targetGlucose}) لـ 3 أيام متتالية، استشر طبيبك لتعديل الجرعة.`);
-      if (a.hasDangerousSwing) alerts.push(`⚡ <strong>تنبيه تذبذب سكري:</strong> الفرق بين أعلى وأقل قراءة وصل إلى ${a.swingDiff} درجة.`);
-      if ((u.stripsCount || 0) <= 10) alerts.push(`📦 <strong>تنبيه المخزون:</strong> تبقّى لديك ${u.stripsCount} أشرطة فحص فقط!`);
+      if (u.sickDayMode) alerts.push('<strong>بروتوكول أيام المرض مفعّل:</strong> اشرب كوب ماء كل ساعة وقس سكرك كل 3 ساعات.');
+      if (a.dawnPhenomenon) alerts.push(`<strong>كاشف ظاهرة الفجر:</strong> ${a.dawnMsg}`);
+      if (a.basalTitrationAlert) alerts.push(`<strong>مساعد ضبط الجرعة الصباحية:</strong> قياسك الصائم أعلى من الهدف (${u.targetGlucose}) لـ 3 أيام متتالية، استشر طبيبك لتعديل الجرعة.`);
+      if (a.hasDangerousSwing) alerts.push(`<strong>تنبيه تذبذب سكري:</strong> الفرق بين أعلى وأقل قراءة وصل إلى ${a.swingDiff} درجة.`);
+      if ((u.stripsCount || 0) <= 10) alerts.push(`<strong>تنبيه المخزون:</strong> تبقّى لديك ${u.stripsCount} أشرطة فحص فقط.`);
 
       alertsBox.innerHTML = alerts.map(msg => `
-        <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200">${msg}</div>
+        <div class="p-3 rounded-xl bg-amber-500/10 backdrop-blur-md border border-amber-400/25 text-xs text-amber-200">${msg}</div>
       `).join('');
 
       document.getElementById('tir-in-pct').textContent = `${a.tir.inRangePct}%`;
@@ -2113,7 +2286,7 @@
 
       document.getElementById('pat-streak-val').textContent = `${a.streak} يوم`;
       document.getElementById('pat-badges-list').innerHTML = a.badges.length
-        ? a.badges.map(b => `<span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold">${b}</span>`).join('')
+        ? a.badges.map(b => `<span class="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/25 text-amber-300 text-[11px] font-bold">${b}</span>`).join('')
         : '<span class="text-xs text-slate-500">استمر بالقياس لربح الأوسمة</span>';
 
       document.getElementById('pat-next-visit').textContent = u.nextVisitDate || 'غير محدد';
@@ -2144,7 +2317,7 @@
       listEl.innerHTML = logs.map(l => {
         const color = l.val < 70 ? 'text-rose-400' : (l.val > 180 ? 'text-amber-400' : 'text-emerald-400');
         return `
-          <div class="p-2.5 rounded-xl bg-slate-900 flex items-center justify-between">
+          <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-between">
             <div>
               <span class="font-black text-sm ${color}">${l.val}</span> <span class="text-slate-400">(${l.timing})</span>
               <div class="text-[11px] text-slate-500">${l.date} ${l.mealName ? '• ' + l.mealName : ''}</div>
@@ -2165,7 +2338,7 @@
             label: 'قياس السكر (mg/dL)',
             data: rev.map(x => x.val),
             borderColor: '#10b981',
-            backgroundColor: 'rgba(16,185,129,0.15)',
+            backgroundColor: 'rgba(16,185,129,0.14)',
             tension: 0.35,
             fill: true
           }]
@@ -2195,11 +2368,11 @@
       await loadPatientDashboard();
 
       if (val < 70) {
-        alert('⚠️ تنبيه هبوط سكر أقل من 70! تم فتح مؤقت قاعدة (15-15) لك.');
+        alert('تنبيه هبوط سكر أقل من 70! تم فتح مؤقت قاعدة (15-15) لك.');
         openToolModal('modal-hypo15');
         startHypo15Timer();
       } else if (currentUser.ramadanMode && val > 300) {
-        alert('🚨 تنبيه صيام: السكر تجاوز 300! ينصح طبياً بكسر الصيام فوراً وشرب الماء ومراجعة الطبيب.');
+        alert('تنبيه صيام: السكر تجاوز 300! ينصح طبياً بكسر الصيام فوراً وشرب الماء ومراجعة الطبيب.');
       }
     }
 
@@ -2207,11 +2380,11 @@
       document.getElementById('water-count').textContent = t.water_cups || 0;
       document.getElementById('walk-count').textContent = t.walk_mins || 0;
       document.getElementById('btn-med-morning').className = t.med_morning
-        ? 'py-2.5 px-3 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-2'
-        : 'py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center justify-center gap-2';
+        ? 'py-2.5 px-3 rounded-xl bg-emerald-600/90 border border-emerald-400/30 text-white text-xs font-bold flex items-center justify-center gap-2'
+        : 'py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center justify-center gap-2';
       document.getElementById('btn-med-evening').className = t.med_evening
-        ? 'py-2.5 px-3 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-2'
-        : 'py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold flex items-center justify-center gap-2';
+        ? 'py-2.5 px-3 rounded-xl bg-emerald-600/90 border border-emerald-400/30 text-white text-xs font-bold flex items-center justify-center gap-2'
+        : 'py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold flex items-center justify-center gap-2';
       document.getElementById('side-effects-select').value = t.side_effects || '';
     }
 
@@ -2229,7 +2402,7 @@
     }
 
     async function toggleMedDose(period) {
-      const isActive = document.getElementById(period === 'morning' ? 'btn-med-morning' : 'btn-med-evening').classList.contains('bg-emerald-600');
+      const isActive = document.getElementById(period === 'morning' ? 'btn-med-morning' : 'btn-med-evening').classList.contains('bg-emerald-600/90');
       const payload = period === 'morning' ? { med_morning: !isActive } : { med_evening: !isActive };
       const res = await fetch('/api/patient/daily-tracker', {
         method: 'POST',
@@ -2281,7 +2454,7 @@
       if (postMealTimeout) clearTimeout(postMealTimeout);
       document.getElementById('postmeal-timer-display').textContent = `مفعّل: تنبيه بعد ${mins === 120 ? 'ساعتين' : '4 ساعات'}`;
       postMealTimeout = setTimeout(() => {
-        alert('⏰ حان الآن موعد قياس السكر بعد الوجبة!');
+        alert('حان الآن موعد قياس السكر بعد الوجبة!');
         document.getElementById('postmeal-timer-display').textContent = 'انتهى الوقت - قس سكرك الآن';
       }, mins * 60 * 1000);
     }
@@ -2321,7 +2494,7 @@
         document.getElementById('hypo15-timer-lbl').textContent = `${m}:${s}`;
         if (hypo15Seconds <= 0) {
           clearInterval(hypo15Interval);
-          alert('⏰ انتهت الـ 15 دقيقة! أعد فحص السكر الآن للتأكد من ارتفاعه فوق 70.');
+          alert('انتهت الـ 15 دقيقة! أعد فحص السكر الآن للتأكد من ارتفاعه فوق 70.');
         }
       }, 1000);
     }
@@ -2337,9 +2510,9 @@
       const box = document.getElementById('bed-result');
       box.classList.remove('hidden');
       if (g < 100 || (g < 120 && ex)) {
-        box.textContent = '⚠️ سكرك قريب من الهبوط ليلاً! تناول وجبة خفيفة قبل النوم (كلاص لبن أو قطعة خبز شعير مع جبن).';
+        box.textContent = 'تنبيه: سكرك قريب من الهبوط ليلاً! تناول وجبة خفيفة قبل النوم (كلاص لبن أو قطعة خبز شعير مع جبن).';
       } else {
-        box.textContent = '✅ قراءتك آمنة للنوم. تصبح على خير!';
+        box.textContent = 'قراءتك آمنة للنوم. تصبح على خير!';
       }
     }
 
@@ -2347,22 +2520,22 @@
       const g = parseFloat(document.getElementById('work-glucose').value);
       const box = document.getElementById('work-result');
       box.classList.remove('hidden');
-      if (g < 100) box.textContent = '⚠️ سكرك أقل من 100؛ تناول وجبة خفيفة (ثمرة فاكهة أو 3 تمرات) قبل المشي لتجنب الهبوط.';
-      else if (g > 250) box.textContent = '🚨 سكرك مرتفع فوق 250؛ أجّل الرياضة واشرب ماء وافحص الكيتونات أولاً.';
-      else box.textContent = '✅ قراءتك ممتازة ومناسبة للمشي والرياضة بأمان!';
+      if (g < 100) box.textContent = 'تنبيه: سكرك أقل من 100؛ تناول وجبة خفيفة (ثمرة فاكهة أو 3 تمرات) قبل المشي لتجنب الهبوط.';
+      else if (g > 250) box.textContent = 'تحذير: سكرك مرتفع فوق 250؛ أجّل الرياضة واشرب ماء وافحص الكيتونات أولاً.';
+      else box.textContent = 'قراءتك ممتازة ومناسبة للمشي والرياضة بأمان!';
     }
 
     function drawLockScreenCard() {
       const c = document.getElementById('lockscreen-canvas');
       const ctx = c.getContext('2d');
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#070c18';
       ctx.fillRect(0, 0, c.width, c.height);
       ctx.fillStyle = '#e11d48';
       ctx.fillRect(0, 0, c.width, 95);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px Cairo, sans-serif';
+      ctx.font = 'bold 22px Cairo, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🚨 بطاقة طوارئ - مصاب بالسكري', c.width / 2, 58);
+      ctx.fillText('بطاقة طوارئ - مصاب بالسكري', c.width / 2, 56);
 
       ctx.font = 'bold 20px Cairo, sans-serif';
       ctx.fillText(`الاسم: ${currentUser.name}`, c.width / 2, 160);
@@ -2407,11 +2580,16 @@
     function filterIraqiFoods() {
       const q = (document.getElementById('iraqi-food-search').value || '').trim();
       const filtered = IRAQI_FOODS.filter(f => f.name.includes(q) || f.tip.includes(q));
+      const badgeStyles = {
+        emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/25',
+        amber: 'bg-amber-500/15 text-amber-300 border-amber-400/25',
+        rose: 'bg-rose-500/15 text-rose-300 border-rose-400/25'
+      };
       document.getElementById('iraqi-foods-container').innerHTML = filtered.map(f => `
-        <div class="p-3 rounded-xl bg-slate-900 flex flex-col gap-1">
-          <div class="flex justify-between font-bold">
+        <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col gap-1.5">
+          <div class="flex justify-between items-center font-bold">
             <span class="text-white">${f.name}</span>
-            <span>${f.tag}</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] border ${badgeStyles[f.level] || ''}">${f.tag}</span>
           </div>
           <p class="text-slate-400">${f.tip}</p>
         </div>
@@ -2518,7 +2696,7 @@
       const msgs = await res.json();
       const box = document.getElementById('pat-chat-messages');
       box.innerHTML = msgs.map(m => `
-        <div class="p-2.5 rounded-xl ${m.sender === 'patient' ? 'bg-emerald-900/40 text-emerald-200 mr-6' : 'bg-slate-800 text-slate-200 ml-6'}">
+        <div class="p-2.5 rounded-xl ${m.sender === 'patient' ? 'bg-emerald-500/15 border border-emerald-400/25 text-emerald-200 mr-6' : 'bg-white/[0.04] border border-white/10 text-slate-200 ml-6'}">
           <div class="font-bold text-[10px] opacity-70">${m.sender === 'patient' ? 'أنت' : 'الدكتور'} • ${m.time}</div>
           <div>${m.text}</div>
         </div>
@@ -2543,7 +2721,7 @@
     async function sendWeeklySummaryToDoctor() {
       if (!patientAnalytics) return;
       const s = patientAnalytics.fiveSecondSummary;
-      const msg = `📊 ملخص الأسبوع التلقائي: النطاق الآمن ${patientAnalytics.tir.inRangePct}% | متوسط الصائم: ${s.fastingAvg} | متوسط بعد الأكل: ${s.postMealAvg} | الالتزام: ${s.adherencePct}%`;
+      const msg = `ملخص الأسبوع التلقائي: النطاق الآمن ${patientAnalytics.tir.inRangePct}% | متوسط الصائم: ${s.fastingAvg} | متوسط بعد الأكل: ${s.postMealAvg} | الالتزام: ${s.adherencePct}%`;
       await fetch(`/api/chat/${currentUser.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2600,7 +2778,7 @@
         const btn = document.getElementById(`flt-${k}`);
         if (btn) btn.className = k === flt
           ? 'px-2.5 py-1 rounded-lg bg-sky-600 text-white font-bold'
-          : 'px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300';
+          : 'px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300';
       });
       renderDoctorPatientsList();
     }
@@ -2622,14 +2800,17 @@
       listEl.innerHTML = filtered.map(p => {
         const active = selectedPatient && selectedPatient.id === p.id;
         return `
-          <div onclick="selectDoctorPatientById(${p.id})" class="p-3 rounded-xl cursor-pointer border transition ${active ? 'bg-sky-950/50 border-sky-500' : 'bg-slate-900/80 border-transparent hover:border-slate-700'}">
+          <div onclick="selectDoctorPatientById(${p.id})" class="p-3 rounded-xl cursor-pointer border transition ${active ? 'bg-sky-500/15 border-sky-400/45' : 'bg-white/[0.03] border-white/5 hover:border-white/15'}">
             <div class="flex items-center justify-between">
               <span class="font-bold text-sm text-white">${p.name}</span>
               <span class="text-xs font-black ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">${p.latestVal ?? '-'}</span>
             </div>
             <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
               <span>${p.diabetesType} • ${p.countryName || 'العراق'}</span>
-              <span>${p.isCritical ? '🔴 حالة حرجة' : '🟢 مستقر'}</span>
+              <span class="inline-flex items-center gap-1.5 ${p.isCritical ? 'text-rose-400' : 'text-emerald-400'}">
+                <span class="w-2 h-2 rounded-full ${p.isCritical ? 'bg-rose-400' : 'bg-emerald-400'}"></span>
+                <span>${p.isCritical ? 'حالة حرجة' : 'مستقر'}</span>
+              </span>
             </div>
           </div>
         `;
@@ -2659,13 +2840,13 @@
       document.getElementById('dp-5s-adh').textContent = `${s5.adherencePct ?? 100}%`;
 
       const alerts = [];
-      if (a.dawnPhenomenon) alerts.push(`🌅 ${a.dawnMsg}`);
-      if (a.basalTitrationAlert) alerts.push(`💉 السكر الصائم أعلى من الهدف (${p.targetGlucose}) لـ 3 أيام متتالية.`);
-      if (a.latestSideEffects) alerts.push(`⚠️ شكوى المراجع من العلاج: ${a.latestSideEffects}`);
-      if (p.latestNeuropathy && p.latestNeuropathy.score >= 2) alerts.push(`🦶 فحص الأعصاب: ${p.latestNeuropathy.risk_level} (${p.latestNeuropathy.score}/4)`);
+      if (a.dawnPhenomenon) alerts.push(a.dawnMsg);
+      if (a.basalTitrationAlert) alerts.push(`السكر الصائم أعلى من الهدف (${p.targetGlucose}) لـ 3 أيام متتالية.`);
+      if (a.latestSideEffects) alerts.push(`شكوى المراجع من العلاج: ${a.latestSideEffects}`);
+      if (p.latestNeuropathy && p.latestNeuropathy.score >= 2) alerts.push(`فحص الأعصاب: ${p.latestNeuropathy.risk_level} (${p.latestNeuropathy.score}/4)`);
 
       document.getElementById('dp-clinical-alerts').innerHTML = alerts.map(txt => `
-        <div class="p-2.5 rounded-xl bg-rose-950/35 border border-rose-500/30 text-xs text-rose-200">${txt}</div>
+        <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-400/25 text-xs text-rose-200">${txt}</div>
       `).join('');
 
       const wc = a.weeklyComparison || {};
@@ -2674,7 +2855,7 @@
 
       const tod = a.timeOfDay || [];
       document.getElementById('dp-time-of-day').innerHTML = tod.length
-        ? tod.map(t => `<div class="flex justify-between p-2 rounded-lg bg-slate-900"><span>${t.timing} (${t.count} قياس)</span><strong class="text-sky-400">${t.avg} mg/dL</strong></div>`).join('')
+        ? tod.map(t => `<div class="flex justify-between p-2 rounded-lg bg-white/[0.03] border border-white/10"><span>${t.timing} (${t.count} قياس)</span><strong class="text-sky-400">${t.avg} mg/dL</strong></div>`).join('')
         : '<div class="text-slate-500">لا توجد قياسات مصنفة بعد.</div>';
 
       document.getElementById('dp-notes-input').value = p.doctorNotes || '';
@@ -2685,7 +2866,7 @@
 
       const logs = p.logs || [];
       document.getElementById('dp-logs-list').innerHTML = logs.map(l => `
-        <div class="p-2 rounded-xl bg-slate-900 flex justify-between items-center">
+        <div class="p-2 rounded-xl bg-white/[0.03] border border-white/10 flex justify-between items-center">
           <div>
             <strong class="${l.val < 70 ? 'text-rose-400' : (l.val > 180 ? 'text-amber-400' : 'text-emerald-400')}">${l.val}</strong>
             <span class="text-slate-400">(${l.timing})</span>
@@ -2706,7 +2887,7 @@
             label: 'قياس السكر',
             data: rev.map(x => x.val),
             borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56,189,248,0.15)',
+            backgroundColor: 'rgba(56,189,248,0.14)',
             tension: 0.35,
             fill: true
           }]
@@ -2837,7 +3018,7 @@
       const msgs = await res.json();
       const box = document.getElementById('doc-chat-messages');
       box.innerHTML = msgs.map(m => `
-        <div class="p-2.5 rounded-xl ${m.sender === 'doctor' ? 'bg-sky-900/40 text-sky-200 mr-6' : 'bg-slate-800 text-slate-200 ml-6'}">
+        <div class="p-2.5 rounded-xl ${m.sender === 'doctor' ? 'bg-sky-500/15 border border-sky-400/25 text-sky-200 mr-6' : 'bg-white/[0.04] border border-white/10 text-slate-200 ml-6'}">
           <div class="font-bold text-[10px] opacity-70">${m.sender === 'doctor' ? 'أنت (الدكتور)' : selectedPatient.name} • ${m.time}</div>
           <div>${m.text}</div>
         </div>
@@ -2865,10 +3046,10 @@
       const labs = selectedPatient.labReports || [];
       document.getElementById('doc-labs-container').innerHTML = labs.length
         ? labs.map(l => `
-          <div class="p-3 rounded-xl bg-slate-900 space-y-1">
+          <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
             <div class="flex justify-between font-bold text-purple-300"><span>${l.title}</span><span>${l.date}</span></div>
             <p class="text-slate-200">${l.summary}</p>
-            <div class="text-amber-300">⚠️ ${l.abnormal}</div>
+            <div class="text-amber-300">القيم غير الطبيعية: ${l.abnormal}</div>
           </div>
         `).join('')
         : '<div class="text-slate-500">لم يرفع هذا المراجع أي تحليل مختبري بعد.</div>';
@@ -2880,7 +3061,7 @@
       document.getElementById('doc-qr-box').innerHTML = `
         <div class="font-black text-base text-white">${selectedPatient.name}</div>
         <div class="text-slate-400">اليوزر: ${selectedPatient.username} | الهاتف: ${selectedPatient.phone}</div>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}" alt="QR" class="mx-auto rounded-xl border border-slate-700 p-1 bg-white" />
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}" alt="QR" class="mx-auto rounded-xl border border-white/15 p-1 bg-white" />
       `;
     }
 
