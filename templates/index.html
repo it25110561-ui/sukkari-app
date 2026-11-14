@@ -11,6 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     * { font-family: 'Cairo', sans-serif; }
@@ -1586,6 +1587,12 @@
     let selectedPatientId = 1;
     let currentDocFilter = 'all';
     let doctorChartInstance = null;
+    window.addEventListener('resize', () => {
+      if (currentUser?.role === 'doctor' && selectedPatientId) {
+        const patient = clinicPatients.find(x => x.id === selectedPatientId);
+        if (patient) requestAnimationFrame(() => drawDoctorChart(patient));
+      }
+    });
 
     async function restoreExistingSession() {
       await populateCountrySelectors();
@@ -1764,9 +1771,12 @@
 
     let patientCardScanStream = null;
     let patientCardScanFrame = null;
+    let patientCardZXingControls = null;
     function stopPatientCardScanner() {
       if (patientCardScanFrame) cancelAnimationFrame(patientCardScanFrame);
       patientCardScanFrame = null;
+      try { patientCardZXingControls?.stop(); } catch (_) {}
+      patientCardZXingControls = null;
       if (patientCardScanStream) patientCardScanStream.getTracks().forEach(track => track.stop());
       patientCardScanStream = null;
       const video = document.getElementById('patient-card-scan-video');
@@ -2218,7 +2228,9 @@
     }
 
     function emergencyPhoneDigits() {
-      return String(currentUser?.emergencyPhone || '').replace(/\D/g, '');
+      const raw = String(currentUser?.emergencyPhone || '').trim();
+      const digits = raw.replace(/\D/g, '');
+      return digits;
     }
 
     async function sendEmergencySMS() {
@@ -2229,9 +2241,10 @@
         const result = await apiRequest('/api/patient/emergency-sms', { method: 'POST', body: JSON.stringify({ message: emergencyMessage() }) });
         showToast(result.message || 'تم إرسال رسالة الطوارئ ✓');
       } catch (err) {
-        if (err.message.includes('غير مربوطة') || err.message.includes('تعذر إرسال SMS')) {
-          window.location.href = `sms:${phone}?body=${encodeURIComponent(emergencyMessage())}`;
-          showToast('فتحنا تطبيق الرسائل؛ أكّد الإرسال من جهازك.');
+        if (/غير مربوطة|تعذر إرسال SMS|SMS gateway|503|502/i.test(err.message)) {
+          const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
+          window.location.href = `sms:${phone}${separator}body=${encodeURIComponent(emergencyMessage())}`;
+          showToast('فتحنا تطبيق الرسائل؛ راجع رقم العائلة واضغط إرسال من جهازك.');
         } else showToast(err.message, 'error');
       }
     }
@@ -2386,65 +2399,56 @@
     function drawDoctorChart(p) {
       const canvas = document.getElementById('doctor-chart');
       if (!canvas) return;
-      const chronological = [...(p.logs || [])].reverse().filter(l => Number.isFinite(Number(l.val)));
-      if (typeof Chart === 'undefined') {
-        const rect = canvas.getBoundingClientRect();
-        const ratio = window.devicePixelRatio || 1;
-        canvas.width = Math.max(320, rect.width) * ratio;
-        canvas.height = Math.max(200, rect.height) * ratio;
-        const ctx = canvas.getContext('2d');
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-        const w = Math.max(320, rect.width), h = Math.max(200, rect.height);
-        ctx.clearRect(0, 0, w, h);
-        if (!chronological.length) {
-          ctx.fillStyle = '#94a3b8'; ctx.font = '12px Cairo, sans-serif'; ctx.textAlign = 'center';
-          ctx.fillText('لا توجد قياسات كافية لرسم المنحنى', w / 2, h / 2);
-          return;
-        }
-        const values = chronological.map(l => Number(l.val));
-        const min = Math.floor((Math.min(...values) - 20) / 20) * 20;
-        const max = Math.ceil((Math.max(...values) + 20) / 20) * 20 || min + 40;
-        const pad = { l: 42, r: 12, t: 16, b: 26 };
-        const px = i => pad.l + (chronological.length < 2 ? 0.5 : i / (chronological.length - 1)) * (w - pad.l - pad.r);
-        const py = v => pad.t + (max - v) / (max - min || 1) * (h - pad.t - pad.b);
-        ctx.strokeStyle = 'rgba(148,163,184,.16)'; ctx.fillStyle = '#94a3b8'; ctx.font = '10px Cairo, sans-serif';
-        for (let i = 0; i <= 4; i++) {
-          const v = min + (max - min) * i / 4, y = py(v);
-          ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-          ctx.textAlign = 'right'; ctx.fillText(String(Math.round(v)), pad.l - 7, y + 3);
-        }
-        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.beginPath();
-        chronological.forEach((entry, i) => i ? ctx.lineTo(px(i), py(Number(entry.val))) : ctx.moveTo(px(i), py(Number(entry.val))));
-        ctx.stroke(); ctx.fillStyle = '#38bdf8';
-        chronological.forEach((entry, i) => { ctx.beginPath(); ctx.arc(px(i), py(Number(entry.val)), 3, 0, Math.PI * 2); ctx.fill(); });
+      const entries = [...(p.logs || [])].filter(l => Number.isFinite(Number(l.val)) && Number(l.val) > 0).reverse();
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(280, Math.floor(rect.width || canvas.parentElement?.clientWidth || 320));
+      const cssHeight = Math.max(190, Math.floor(rect.height || 208));
+      const ratio = Math.max(1, window.devicePixelRatio || 1);
+      canvas.width = Math.round(cssWidth * ratio);
+      canvas.height = Math.round(cssHeight * ratio);
+      canvas.style.width = '100%';
+      canvas.style.height = `${cssHeight}px`;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+      const pad = { left: 42, right: 12, top: 16, bottom: 30 };
+      if (!entries.length) {
+        ctx.fillStyle = '#94a3b8'; ctx.font = '12px Cairo, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('لا توجد قياسات كافية لرسم المنحنى', cssWidth / 2, cssHeight / 2);
         return;
       }
-      if (doctorChartInstance) { doctorChartInstance.destroy(); doctorChartInstance = null; }
-      const labels = chronological.map(l => {
-        const d = String(l.date || '');
-        return d ? d.slice(5, 16) : '—';
+      const values = entries.map(l => Number(l.val));
+      let min = Math.floor((Math.min(...values) - 20) / 20) * 20;
+      let max = Math.ceil((Math.max(...values) + 20) / 20) * 20;
+      if (max <= min) max = min + 40;
+      const plotW = cssWidth - pad.left - pad.right;
+      const plotH = cssHeight - pad.top - pad.bottom;
+      const x = i => pad.left + (entries.length === 1 ? plotW / 2 : i * plotW / (entries.length - 1));
+      const y = v => pad.top + ((max - v) / (max - min)) * plotH;
+      ctx.font = '10px Cairo, sans-serif'; ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const val = min + (max - min) * i / 4, yy = y(val);
+        ctx.strokeStyle = 'rgba(148,163,184,.18)'; ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(cssWidth - pad.right, yy); ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.fillText(String(Math.round(val)), pad.left - 7, yy + 3);
+      }
+      const gradient = ctx.createLinearGradient(0, pad.top, 0, cssHeight - pad.bottom);
+      gradient.addColorStop(0, 'rgba(56,189,248,.22)'); gradient.addColorStop(1, 'rgba(56,189,248,0)');
+      ctx.beginPath();
+      entries.forEach((entry, i) => i ? ctx.lineTo(x(i), y(Number(entry.val))) : ctx.moveTo(x(i), y(Number(entry.val))));
+      if (entries.length > 1) { ctx.lineTo(x(entries.length - 1), cssHeight - pad.bottom); ctx.lineTo(x(0), cssHeight - pad.bottom); ctx.closePath(); ctx.fillStyle = gradient; ctx.fill(); }
+      ctx.beginPath();
+      entries.forEach((entry, i) => i ? ctx.lineTo(x(i), y(Number(entry.val))) : ctx.moveTo(x(i), y(Number(entry.val))));
+      ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+      entries.forEach((entry, i) => {
+        ctx.beginPath(); ctx.arc(x(i), y(Number(entry.val)), 3.2, 0, Math.PI * 2); ctx.fillStyle = '#38bdf8'; ctx.fill();
       });
-      doctorChartInstance = new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: 'سكر الدم (mg/dL)',
-            data: chronological.map(l => Number(l.val)),
-            borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.15)',
-            pointBackgroundColor: '#38bdf8', pointRadius: 3, pointHoverRadius: 5,
-            borderWidth: 2, tension: 0.35, fill: true, spanGaps: true
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
-          interaction: { intersect: false, mode: 'index' },
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: false, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.12)' } },
-                    x: { ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: true }, grid: { display: false } } }
-        }
-      });
-      requestAnimationFrame(() => doctorChartInstance?.resize());
+      ctx.fillStyle = '#94a3b8'; ctx.font = '9px Cairo, sans-serif'; ctx.textAlign = 'center';
+      const ticks = Math.min(entries.length, 5);
+      for (let i = 0; i < ticks; i++) {
+        const idx = ticks === 1 ? 0 : Math.round(i * (entries.length - 1) / (ticks - 1));
+        const date = String(entries[idx].date || '');
+        ctx.fillText(date ? date.slice(5, 10) : String(idx + 1), x(idx), cssHeight - 8);
+      }
     }
 
     function renderPatientCard(p) {
@@ -2465,8 +2469,9 @@
       err?.classList.add('hidden');
       const cardUrl = `${window.location.origin}/api/doctor/card/${encodeURIComponent(p.qrToken)}`;
       new QRCode(qrBox, { text: cardUrl, width: 128, height: 128, colorDark: '#020617', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-      try { JsBarcode(barcode, p.qrToken, { format: 'CODE128', lineColor: '#020617', background: '#ffffff', width: 1.6, height: 48, displayValue: false, margin: 2 }); }
-      catch (err2) { err?.classList.remove('hidden'); console.warn(err2); }
+      try {
+        JsBarcode(barcode, p.qrToken, { format: 'CODE128', lineColor: '#020617', background: '#ffffff', width: 1.8, height: 54, displayValue: true, fontSize: 11, textMargin: 2, margin: 5, valid: valid => { if (!valid) throw new Error('Invalid Code 128 value'); } });
+      } catch (err2) { err?.classList.remove('hidden'); console.warn('Code128 generation failed:', err2); }
     }
 
     async function populateDoctorModalsForSelected() {
@@ -2539,35 +2544,56 @@
     }
 
     async function startPatientCardScanner() {
-      if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
-        showToast('المتصفح لا يدعم المسح بالكاميرا. استخدم حقل إدخال رمز البطاقة.', 'error');
+      if (!navigator.mediaDevices?.getUserMedia) {
+        showToast('الكاميرا غير متاحة. افتح الموقع عبر HTTPS أو أدخل رمز البطاقة يدوياً.', 'error');
         document.getElementById('patient-card-scan-code')?.focus();
         return;
       }
+      stopPatientCardScanner();
+      const video = document.getElementById('patient-card-scan-video');
+      video.classList.remove('hidden');
       try {
-        stopPatientCardScanner();
-        const video = document.getElementById('patient-card-scan-video');
-        const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128'] });
-        patientCardScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
-        video.srcObject = patientCardScanStream;
-        video.classList.remove('hidden');
-        await video.play();
-        const scan = async () => {
-          if (!patientCardScanStream) return;
-          try {
-            const codes = await detector.detect(video);
-            if (codes.length) {
-              document.getElementById('patient-card-scan-code').value = codes[0].rawValue;
-              await lookupPatientCardCode(codes[0].rawValue);
-              return;
-            }
-          } catch (err) { console.warn('Barcode detection failed:', err); }
-          patientCardScanFrame = requestAnimationFrame(scan);
-        };
-        patientCardScanFrame = requestAnimationFrame(scan);
+        // Native detector is fast when the browser supports both card formats.
+        if ('BarcodeDetector' in window) {
+          let supported = await BarcodeDetector.getSupportedFormats();
+          const formats = ['qr_code', 'code_128'].filter(f => supported.includes(f));
+          if (formats.length) {
+            const detector = new BarcodeDetector({ formats });
+            patientCardScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+            video.srcObject = patientCardScanStream;
+            await video.play();
+            const scan = async () => {
+              if (!patientCardScanStream) return;
+              try {
+                const codes = await detector.detect(video);
+                if (codes.length && codes[0].rawValue) {
+                  document.getElementById('patient-card-scan-code').value = codes[0].rawValue;
+                  await lookupPatientCardCode(codes[0].rawValue);
+                  return;
+                }
+              } catch (err) { console.warn('Native barcode scan:', err); }
+              patientCardScanFrame = requestAnimationFrame(scan);
+            };
+            patientCardScanFrame = requestAnimationFrame(scan);
+            return;
+          }
+        }
+        // ZXing fallback supports QR and Code 128 on browsers without BarcodeDetector.
+        const Reader = window.ZXingBrowser?.BrowserMultiFormatReader;
+        if (!Reader) throw new Error('تعذر تحميل مكتبة قارئ QR/Barcode. حدّث الصفحة وتأكد من الإنترنت.');
+        const reader = new Reader();
+        patientCardZXingControls = await reader.decodeFromVideoDevice(undefined, video, async (result, error, controls) => {
+          if (result?.getText()) {
+            const value = result.getText();
+            document.getElementById('patient-card-scan-code').value = value;
+            controls.stop();
+            patientCardZXingControls = null;
+            await lookupPatientCardCode(value);
+          }
+        });
       } catch (err) {
         stopPatientCardScanner();
-        showToast(`تعذر فتح الكاميرا: ${err.message}`, 'error');
+        showToast(`تعذر تشغيل ماسح البطاقة: ${err.message}`, 'error');
       }
     }
 
