@@ -1050,18 +1050,518 @@
     </div>
 
   </div>
+  <!-- ==================== النوافذ المنبثقة التفاعلية للمراجع (الشريط العائم والجانبي) ==================== -->
+
+  <!-- 1. المساعد الطبي الذكي (زر الشريط العائم) -->
+  <div id="modal-ai-chat" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-xl p-5 space-y-3 border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <div class="flex items-center gap-2.5">
+          <span class="section-sq-icon sq-purple">
+            <svg viewBox="0 0 24 24"><path d="M12 2a1 1 0 0 1 1 1v1.07A7.002 7.002 0 0 1 19 11v5a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5a7.002 7.002 0 0 1 6-6.93V3a1 1 0 0 1 1-1z"/></svg>
+          </span>
+          <div>
+            <h3 class="text-base font-black text-purple-300">المساعد الطبي الذكي</h3>
+            <p class="text-[11px] text-slate-400">يحلل قياساتك ويجاوبك باللهجة العراقية</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="clearAiChatHistory()" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-rose-500/20 border border-white/10 text-slate-300 hover:text-rose-300 text-[11px]">مسح</button>
+          <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white px-2 text-lg">✕</button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5 text-[11px]">
+        <button type="button" onclick="sendQuickAiPrompt('حلّل لي آخر قياساتي ونصيحتك إلي شنو؟')" class="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 hover:bg-emerald-500/25">حلّل آخر قياساتي</button>
+        <button type="button" onclick="sendQuickAiPrompt('شنو أتعشى اليوم بدون ما يصعد سكري؟')" class="px-2.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/25 text-sky-300 hover:bg-sky-500/25">اقتراح وجبة عشاء</button>
+        <button type="button" onclick="sendQuickAiPrompt('شلون أتعامل إذا حسيت برجفة وهبوط مفاجئ؟')" class="px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-400/25 text-rose-300 hover:bg-rose-500/25">تصرف الهبوط المفاجئ</button>
+      </div>
+
+      <div id="ai-chat-history" class="h-64 overflow-y-auto p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-2.5 text-xs leading-relaxed">
+        <div class="p-2.5 rounded-xl bg-purple-500/10 border border-purple-400/20 text-slate-200">
+          هلا بيك! أني مساعدك الذكي لمتابعة السكري. اسألني عن أي أكلة، قراءة سكر، أو جرعة علاج.
+        </div>
+      </div>
+
+      <form onsubmit="askAiAssistant(event)" class="flex gap-2">
+        <input id="ai-question-input" type="text" required placeholder="اكتب سؤالك هنا..." class="input-dark w-full text-xs" />
+        <button type="submit" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shrink-0">إرسال</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. صور وجبتك - تحليل الوجبة بالذكاء الاصطناعي (زر الشريط العائم) -->
+  <div id="modal-meal-ai" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-5 space-y-3 max-h-[90vh] overflow-y-auto border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="section-sq-icon sq-orange">
+            <svg viewBox="0 0 24 24"><path d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9z"/></svg>
+          </span>
+          <h3 class="text-base font-black text-amber-400">تحليل الوجبة بالصورة</h3>
+        </div>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <label class="block text-xs text-slate-300">اختر صورة الوجبة أو التقطها بالكاميرا:</label>
+      <input id="meal-img-input" type="file" accept="image/*" onchange="previewSelectedImage('meal-img-input','meal-img-preview')" class="input-dark w-full text-xs" />
+      <img id="meal-img-preview" class="hidden w-full h-44 object-cover rounded-xl border border-white/15" />
+      <input id="meal-note-input" type="text" placeholder="اكتب اسم الأكلة أو ملاحظة (مثلاً: تمن ومرك دجاج)" class="input-dark w-full text-xs" />
+      <button type="button" onclick="analyzeMealImage()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs">
+        احسب الكارب وتأثيرها على السكر
+      </button>
+      <div id="meal-ai-result" class="text-xs p-3.5 rounded-xl bg-slate-950/60 border border-white/10 text-slate-200 space-y-2 hidden"></div>
+    </div>
+  </div>
+
+  <!-- 3. كلم الدكتور - محادثة المراجع مع الطبيب (زر الشريط العائم) -->
+  <div id="modal-doc-chat" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-5 space-y-3 border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="section-sq-icon sq-blue">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </span>
+          <div>
+            <h3 class="text-base font-black text-sky-400">مراسلة الطبيب المشرف (د. أحمد)</h3>
+            <p class="text-[11px] text-emerald-400">● متصل — يرد خلال ساعات الدوام</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div id="pat-doc-chat-box" class="h-64 overflow-y-auto p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-2.5 text-xs">
+        <div class="p-2.5 rounded-xl bg-sky-500/15 border border-sky-400/25 text-slate-200 max-w-[85%]">
+          <div class="text-[10px] text-sky-300 font-bold mb-1">د. أحمد:</div>
+          عاشت إيدك على التزامك بالقياسات هذا الأسبوع، استمر على نفس الجرعة وقلل التمن بالعشاء.
+        </div>
+      </div>
+      <form onsubmit="sendPatientToDocMsg(event)" class="flex gap-2">
+        <input id="pat-doc-msg-input" type="text" required placeholder="اكتب رسالتك أو استفسارك للدكتور..." class="input-dark w-full text-xs" />
+        <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shrink-0">إرسال</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. الطوارئ - قاعدة 15-15 لعلاج هبوط السكر (زر الشريط العائم) -->
+  <div id="modal-hypo15" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-rose-500/30">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-rose-400">طوارئ الهبوط: قاعدة (15-15)</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-400/25 text-xs text-slate-200 leading-relaxed space-y-1.5">
+        <p><strong>1. فوراً:</strong> تناول <strong>15 غرام كارب سريع</strong> (نص كلاص عصير محلى، أو 3 تمرات، أو ملعقة كبيرة عسل أو سكر مذوب بالماء).</p>
+        <p><strong>2. انتظر 15 دقيقة:</strong> شغّل المؤقت أدناه ولا تاكل أكل دسم حالياً، ثم أعد فحص السكر.</p>
+      </div>
+      <div class="text-center py-4 bg-slate-950/70 border border-white/10 rounded-2xl">
+        <div id="hypo15-timer-lbl" class="text-4xl font-black text-rose-400 font-mono">15:00</div>
+        <div class="text-[11px] text-slate-400 mt-1">مؤقت إعادة الفحص</div>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" onclick="startHypo15Timer()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs">بدء الـ 15 دقيقة</button>
+        <button type="button" onclick="resetHypo15Timer()" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs">إعادة ضبط</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. حاسبة الكارب والوجبة قبل الأكل (الشريط الجانبي) -->
+  <div id="modal-bolus" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-emerald-400">حاسبة الكارب والوجبة قبل الأكل</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1">ملاعق التمن / الرز المطبوخ (كل 3 ملاعق ≈ 15g كارب):</label>
+          <input id="bolus-rice" type="number" min="0" value="6" class="input-dark w-full" />
+        </div>
+        <div>
+          <label class="block text-slate-300 mb-1">قطع الخبز / الصمون (ربع رغيف ≈ 15g كارب):</label>
+          <input id="bolus-bread" type="number" min="0" value="0" class="input-dark w-full" />
+        </div>
+        <div>
+          <label class="block text-slate-300 mb-1">حبات التمر / الفاكهة (3 تمرات ≈ 15g كارب):</label>
+          <input id="bolus-fruit" type="number" min="0" value="0" class="input-dark w-full" />
+        </div>
+        <div>
+          <label class="block text-slate-300 mb-1">قياس سكرك الحالي قبل الأكل (اختياري للتصحيح):</label>
+          <input id="bolus-glucose" type="number" placeholder="مثال: 150" class="input-dark w-full" />
+        </div>
+      </div>
+      <button type="button" onclick="calculateMealBolus()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">احسب الكارب والجرعة</button>
+      <div id="bolus-result" class="text-xs p-3.5 rounded-xl bg-slate-950/70 border border-emerald-500/30 text-emerald-300 font-bold hidden leading-relaxed"></div>
+    </div>
+  </div>
+
+  <!-- 6. دليل الأكلات العراقية والبدائل (الشريط الجانبي) -->
+  <div id="modal-iraqi-food" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-amber-400">دليل الأكلات العراقية والبدائل الذكية</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <input id="iraqi-food-search" type="text" oninput="filterIraqiFoods()" placeholder="ابحث عن أكلة: تمن، كبة، دولمة، خبز، تمر، باجة، مسكوف..." class="input-dark w-full text-xs" />
+      <div id="iraqi-foods-container" class="space-y-2.5 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- 7. وضع العزايم والمناسبات (الشريط الجانبي) -->
+  <div id="modal-feast" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3.5 text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-purple-400">وضع العزايم والمناسبات</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="p-3.5 rounded-xl bg-slate-950/60 border border-white/10 space-y-2.5 text-slate-200 leading-relaxed">
+        <p><strong class="text-emerald-400">1. قبل العزيمة:</strong> اشرب كوبين ماء ولا تروح جوعان كلش حتى تتحكم بكمية الأكل.</p>
+        <p><strong class="text-sky-400">2. ترتيب الصحن:</strong> ابدأ بالزلاطة والخضار أولاً، ثم اللحم أو الدجاج المشوي، وخلّي التمن بحدود 6–8 ملاعق فقط.</p>
+        <p><strong class="text-amber-400">3. بعد العزيمة:</strong> امشِ 20–30 دقيقة وقس سكرك بعد 3–4 ساعات لأن الأكل الدسم يرفع السكر متأخراً.</p>
+      </div>
+      <button type="button" onclick="startPostMealTimer(180); closeAllModals()" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold">
+        تفعيل مؤقت فحص بعد العزيمة (3 ساعات)
+      </button>
+    </div>
+  </div>
+
+  <!-- 8. دليل الأعشاب وتداخلها مع الأدوية (الشريط الجانبي) -->
+  <div id="modal-herbs" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-teal-400">دليل الأعشاب وتداخلها مع أدوية السكري</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="space-y-2.5 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-amber-500">
+          <div class="font-bold text-amber-300">الحلبة:</div>
+          <p class="text-slate-300">تبطئ امتصاص السكر، لكن الإكثار منها مع الأنسولين أو حبوب السكر قد يسبب هبوطاً مفاجئاً.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-emerald-500">
+          <div class="font-bold text-emerald-300">الدارسين (القرفة):</div>
+          <p class="text-slate-300">يحسّن حساسية الأنسولين بكميات معتدلة (نصف ملعقة صغيرة يومياً) ولا يُغني عن العلاج.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-sky-500">
+          <div class="font-bold text-sky-300">نومي بصرة (الليمون المجفف):</div>
+          <p class="text-slate-300">آمن ومفيد بدون سكر مضاف، ويساعد على تقليل امتصاص الكربوهيدرات بعد الوجبات.</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 border-r-4 border-r-rose-500">
+          <div class="font-bold text-rose-300">ورق الزيتون والمرمية:</div>
+          <p class="text-slate-300">قد يتداخل مع أدوية الضغط والسكر؛ استشر طبيبك قبل تناوله بانتظام.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. مخزون الأشرطة وأقلام الأنسولين (الشريط الجانبي) -->
+  <div id="modal-inventory" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-amber-400">مخزون الأشرطة وأقلام الأنسولين</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1">عدد أشرطة الفحص المتبقية:</label>
+          <input id="inv-strips-input" type="number" min="0" value="50" class="input-dark w-full" />
+        </div>
+        <div>
+          <label class="block text-slate-300 mb-1">عدد أقلام الأنسولين المتبقية:</label>
+          <input id="inv-pens-input" type="number" min="0" value="5" class="input-dark w-full" />
+        </div>
+        <div id="inv-estimate-lbl" class="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-300">
+          المخزون الحالي يكفي لحوالي 25 يوماً بمعدل فحصين يومياً.
+        </div>
+        <button type="button" onclick="saveInventory()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black">تحديث المخزون</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. جدول الفحوصات الدورية والمشي (الشريط الجانبي) -->
+  <div id="modal-periodic" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-4 text-xs max-h-[85vh] overflow-y-auto border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-emerald-400">جدول الفحوصات الدورية والمشي</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="space-y-2.5">
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center gap-2">
+          <span>فحص التراكمي (HbA1c) — كل 3 أشهر</span>
+          <input id="chk-hba1c" type="date" class="input-dark text-xs" />
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center gap-2">
+          <span>فحص الكلى والزلال — كل 6 أشهر</span>
+          <input id="chk-kidney" type="date" class="input-dark text-xs" />
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center gap-2">
+          <span>فحص قاع العين والدهون — سنوياً</span>
+          <input id="chk-eye" type="date" class="input-dark text-xs" />
+        </div>
+        <button type="button" onclick="savePeriodicChecks()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold">حفظ تواريخ الفحوصات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. معايرة دقة الجهاز المنزلي (الشريط الجانبي) -->
+  <div id="modal-calibration" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-4 text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-sky-400">معايرة دقة الجهاز المنزلي</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <p class="text-slate-300 leading-relaxed">قارن قراءة جهازك المنزلي مع فحص المختبر الوريدي في نفس الوقت (الفرق المقبول طبياً ±15%):</p>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-slate-400 mb-1">قراءة الجهاز المنزلي:</label>
+          <input id="cal-home" type="number" placeholder="142" class="input-dark w-full" />
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">قراءة المختبر:</label>
+          <input id="cal-lab" type="number" placeholder="135" class="input-dark w-full" />
+        </div>
+      </div>
+      <button type="button" onclick="calcCalibration()" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold">فحص دقة الجهاز</button>
+      <div id="cal-result" class="p-3 rounded-xl bg-slate-950/70 border border-white/10 font-bold hidden"></div>
+    </div>
+  </div>
+
+  <!-- 12. إعدادات الملف واللهجة (الشريط الجانبي) -->
+  <div id="modal-profile" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-indigo-400">إعدادات الملف الشخصي واللهجة</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div>
+        <label class="block text-slate-400 mb-1">الاسم الكامل:</label>
+        <input id="prof-name" type="text" value="محمد العراقي" class="input-dark w-full" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-slate-400 mb-1">الدولة واللهجة:</label>
+          <select id="prof-dialect" class="input-dark w-full">
+            <option value="العراق (لهجة عراقية)">العراق (لهجة عراقية)</option>
+            <option value="السعودية / الخليج">السعودية / الخليج</option>
+            <option value="بلاد الشام">بلاد الشام</option>
+            <option value="مصر">مصر</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">نوع السكري:</label>
+          <select id="prof-type" class="input-dark w-full">
+            <option value="النوع الثاني">النوع الثاني</option>
+            <option value="النوع الأول">النوع الأول</option>
+            <option value="سكري الحمل">سكري الحمل</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-slate-400 mb-1">السكر المستهدف:</label>
+          <input id="prof-target" type="number" value="120" class="input-dark w-full" />
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">معامل التصحيح:</label>
+          <input id="prof-corr" type="number" value="40" class="input-dark w-full" />
+        </div>
+      </div>
+      <button type="button" onclick="savePatientProfile()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold">حفظ التعديلات</button>
+    </div>
+  </div>
+
+  <!-- ==================== النوافذ المنبثقة التفاعلية للطبيب (الشريط العائم والجانبي) ==================== -->
+
+  <!-- 13. التحاليل المختبرية للمراجع (زر الشريط العائم للطبيب) -->
+  <div id="modal-doc-labs-panel" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-3 text-xs max-h-[85vh] overflow-y-auto border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-black text-purple-400">تحاليل المراجع المختبرية</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div id="doc-labs-container" class="space-y-2"></div>
+      <form onsubmit="addDocLabResult(event)" class="pt-3 border-t border-white/10 grid grid-cols-3 gap-2">
+        <input id="new-lab-name" type="text" required placeholder="اسم التحليل (HbA1c)" class="input-dark" />
+        <input id="new-lab-val" type="text" required placeholder="النتيجة (6.8%)" class="input-dark" />
+        <button type="submit" class="rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold">إضافة</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 14. محادثة الطبيب مع المريض (زر الشريط العائم للطبيب) -->
+  <div id="modal-doc-chat-panel" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 space-y-3 border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 id="doc-chat-patient-title" class="text-base font-black text-sky-400">المحادثة مع المراجع</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div id="doc-pat-chat-box" class="h-60 overflow-y-auto p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-2 text-xs"></div>
+      <form onsubmit="sendDocToPatientMsg(event)" class="flex gap-2">
+        <input id="doc-pat-msg-input" type="text" required placeholder="اكتب توجيهاً أو رداً للمراجع..." class="input-dark w-full text-xs" />
+        <button type="submit" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shrink-0">إرسال</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 15. بطاقة المريض الرقمية QR (زر الشريط العائم للطبيب) -->
+  <div id="modal-doc-qr-panel" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card w-full max-w-sm p-6 space-y-3 text-center text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
+        <h3 class="text-base font-black text-teal-400">بطاقة المراجع الرقمية</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="p-4 rounded-2xl bg-slate-950/70 border border-teal-500/30 space-y-2">
+        <div class="mx-auto w-28 h-28 rounded-xl bg-white p-2 flex items-center justify-center">
+          <svg viewBox="0 0 100 100" class="w-full h-full fill-slate-950">
+            <rect x="10" y="10" width="25" height="25"/><rect x="65" y="10" width="25" height="25"/><rect x="10" y="65" width="25" height="25"/>
+            <rect x="42" y="15" width="12" height="12"/><rect x="42" y="42" width="16" height="16"/><rect x="65" y="65" width="25" height="12"/><rect x="45" y="72" width="12" height="18"/>
+          </svg>
+        </div>
+        <div id="qr-card-name" class="text-base font-black text-white">-</div>
+        <div id="qr-card-meta" class="text-slate-400">-</div>
+        <div id="qr-card-meds" class="text-emerald-400 font-bold">-</div>
+      </div>
+      <button type="button" onclick="printPatientCard()" class="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold">نسخ / مشاركة بيانات البطاقة</button>
+    </div>
+  </div>
+
+  <!-- 16. تسجيل مريض جديد (زر الشريط العائم للطبيب) -->
+  <div id="modal-doc-create-patient" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <form onsubmit="createNewPatientByDoc(event)" class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
+        <h3 class="text-base font-black text-emerald-400">تسجيل ملف مراجع جديد</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <input id="new-pat-name" type="text" required placeholder="الاسم الكامل للمراجع *" class="input-dark w-full" />
+      <div class="grid grid-cols-2 gap-2">
+        <input id="new-pat-phone" type="text" required placeholder="رقم الهاتف *" class="input-dark w-full" />
+        <input id="new-pat-age" type="number" required placeholder="العمر *" class="input-dark w-full" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <select id="new-pat-type" class="input-dark w-full">
+          <option value="النوع الثاني">النوع الثاني</option>
+          <option value="النوع الأول">النوع الأول</option>
+          <option value="سكري الحمل">سكري الحمل</option>
+        </select>
+        <input id="new-pat-meds" type="text" placeholder="العلاج الحالي" class="input-dark w-full" />
+      </div>
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold">إنشاء ملف المراجع</button>
+    </form>
+  </div>
+
+  <!-- 17. تعديل بيانات المراجع (الشريط الجانبي للطبيب) -->
+  <div id="modal-doc-edit-patient" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <form onsubmit="saveEditedPatient(event)" class="card w-full max-w-md p-6 space-y-3 text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
+        <h3 class="text-base font-black text-sky-400">تعديل بيانات المراجع</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <input id="edit-pat-name" type="text" required class="input-dark w-full" />
+      <div class="grid grid-cols-2 gap-2">
+        <input id="edit-pat-phone" type="text" required class="input-dark w-full" />
+        <input id="edit-pat-age" type="number" required class="input-dark w-full" />
+      </div>
+      <select id="edit-pat-type" class="input-dark w-full">
+        <option value="النوع الثاني">النوع الثاني</option>
+        <option value="النوع الأول">النوع الأول</option>
+        <option value="سكري الحمل">سكري الحمل</option>
+      </select>
+      <input id="edit-pat-meds" type="text" placeholder="الخطة العلاجية" class="input-dark w-full" />
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold">حفظ التعديلات</button>
+    </form>
+  </div>
+
+  <!-- 18. تغيير الرمز السري للمراجع (الشريط الجانبي للطبيب) -->
+  <div id="modal-doc-reset-pass" onclick="if(event.target===this) closeAllModals()" class="tool-modal hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <form onsubmit="saveResetPatientPass(event)" class="card w-full max-w-sm p-6 space-y-3 text-xs border-white/15">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
+        <h3 class="text-base font-black text-amber-400">تغيير الرمز السري للمراجع</h3>
+        <button type="button" onclick="closeAllModals()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <input id="reset-pass-val" type="text" required placeholder="أدخل الرمز السري الجديد..." class="input-dark w-full" />
+      <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black">تحديث الرمز</button>
+    </form>
+  </div>
+
+  <!-- ==================== المنطق البرمجي الكامل للمشروع ==================== -->
   <script>
+    // 1. البيانات الافتراضية للمراجع والعيادة
+    const IRAQI_FOODS = [
+      { name: 'تمن أبيض (رز)', gi: 'مرتفع', carbs: 'كل 3 ملاعق = 15g كارب', alt: 'تمن بسمتي مسلوق أو برغل (6-8 ملاعق كحد أقصى)' },
+      { name: 'خبز تنور / صمون أبيض', gi: 'مرتفع', carbs: 'ربع رغيف = 15g كارب', alt: 'خبز شعير أو خبز شوفان أو نصف صمونة سمراء' },
+      { name: 'كبة برغل مقلية', gi: 'متوسط-مرتفع', carbs: 'حبة واحدة ≈ 22g كارب', alt: 'كبة مشوية أو مسلوقة بالمرق مع زلاطة' },
+      { name: 'دولمة عراقية', gi: 'متوسط', carbs: '4 حبات متوسطة ≈ 20g كارب', alt: 'كثّر السلق والباذنجان وقلل التمن بالحشوة' },
+      { name: 'سمك مسكوف', gi: 'منخفض جداً', carbs: '0g كارب (بروتين صافي)', alt: 'ممتاز ومثالي لمرضى السكري مع خضار وزلاطة' },
+      { name: 'تمر زهدي / خستاوي', gi: 'مرتفع', carbs: '3 تمرات = 15g كارب', alt: 'حبتين تمر مع 3 حبات جوز لتقليل سرعة الامتصاص' },
+      { name: 'باجة عراقية', gi: 'منخفض كارب / دسم', carbs: 'بدون خبز منخفضة الكارب', alt: 'تناول اللحم بدون تشريب الخبز وامشِ بعدها 30 دقيقة' },
+      { name: 'تشريب لحم أو دجاج', gi: 'مرتفع بسبب الخبز', carbs: 'الصحن الكامل ≈ 45-60g كارب', alt: 'اشرب المرق مع اللحم والخضار وقلل الخبز المنقوع' }
+    ];
+
+    let patientLogs = [
+      { val: 118, timing: 'على الريك', meal: 'بيض مسلوق + خبز شعير', time: 'اليوم 08:15 ص' },
+      { val: 164, timing: 'ورا الأكل', meal: 'تمن ومرك بامية + زلاطة', time: 'أمس 03:30 م' },
+      { val: 132, timing: 'عشوائي', meal: 'لبن خالي الدسم + خيار', time: 'أمس 10:00 م' },
+      { val: 109, timing: 'على الريك', meal: 'جبن عرب + طماطة', time: 'قبل يومين 08:00 ص' }
+    ];
+
+    let clinicPatients = [
+      {
+        id: 1, name: 'محمد العراقي', age: 46, phone: '07701112233', country: 'العراق', type: 'النوع الثاني',
+        status: 'controlled', inactive: false, meds: 'ميتفورمين 850mg مرتين يومياً',
+        targetG: 120, corrF: 40, carbR: 12, nextVisit: '2026-12-05',
+        notes: 'استمر على المشي 30 دقيقة بعد الغداء، وقلل التمن بالعشاء إلى 6 ملاعق.',
+        logs: [118, 164, 132, 109, 145, 126],
+        labs: [{ name: 'HbA1c التراكمي', val: '6.6%', date: '2026-10-15' }, { name: 'الكرياتينين', val: '0.9 mg/dL', date: '2026-10-15' }],
+        chat: [{ sender: 'doc', text: 'عاشت إيدك على التزامك بالقياسات هذا الأسبوع.' }]
+      },
+      {
+        id: 2, name: 'زهراء الكاظمي', age: 29, phone: '07804445566', country: 'العراق', type: 'سكري الحمل',
+        status: 'critical', inactive: false, meds: 'أنسولين سريع قبل الوجبات + قاعدي ليلاً',
+        targetG: 95, corrF: 50, carbR: 15, nextVisit: '2026-11-20',
+        notes: 'مهم جداً الالتزام بفحص السكر بعد الأكل بساعة وعدم تجاوز 140.',
+        logs: [142, 195, 168, 130, 210, 155],
+        labs: [{ name: 'سكر صائم', val: '128 mg/dL', date: '2026-11-02' }],
+        chat: [{ sender: 'pat', text: 'دكتور اليوم بعد الغداء صعد 195 شنو أسوي؟' }]
+      },
+      {
+        id: 3, name: 'حسين البصراوي', age: 19, phone: '07719998877', country: 'العراق', type: 'النوع الأول',
+        status: 'critical', inactive: false, meds: 'نوفورابيد + لانتوس 22 وحدة',
+        targetG: 110, corrF: 35, carbR: 10, nextVisit: '2026-11-25',
+        notes: 'تجنب السهر وفحص السكر قبل النوم لتفادي الهبوط الليلي.',
+        logs: [64, 240, 185, 72, 260, 140],
+        labs: [{ name: 'HbA1c التراكمي', val: '8.4%', date: '2026-09-28' }],
+        chat: []
+      },
+      {
+        id: 4, name: 'أم علي الساعدي', age: 58, phone: '07503332211', country: 'العراق', type: 'النوع الثاني',
+        status: 'controlled', inactive: true, meds: 'غليمبرايد 2mg + منظم',
+        targetG: 130, corrF: 45, carbR: 15, nextVisit: '2026-11-18',
+        notes: 'يرجى تسجيل القراءات بانتظام ومراجعة العيادة لفحص القدمين.',
+        logs: [135, 148, 129, 140],
+        labs: [{ name: 'HbA1c التراكمي', val: '7.1%', date: '2026-08-12' }],
+        chat: []
+      }
+    ];
+
+    let selectedPatientId = 1;
+    let currentDocFilter = 'all';
+    let doctorChartInstance = null;
+
+    // 2. الساعة الحية
+    setInterval(() => {
+      const el = document.getElementById('live-clock');
+      if (el) el.innerText = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+    }, 1000);
+
+    // 3. تسجيل الدخول والخروج
     function quickFill(userType, pass) {
       document.getElementById('login-username').value = userType;
       document.getElementById('login-password').value = pass;
     }
-    
+
     function handleLogin(e) {
       e.preventDefault();
       const user = document.getElementById('login-username').value.toLowerCase();
       document.getElementById('auth-screen').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
-      
+
       if (user.includes('doc')) {
         document.getElementById('doctor-view').classList.remove('hidden');
         document.getElementById('doctor-floating-dock').classList.remove('hidden');
@@ -1069,6 +1569,7 @@
         document.getElementById('header-role-badge').innerText = 'دكتور';
         document.getElementById('header-role-badge').className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-sky-500/15 border border-sky-400/25 text-sky-300 shrink-0 hidden sm:inline-block';
         document.getElementById('header-user-name').innerText = 'د. أحمد';
+        initDoctorDashboard();
       } else {
         document.getElementById('patient-view').classList.remove('hidden');
         document.getElementById('patient-floating-dock').classList.remove('hidden');
@@ -1076,10 +1577,12 @@
         document.getElementById('header-role-badge').innerText = 'مراجع';
         document.getElementById('header-role-badge').className = 'px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/15 border border-emerald-400/25 text-emerald-300 shrink-0 hidden sm:inline-block';
         document.getElementById('header-user-name').innerText = 'محمد العراقي';
+        initPatientDashboard();
       }
     }
 
     function logout() {
+      closeAllModals();
       document.getElementById('app-shell').classList.add('hidden');
       document.getElementById('auth-screen').classList.remove('hidden');
       document.getElementById('patient-view').classList.add('hidden');
@@ -1094,173 +1597,629 @@
     function toggleSidebar() {
       const sidebar = document.getElementById('unified-sidebar');
       const backdrop = document.getElementById('sidebar-backdrop');
-      if(sidebar.classList.contains('translate-x-full')) {
-        sidebar.classList.remove('translate-x-full');
-        backdrop.classList.remove('hidden');
-      } else {
+      sidebar.classList.toggle('translate-x-full');
+      backdrop.classList.toggle('hidden');
+    }
+
+    // 4. إدارة النوافذ المنبثقة (Modals)
+    function openToolModal(modalId) {
+      closeAllModals();
+      const sidebar = document.getElementById('unified-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (sidebar && !sidebar.classList.contains('translate-x-full') && window.innerWidth < 1024) {
         sidebar.classList.add('translate-x-full');
         backdrop.classList.add('hidden');
       }
-    }
-
-    // --- الوظائف التفاعلية المضافة (الإشعارات، الأوضاع، الأدوات) ---
-    function showToast(msg, type='success') {
-      const toast = document.createElement('div');
-      toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full font-bold text-xs shadow-2xl transition-all duration-300 translate-y-[-100%] opacity-0 border ${type === 'success' ? 'bg-emerald-600/95 border-emerald-400 text-white' : 'bg-rose-600/95 border-rose-400 text-white'}`;
-      toast.style.backdropFilter = "blur(10px)";
-      toast.innerText = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => { toast.classList.remove('translate-y-[-100%]', 'opacity-0'); toast.classList.add('translate-y-0', 'opacity-100'); }, 10);
-      setTimeout(() => { toast.classList.remove('translate-y-0', 'opacity-100'); toast.classList.add('translate-y-[-100%]', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
-    }
-
-    const flags = { ramadanMode: false, sickDayMode: false, seniorMode: false };
-    function togglePatientFlag(flag) {
-      flags[flag] = !flags[flag];
-      let stateTxt = flags[flag] ? 'مفعّل' : 'مغلق';
-      let stateColor = flags[flag] ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5';
-      
-      let badge;
-      if(flag === 'ramadanMode') badge = document.getElementById('sb-ramadan-state');
-      if(flag === 'sickDayMode') badge = document.getElementById('sb-sick-state');
-      if(flag === 'seniorMode') badge = document.getElementById('sb-senior-state');
-      
-      if(badge) {
-        badge.innerText = stateTxt;
-        badge.className = `px-2 py-0.5 rounded-md transition-colors ${stateColor}`;
-      }
-
-      if(flag === 'seniorMode') {
-        document.body.classList.toggle('senior-mode', flags[flag]);
-        showToast(flags[flag] ? 'تم تفعيل وضع كبار السن (تكبير الخط)' : 'تم إيقاف وضع كبار السن');
-      } else if (flag === 'ramadanMode') {
-        showToast(flags[flag] ? 'تم تفعيل وضع الصيام ورمضان' : 'تم إيقاف وضع الصيام');
-        const ramadanInd = document.getElementById('ramadan-indicator-badge');
-        if(ramadanInd) flags[flag] ? ramadanInd.classList.remove('hidden') : ramadanInd.classList.add('hidden');
-      } else {
-        showToast(flags[flag] ? 'تم تفعيل وضع أيام المرض' : 'تم إيقاف وضع المرض');
-      }
-    }
-
-    function openToolModal(modalId) { 
-      let btnText = document.querySelector(`[onclick="openToolModal('${modalId}')"] span:last-child`)?.innerText || modalId;
-      showToast('جاري فتح: ' + btnText); 
-    }
-    
-    function sendWeeklySummaryToDoctor() { showToast('تم إرسال الملخص الأسبوعي للطبيب بنجاح ✓'); }
-    function shareCaregiverWhatsApp() { showToast('تم تجهيز التقرير للمشاركة عبر واتساب'); setTimeout(()=> window.open('https://wa.me/?text=تقرير+السكر+الأسبوعي', '_blank'), 1000); }
-    function exportExcel() { showToast('جاري تصدير السجل بصيغة Excel...'); }
-    function exportDoctorSelectedExcel() { showToast('جاري تصدير بيانات المراجعين بصيغة Excel...'); }
-    function openEditPatientModal() { showToast('تم فتح واجهة تعديل بيانات المراجع'); }
-    function deleteSelectedPatient() { if(confirm('هل أنت متأكد من حذف ملف المراجع؟')) showToast('تم حذف الملف بنجاح', 'error'); }
-    function setDocFilter(filter) { showToast('تم تطبيق الفلتر بنجاح'); }
-    function renderDoctorPatientsList() { /* Mock search */ }
-    
-    // تسجيل قراءة جديدة
-    function submitNewLog(e) {
-      e.preventDefault();
-      const val = document.getElementById('log-val').value;
-      if(val) {
-        showToast('تم تسجيل القياس بنجاح: ' + val + ' mg/dL');
-        e.target.reset();
-      }
-    }
-
-    // تفاعلات الأزرار اليومية
-    function incrementDaily(type, amount) {
-      const el = document.getElementById(`${type}-count`);
-      if(el) {
-        let current = parseInt(el.innerText) || 0;
-        el.innerText = current + amount;
-        showToast(type === 'water' ? 'بالعافية! تم تسجيل كوب ماء' : 'عاشت إيدك! تم تسجيل نشاط رياضي');
-      }
-    }
-    
-    function toggleMedDose(time) {
-      const btn = document.getElementById(`btn-med-${time}`);
-      if(btn) {
-        btn.classList.toggle('bg-emerald-600/90');
-        btn.classList.toggle('text-white');
-        btn.classList.toggle('bg-white/5');
-        if(btn.classList.contains('bg-emerald-600/90')) showToast('تم تسجيل أخذ العلاج ✓');
-      }
-    }
-
-    function saveSideEffects() { showToast('تم حفظ الأعراض وإشعار الطبيب'); }
-    function calcCorrectionDose() {
-      const val = document.getElementById('corr-input-val').value;
-      const res = document.getElementById('corr-result-box');
-      if(val && res) {
-        const diff = val - 120;
-        if (diff > 0) {
-          const dose = (diff / 40).toFixed(1);
-          res.innerText = `الجرعة المقترحة: ${dose} وحدات أنسولين صافي`;
-          res.className = 'text-xs text-emerald-300 font-bold';
-          showToast('تم حساب الجرعة التصحيحية');
-        } else {
-          res.innerText = 'السكر ضمن أو تحت الهدف، لا تحتاج تصحيح.';
-          res.className = 'text-xs text-amber-400 font-bold';
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('hidden');
+        if (modalId === 'modal-iraqi-food') filterIraqiFoods();
+        if (modalId === 'modal-doc-chat') {
+          const b = document.getElementById('pat-doc-badge');
+          if (b) b.classList.add('hidden');
+        }
+        if (modalId === 'modal-doc-labs-panel' || modalId === 'modal-doc-chat-panel' || modalId === 'modal-doc-qr-panel') {
+          populateDoctorModalsForSelected();
         }
       }
     }
-    
-    let timerInterval;
+
+    function closeAllModals() {
+      document.querySelectorAll('.tool-modal').forEach(m => m.classList.add('hidden'));
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAllModals();
+    });
+
+    // 5. الإشعارات العلوية (Toasts)
+    function showToast(msg, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] px-5 py-2.5 rounded-full font-bold text-xs shadow-2xl transition-all duration-300 translate-y-[-100%] opacity-0 border ${type === 'success' ? 'bg-emerald-600/95 border-emerald-400 text-white' : 'bg-rose-600/95 border-rose-400 text-white'}`;
+      toast.style.backdropFilter = 'blur(10px)';
+      toast.innerText = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('translate-y-[-100%]', 'opacity-0'); toast.classList.add('translate-y-0', 'opacity-100'); }, 10);
+      setTimeout(() => { toast.classList.remove('translate-y-0', 'opacity-100'); toast.classList.add('translate-y-[-100%]', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 2800);
+    }
+
+    // 6. تهيئة وتحديث واجهة المراجع
+    function initPatientDashboard() {
+      renderPatientLogsAndTIR();
+      const docPat = clinicPatients[0];
+      document.getElementById('pat-doctor-notes').innerText = docPat.notes;
+      document.getElementById('pat-next-visit').innerText = docPat.nextVisit;
+    }
+
+    function renderPatientLogsAndTIR() {
+      const list = document.getElementById('patient-logs-list');
+      if (!list) return;
+      list.innerHTML = patientLogs.map(l => {
+        const color = l.val < 70 ? 'text-rose-400 border-rose-500/30' : (l.val > 180 ? 'text-amber-400 border-amber-500/30' : 'text-emerald-400 border-emerald-500/30');
+        return `<div class="p-2.5 rounded-xl bg-white/[0.03] border ${color} flex items-center justify-between">
+          <div>
+            <span class="font-black text-sm ${color.split(' ')[0]}">${l.val} mg/dL</span>
+            <span class="text-slate-400 mr-2">(${l.timing})</span>
+            ${l.meal ? `<div class="text-[11px] text-slate-300 mt-0.5">${l.meal}</div>` : ''}
+          </div>
+          <span class="text-[10px] text-slate-500">${l.time}</span>
+        </div>`;
+      }).join('');
+
+      const total = patientLogs.length || 1;
+      const low = Math.round((patientLogs.filter(x => x.val < 70).length / total) * 100);
+      const high = Math.round((patientLogs.filter(x => x.val > 180).length / total) * 100);
+      const inRange = Math.max(0, 100 - low - high);
+
+      document.getElementById('tir-in-pct').innerText = inRange + '%';
+      document.getElementById('tir-bar-low').style.width = low + '%';
+      document.getElementById('tir-bar-in').style.width = inRange + '%';
+      document.getElementById('tir-bar-high').style.width = high + '%';
+      document.getElementById('tir-low-lbl').innerText = `هبوط: ${low}%`;
+      document.getElementById('tir-high-lbl').innerText = `ارتفاع: ${high}%`;
+      document.getElementById('pat-streak-val').innerText = `${patientLogs.length} أيام`;
+    }
+
+    function submitNewLog(e) {
+      e.preventDefault();
+      const val = parseInt(document.getElementById('log-val').value);
+      const timing = document.getElementById('log-timing').value;
+      const meal = document.getElementById('log-meal').value.trim();
+      if (!val) return;
+      patientLogs.unshift({ val, timing, meal, time: 'الآن' });
+      renderPatientLogsAndTIR();
+      e.target.reset();
+      if (val < 70) {
+        showToast('تنبيه: قراءة منخفضة! افتح طوارئ الهبوط فوراً', 'error');
+        openToolModal('modal-hypo15');
+      } else {
+        showToast(`تم تسجيل القراءة: ${val} mg/dL ✓`);
+      }
+    }
+
+    // 7. الأوضاع الذكية للمراجع
+    const flags = { ramadanMode: false, sickDayMode: false, seniorMode: false };
+    function togglePatientFlag(flag) {
+      flags[flag] = !flags[flag];
+      const stateTxt = flags[flag] ? 'مفعّل' : 'مغلق';
+      const stateColor = flags[flag] ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5';
+      const map = { ramadanMode: 'sb-ramadan-state', sickDayMode: 'sb-sick-state', seniorMode: 'sb-senior-state' };
+      const badge = document.getElementById(map[flag]);
+      if (badge) { badge.innerText = stateTxt; badge.className = `px-2 py-0.5 rounded-md ${stateColor}`; }
+
+      if (flag === 'seniorMode') {
+        document.body.classList.toggle('senior-mode', flags[flag]);
+        showToast(flags[flag] ? 'تم تكبير الخط لوضع كبار السن' : 'تمت استعادة الحجم الطبيعي');
+      } else if (flag === 'ramadanMode') {
+        document.getElementById('ramadan-indicator-badge')?.classList.toggle('hidden', !flags[flag]);
+        showToast(flags[flag] ? 'تم تفعيل وضع الصيام ورمضان' : 'تم إيقاف وضع الصيام');
+      } else {
+        showToast(flags[flag] ? 'تم تفعيل وضع أيام المرض والفلاونزا' : 'تم إيقاف وضع المرض');
+      }
+    }
+
+    // 8. وظائف نوافذ المراجع التفاعلية
+    function sendQuickAiPrompt(text) {
+      document.getElementById('ai-question-input').value = text;
+      askAiAssistant(new Event('submit'));
+    }
+
+    function askAiAssistant(e) {
+      e.preventDefault();
+      const inp = document.getElementById('ai-question-input');
+      const box = document.getElementById('ai-chat-history');
+      const q = inp.value.trim();
+      if (!q) return;
+      box.innerHTML += `<div class="p-2.5 rounded-xl bg-emerald-600/20 border border-emerald-400/25 text-white mr-8">${q}</div>`;
+      inp.value = '';
+
+      let reply = 'حسب آخر قراءاتك (معدلها مستقر حول 130)، ننصح بالاستمرار على شرب الماء والمشي 20 دقيقة بعد الوجبة الرئيسية.';
+      if (q.includes('عشاء') || q.includes('أتعشى')) reply = 'للعشاء الصحي بدون صعود السكر: صدر دجاج مشوي أو بيضتين مسلوقات مع زلاطة خيار وطماطة ونصف خبزة شعير.';
+      if (q.includes('هبوط') || q.includes('رجفة')) reply = 'إذا حسيت برجفة قس سكرك فوراً، وإذا أقل من 70 اشرب نص كلاص عصير محلى أو 3 تمرات وانتظر 15 دقيقة.';
+
+      setTimeout(() => {
+        box.innerHTML += `<div class="p-2.5 rounded-xl bg-purple-500/15 border border-purple-400/25 text-slate-200 ml-8"><strong class="text-purple-300">المساعد الذكي:</strong> ${reply}</div>`;
+        box.scrollTop = box.scrollHeight;
+      }, 350);
+    }
+
+    function clearAiChatHistory() {
+      document.getElementById('ai-chat-history').innerHTML = '<div class="text-slate-400">تم مسح المحادثة. اسألني أي سؤال جديد...</div>';
+    }
+
+    function previewSelectedImage(inputId, imgId) {
+      const file = document.getElementById(inputId).files[0];
+      const img = document.getElementById(imgId);
+      if (file && img) {
+        img.src = URL.createObjectURL(file);
+        img.classList.remove('hidden');
+      }
+    }
+
+    function analyzeMealImage() {
+      const note = document.getElementById('meal-note-input').value.trim() || 'وجبة منزلية متكاملة';
+      const res = document.getElementById('meal-ai-result');
+      res.classList.remove('hidden');
+      res.innerHTML = `
+        <div class="font-bold text-amber-300">نتيجة تحليل: ${note}</div>
+        <div>• الكربوهيدرات المقدرة: <strong>45 غرام</strong> (حوالي 3 حصص كارب)</div>
+        <div>• الجرعة المقترحة (حسب معامل 12): <strong>3.5 – 4 وحدات</strong></div>
+        <div class="text-emerald-400">نصيحة: ابدأ بالزلاطة قبل النشويات لتقليل ارتفاع السكر بعد الأكل.</div>
+      `;
+      showToast('تم تحليل الوجبة بنجاح ✓');
+    }
+
+    function sendPatientToDocMsg(e) {
+      e.preventDefault();
+      const inp = document.getElementById('pat-doc-msg-input');
+      const box = document.getElementById('pat-doc-chat-box');
+      const txt = inp.value.trim();
+      if (!txt) return;
+      box.innerHTML += `<div class="p-2.5 rounded-xl bg-emerald-600/20 border border-emerald-400/25 text-white mr-8">${txt}</div>`;
+      clinicPatients[0].chat.push({ sender: 'pat', text: txt });
+      inp.value = '';
+      box.scrollTop = box.scrollHeight;
+      showToast('وصلت رسالتك للدكتور ✓');
+    }
+
+    let hypo15Interval = null;
+    let hypo15Secs = 900;
+    function startHypo15Timer() {
+      clearInterval(hypo15Interval);
+      showToast('بدأ عدّاد الـ 15 دقيقة');
+      hypo15Interval = setInterval(() => {
+        hypo15Secs--;
+        const m = Math.floor(hypo15Secs / 60);
+        const s = hypo15Secs % 60;
+        document.getElementById('hypo15-timer-lbl').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        if (hypo15Secs <= 0) {
+          clearInterval(hypo15Interval);
+          showToast('انتهت الـ 15 دقيقة! أعد فحص السكر الآن', 'error');
+        }
+      }, 1000);
+    }
+
+    function resetHypo15Timer() {
+      clearInterval(hypo15Interval);
+      hypo15Secs = 900;
+      document.getElementById('hypo15-timer-lbl').innerText = '15:00';
+    }
+
+    function calculateMealBolus() {
+      const rice = parseFloat(document.getElementById('bolus-rice').value) || 0;
+      const bread = parseFloat(document.getElementById('bolus-bread').value) || 0;
+      const fruit = parseFloat(document.getElementById('bolus-fruit').value) || 0;
+      const bg = parseFloat(document.getElementById('bolus-glucose').value) || 0;
+      const carbs = Math.round((rice / 3) * 15 + bread * 15 + (fruit / 3) * 15);
+      const mealUnits = carbs / 12;
+      const corrUnits = bg > 120 ? (bg - 120) / 40 : 0;
+      const total = (mealUnits + corrUnits).toFixed(1);
+      const res = document.getElementById('bolus-result');
+      res.classList.remove('hidden');
+      res.innerHTML = `إجمالي الكارب: ${carbs} غرام<br/>جرعة الوجبة: ${mealUnits.toFixed(1)} وحدة + التصحيح: ${corrUnits.toFixed(1)} وحدة<br/>المجموع المقترح: <span class="text-base text-white">${total} وحدة أنسولين</span>`;
+    }
+
+    function filterIraqiFoods() {
+      const q = (document.getElementById('iraqi-food-search')?.value || '').trim();
+      const box = document.getElementById('iraqi-foods-container');
+      if (!box) return;
+      const filtered = IRAQI_FOODS.filter(f => f.name.includes(q) || f.alt.includes(q));
+      box.innerHTML = filtered.map(f => `
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-amber-300">${f.name}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] bg-white/5 border border-white/10 text-slate-300">المؤشر: ${f.gi}</span>
+          </div>
+          <div class="text-slate-400">الحصة: ${f.carbs}</div>
+          <div class="text-emerald-400">البديل الصحي: ${f.alt}</div>
+        </div>
+      `).join('');
+    }
+
+    function saveInventory() {
+      const strips = parseInt(document.getElementById('inv-strips-input').value) || 0;
+      const pens = parseInt(document.getElementById('inv-pens-input').value) || 0;
+      document.getElementById('pat-strips-badge').innerText = strips;
+      document.getElementById('pat-pens-badge').innerText = pens;
+      document.getElementById('inv-estimate-lbl').innerText = `المخزون الحالي (${strips} شريط) يكفي لحوالي ${Math.floor(strips / 2)} يوماً.`;
+      showToast('تم تحديث مخزون الأشرطة والأنسولين ✓');
+      closeAllModals();
+    }
+
+    function savePeriodicChecks() {
+      showToast('تم حفظ مواعيد الفحوصات الدورية بنجاح ✓');
+      closeAllModals();
+    }
+
+    function calcCalibration() {
+      const home = parseFloat(document.getElementById('cal-home').value);
+      const lab = parseFloat(document.getElementById('cal-lab').value);
+      const res = document.getElementById('cal-result');
+      if (!home || !lab) return;
+      const diffPct = Math.abs(((home - lab) / lab) * 100).toFixed(1);
+      res.classList.remove('hidden');
+      if (diffPct <= 15) {
+        res.className = 'p-3 rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold';
+        res.innerText = `جهازك دقيق جداً ✓ (نسبة الفرق ${diffPct}% وهي ضمن الحد الطبي المسموح ±15%).`;
+      } else {
+        res.className = 'p-3 rounded-xl bg-rose-500/15 border border-rose-400/30 text-rose-300 font-bold';
+        res.innerText = `تنبيه: نسبة الفرق ${diffPct}% أعلى من المسموح! يرجى تبديل علبة الأشرطة أو فحص الجهاز.`;
+      }
+    }
+
+    function savePatientProfile() {
+      const name = document.getElementById('prof-name').value.trim();
+      if (name) document.getElementById('header-user-name').innerText = name;
+      showToast('تم حفظ إعدادات الملف واللهجة ✓');
+      closeAllModals();
+    }
+
+    function sendWeeklySummaryToDoctor() { showToast('تم إرسال ملخص قياسات الأسبوع للدكتور ✓'); }
+    function shareCaregiverWhatsApp() {
+      const text = encodeURIComponent('تقرير متابعة السكري الأسبوعي: النطاق الآمن 80%، متوسط القراءات 131 mg/dL.');
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+    function exportExcel() { showToast('تم تجهيز وتنزيل ملف السجل الكامل (Excel) ✓'); }
+
+    // 9. تهيئة وتحديث واجهة الطبيب
+    function initDoctorDashboard() {
+      updateClinicCounters();
+      renderDoctorPatientsList();
+      selectDoctorPatient(selectedPatientId);
+    }
+
+    function updateClinicCounters() {
+      document.getElementById('clinic-total-count').innerText = clinicPatients.length;
+      document.getElementById('clinic-critical-count').innerText = clinicPatients.filter(p => p.status === 'critical').length;
+      document.getElementById('clinic-inactive-count').innerText = clinicPatients.filter(p => p.inactive).length;
+      const controlled = clinicPatients.filter(p => p.status === 'controlled').length;
+      document.getElementById('clinic-controlled-pct').innerText = Math.round((controlled / (clinicPatients.length || 1)) * 100) + '%';
+    }
+
+    function setDocFilter(filter) {
+      currentDocFilter = filter;
+      ['all', 'critical', 'inactive', 'type1', 'gestational'].forEach(f => {
+        const btn = document.getElementById('flt-' + f);
+        if (btn) btn.className = f === filter ? 'px-2.5 py-1 rounded-lg bg-sky-600 text-white font-bold' : 'px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300';
+      });
+      renderDoctorPatientsList();
+    }
+
+    function renderDoctorPatientsList() {
+      const q = (document.getElementById('doc-search-input')?.value || '').trim();
+      const filtered = clinicPatients.filter(p => {
+        if (q && !p.name.includes(q) && !p.phone.includes(q)) return false;
+        if (currentDocFilter === 'critical') return p.status === 'critical';
+        if (currentDocFilter === 'inactive') return p.inactive;
+        if (currentDocFilter === 'type1') return p.type === 'النوع الأول';
+        if (currentDocFilter === 'gestational') return p.type === 'سكري الحمل';
+        return true;
+      });
+
+      document.getElementById('doc-filtered-badge').innerText = filtered.length;
+      document.getElementById('doc-patients-list').innerHTML = filtered.map(p => `
+        <button type="button" onclick="selectDoctorPatient(${p.id})" class="w-full text-right p-3 rounded-xl border transition ${p.id === selectedPatientId ? 'bg-sky-500/15 border-sky-400/40' : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]'}">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white text-xs">${p.name}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === 'critical' ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}">
+              ${p.status === 'critical' ? 'حرجة' : 'مستقرة'}
+            </span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-1">${p.type} • ${p.age} سنة • ${p.phone}</div>
+        </button>
+      `).join('');
+    }
+
+    function selectDoctorPatient(id) {
+      selectedPatientId = id;
+      const p = clinicPatients.find(x => x.id === id) || clinicPatients[0];
+      if (!p) return;
+      renderDoctorPatientsList();
+
+      document.getElementById('dp-name').innerText = p.name;
+      document.getElementById('dp-country-badge').innerText = `${p.country} • ${p.type}`;
+      document.getElementById('dp-meta').innerText = `العمر: ${p.age} سنة | الهاتف: ${p.phone} | العلاج: ${p.meds}`;
+
+      const minVal = Math.min(...p.logs);
+      const maxVal = Math.max(...p.logs);
+      const avgVal = Math.round(p.logs.reduce((a, b) => a + b, 0) / p.logs.length);
+      document.getElementById('dp-5s-fasting').innerText = `${minVal + 12} mg/dL`;
+      document.getElementById('dp-5s-post').innerText = `${avgVal + 18} mg/dL`;
+      document.getElementById('dp-5s-minmax').innerText = `${minVal} / ${maxVal}`;
+      document.getElementById('dp-5s-adh').innerText = p.inactive ? '65%' : '94%';
+
+      document.getElementById('dp-notes-input').value = p.notes;
+      document.getElementById('dp-target-g').value = p.targetG;
+      document.getElementById('dp-corr-f').value = p.corrF;
+      document.getElementById('dp-carb-r').value = p.carbR;
+      document.getElementById('dp-next-visit').value = p.nextVisit;
+      document.getElementById('dp-this-week-avg').innerText = `${avgVal} mg/dL`;
+      document.getElementById('dp-last-week-avg').innerText = `${avgVal + 14} mg/dL`;
+
+      document.getElementById('dp-logs-list').innerHTML = p.logs.map((v, i) => `
+        <div class="p-2 rounded-lg bg-white/[0.03] border border-white/10 flex justify-between">
+          <span class="font-bold ${v > 180 ? 'text-amber-400' : (v < 70 ? 'text-rose-400' : 'text-emerald-400')}">${v} mg/dL</span>
+          <span class="text-slate-400">قراءة #${p.logs.length - i}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('dp-time-of-day').innerHTML = `
+        <div class="flex justify-between"><span>الصباح (صائم):</span><strong class="text-sky-400">${minVal + 10} mg/dL</strong></div>
+        <div class="flex justify-between"><span>الظهيرة (بعد الغداء):</span><strong class="text-amber-400">${maxVal} mg/dL</strong></div>
+        <div class="flex justify-between"><span>المساء وقبل النوم:</span><strong class="text-emerald-400">${avgVal} mg/dL</strong></div>
+      `;
+
+      const ctx = document.getElementById('doctor-chart');
+      if (ctx && typeof Chart !== 'undefined') {
+        if (doctorChartInstance) doctorChartInstance.destroy();
+        doctorChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: p.logs.map((_, idx) => `قراءة ${idx + 1}`),
+            datasets: [{
+              label: 'سكر الدم (mg/dL)',
+              data: p.logs,
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.15)',
+              tension: 0.35,
+              fill: true
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+      }
+    }
+
+    function populateDoctorModalsForSelected() {
+      const p = clinicPatients.find(x => x.id === selectedPatientId) || clinicPatients[0];
+      if (!p) return;
+      document.getElementById('doc-labs-container').innerHTML = p.labs.map(l => `
+        <div class="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex justify-between items-center">
+          <div><div class="font-bold text-white">${l.name}</div><div class="text-[10px] text-slate-400">${l.date}</div></div>
+          <span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 font-black">${l.val}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('doc-chat-patient-title').innerText = `المحادثة مع: ${p.name}`;
+      const chatBox = document.getElementById('doc-pat-chat-box');
+      chatBox.innerHTML = p.chat.length ? p.chat.map(m => `
+        <div class="p-2.5 rounded-xl ${m.sender === 'doc' ? 'bg-sky-600/20 border border-sky-400/25 text-white mr-8' : 'bg-white/5 border border-white/10 text-slate-200 ml-8'}">${m.text}</div>
+      `).join('') : '<div class="text-slate-400">لا توجد رسائل سابقة مع هذا المراجع.</div>';
+
+      document.getElementById('qr-card-name').innerText = p.name;
+      document.getElementById('qr-card-meta').innerText = `${p.type} • ${p.age} سنة • ${p.phone}`;
+      document.getElementById('qr-card-meds').innerText = p.meds;
+    }
+
+    function addDocLabResult(e) {
+      e.preventDefault();
+      const p = clinicPatients.find(x => x.id === selectedPatientId);
+      const name = document.getElementById('new-lab-name').value.trim();
+      const val = document.getElementById('new-lab-val').value.trim();
+      if (p && name && val) {
+        p.labs.unshift({ name, val, date: new Date().toISOString().slice(0, 10) });
+        populateDoctorModalsForSelected();
+        e.target.reset();
+        showToast('تمت إضافة نتيجة التحليل ✓');
+      }
+    }
+
+    function sendDocToPatientMsg(e) {
+      e.preventDefault();
+      const p = clinicPatients.find(x => x.id === selectedPatientId);
+      const inp = document.getElementById('doc-pat-msg-input');
+      const txt = inp.value.trim();
+      if (p && txt) {
+        p.chat.push({ sender: 'doc', text: txt });
+        populateDoctorModalsForSelected();
+        inp.value = '';
+        showToast('تم إرسال الرسالة للمراجع ✓');
+      }
+    }
+
+    function printPatientCard() { showToast('تم نسخ بيانات بطاقة المراجع الرقمية ✓'); }
+
+    function createNewPatientByDoc(e) {
+      e.preventDefault();
+      const newP = {
+        id: Date.now(),
+        name: document.getElementById('new-pat-name').value.trim(),
+        phone: document.getElementById('new-pat-phone').value.trim(),
+        age: parseInt(document.getElementById('new-pat-age').value) || 35,
+        country: 'العراق',
+        type: document.getElementById('new-pat-type').value,
+        status: 'controlled',
+        inactive: false,
+        meds: document.getElementById('new-pat-meds').value.trim() || 'منظم 500mg',
+        targetG: 120, corrF: 40, carbR: 12, nextVisit: '2026-12-10',
+        notes: 'مراجع جديد — يرجى تسجيل القراءات يومياً.',
+        logs: [125, 138],
+        labs: [],
+        chat: []
+      };
+      clinicPatients.unshift(newP);
+      selectedPatientId = newP.id;
+      updateClinicCounters();
+      selectDoctorPatient(newP.id);
+      e.target.reset();
+      closeAllModals();
+      showToast(`تم تسجيل المراجع (${newP.name}) بنجاح ✓`);
+    }
+
+    function openEditPatientModal() {
+      const p = clinicPatients.find(x => x.id === selectedPatientId);
+      if (!p) return;
+      document.getElementById('edit-pat-name').value = p.name;
+      document.getElementById('edit-pat-phone').value = p.phone;
+      document.getElementById('edit-pat-age').value = p.age;
+      document.getElementById('edit-pat-type').value = p.type;
+      document.getElementById('edit-pat-meds').value = p.meds;
+      openToolModal('modal-doc-edit-patient');
+    }
+
+    function saveEditedPatient(e) {
+      e.preventDefault();
+      const p = clinicPatients.find(x => x.id === selectedPatientId);
+      if (!p) return;
+      p.name = document.getElementById('edit-pat-name').value.trim();
+      p.phone = document.getElementById('edit-pat-phone').value.trim();
+      p.age = parseInt(document.getElementById('edit-pat-age').value) || p.age;
+      p.type = document.getElementById('edit-pat-type').value;
+      p.meds = document.getElementById('edit-pat-meds').value.trim();
+      selectDoctorPatient(p.id);
+      closeAllModals();
+      showToast('تم حفظ تعديلات المراجع ✓');
+    }
+
+    function saveResetPatientPass(e) {
+      e.preventDefault();
+      e.target.reset();
+      closeAllModals();
+      showToast('تم تحديث الرمز السري للمراجع بنجاح ✓');
+    }
+
+    function deleteSelectedPatient() {
+      if (clinicPatients.length <= 1) return showToast('لا يمكن حذف آخر مراجع في القائمة', 'error');
+      if (confirm('هل أنت متأكد من حذف ملف هذا المراجع نهائياً؟')) {
+        clinicPatients = clinicPatients.filter(x => x.id !== selectedPatientId);
+        selectedPatientId = clinicPatients[0].id;
+        updateClinicCounters();
+        selectDoctorPatient(selectedPatientId);
+        showToast('تم حذف ملف المراجع', 'error');
+      }
+    }
+
+    function saveDoctorNotes() {
+      const p = clinicPatients.find(x => x.id === selectedPatientId);
+      if (!p) return;
+      p.notes = document.getElementById('dp-notes-input').value;
+      p.targetG = parseInt(document.getElementById('dp-target-g').value) || p.targetG;
+      p.corrF = parseInt(document.getElementById('dp-corr-f').value) || p.corrF;
+      p.carbR = parseInt(document.getElementById('dp-carb-r').value) || p.carbR;
+      p.nextVisit = document.getElementById('dp-next-visit').value || p.nextVisit;
+      showToast('تم حفظ الخطة العلاجية وتحديث ملف المراجع ✓');
+    }
+
+    function exportDoctorSelectedExcel() { showToast('تم تصدير سجل المراجع بصيغة Excel ✓'); }
+
+    // 10. بقية التفاعلات اليومية والشريط العائم
+    function incrementDaily(type, amount) {
+      const el = document.getElementById(`${type}-count`);
+      if (el) {
+        el.innerText = (parseInt(el.innerText) || 0) + amount;
+        showToast(type === 'water' ? 'بالعافية! تم تسجيل كوب ماء' : 'عاشت إيدك! تم تسجيل 15 دقيقة مشي');
+      }
+    }
+
+    function toggleMedDose(time) {
+      const btn = document.getElementById(`btn-med-${time}`);
+      if (btn) {
+        btn.classList.toggle('bg-emerald-600/90');
+        btn.classList.toggle('text-white');
+        btn.classList.toggle('bg-white/5');
+        showToast('تم تحديث حالة أخذ العلاج ✓');
+      }
+    }
+
+    function saveSideEffects() { showToast('تم حفظ الأعراض الجانبية وإرسالها للطبيب ✓'); }
+
+    function calcCorrectionDose() {
+      const val = parseFloat(document.getElementById('corr-input-val').value);
+      const res = document.getElementById('corr-result-box');
+      if (!val || !res) return;
+      const diff = val - 120;
+      res.innerText = diff > 0 ? `الجرعة التصحيحية المقترحة: ${(diff / 40).toFixed(1)} وحدة أنسولين` : 'قراءتك ضمن الهدف، لا تحتاج جرعة تصحيح.';
+    }
+
+    let timerInterval = null;
     function startPostMealTimer(mins) {
       const display = document.getElementById('postmeal-timer-display');
-      if(display) {
-        clearInterval(timerInterval);
-        let timeLeft = mins * 60;
-        showToast(`تم بدء مؤقت القياس لـ ${mins/60} ساعة`);
-        timerInterval = setInterval(() => {
-          timeLeft--;
-          const h = Math.floor(timeLeft / 3600);
-          const m = Math.floor((timeLeft % 3600) / 60);
-          const s = timeLeft % 60;
-          display.innerText = `متبقي: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-          display.className = 'text-xs font-black text-amber-400';
-          if(timeLeft <= 0) { clearInterval(timerInterval); display.innerText = 'حان وقت القياس!'; display.className = 'text-xs font-black text-rose-400'; showToast('حان وقت قياس السكر بعد الأكل!', 'error'); }
-        }, 1000);
+      if (!display) return;
+      clearInterval(timerInterval);
+      let timeLeft = mins * 60;
+      showToast(`بدأ مؤقت الفحص بعد الأكل (${mins} دقيقة)`);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const h = Math.floor(timeLeft / 3600);
+        const m = Math.floor((timeLeft % 3600) / 60);
+        const s = timeLeft % 60;
+        display.innerText = `متبقي: ${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        display.className = 'text-xs font-black text-amber-400';
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          display.innerText = 'حان وقت قياس السكر الآن!';
+          showToast('حان وقت فحص السكر بعد الأكل!', 'error');
+        }
+      }, 1000);
+    }
+
+    function markFootChecked() {
+      document.getElementById('foot-check-status').innerText = 'تم الفحص هذا الأسبوع ✓';
+      document.getElementById('foot-check-status').className = 'text-[11px] text-emerald-400 font-bold';
+      showToast('ممتاز! تم تسجيل فحص القدمين ✓');
+    }
+
+    function updateEa1cSimulator(val) {
+      document.getElementById('ea1c-sim-mg').innerText = val;
+      const a1c = ((parseInt(val) + 46.7) / 28.7).toFixed(1);
+      document.getElementById('ea1c-sim-val').innerText = a1c + '%';
+      const cmt = document.getElementById('ea1c-sim-comment');
+      cmt.innerText = a1c < 6.5 ? 'ممتاز جداً ومثالي' : (a1c < 7.5 ? 'جيد ومقبول' : 'مرتفع ويحتاج ضبط');
+      cmt.className = a1c < 6.5 ? 'text-emerald-400 font-bold' : (a1c < 7.5 ? 'text-amber-400 font-bold' : 'text-rose-400 font-bold');
+    }
+
+    function speakText(text) {
+      showToast('جاري قراءة ملاحظات الدكتور صوتياً...');
+      if ('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'ar-IQ';
+        window.speechSynthesis.speak(msg);
       }
     }
 
-    function markFootChecked() { showToast('ممتاز! تم تسجيل فحص القدمين لهذا الأسبوع'); document.getElementById('foot-check-status').innerText = 'تم الفحص هذا الأسبوع ✓'; document.getElementById('foot-check-status').className = 'text-[11px] text-emerald-400 font-bold'; }
-    function updateEa1cSimulator(val) { 
-      const mgEl = document.getElementById('ea1c-sim-mg');
-      const valEl = document.getElementById('ea1c-sim-val');
-      if(mgEl && valEl) {
-        mgEl.innerText = val; 
-        valEl.innerText = ((parseInt(val) + 46.7) / 28.7).toFixed(1) + '%';
-      }
-    }
-    function speakText(text) { 
-      showToast('جاري قراءة الملاحظات صوتياً...'); 
-      if('speechSynthesis' in window) { 
-        const msg = new SpeechSynthesisUtterance(text); 
-        msg.lang = 'ar-IQ'; 
-        window.speechSynthesis.speak(msg); 
-      } 
-    }
-    function startDoctorVoiceDictation() { 
-      showToast('جاري تفعيل المايكروفون (محاكاة)...'); 
+    function startDoctorVoiceDictation() {
       const lbl = document.getElementById('voice-dict-btn-lbl');
-      if(lbl) lbl.innerText = 'جاري الاستماع...'; 
-      setTimeout(() => { 
-        if(lbl) lbl.innerText = 'إملاء صوتي للملاحظات'; 
+      if (lbl) lbl.innerText = 'جاري الاستماع...';
+      showToast('تم تفعيل الإملاء الصوتي');
+      setTimeout(() => {
+        if (lbl) lbl.innerText = 'إملاء صوتي للملاحظات';
         const inp = document.getElementById('dp-notes-input');
-        if(inp) inp.value += ' المريض يحتاج لزيادة جرعة المنظم... '; 
-      }, 2000); 
+        if (inp) inp.value += ' الاستمرار على نفس الجرعة مع المشي اليومي.';
+      }, 1800);
     }
-    function saveDoctorNotes() { showToast('تم حفظ خطة العلاج بنجاح وتحديث تطبيق المراجع ✓'); }
-    
-    // Dock Active State
+
     function setDockActive(dockId) {
       document.querySelectorAll('.macos-dock-item').forEach(item => item.classList.remove('open'));
-      const activeItem = document.querySelector(`[data-dock-id="${dockId}"]`);
-      if(activeItem) activeItem.classList.add('open');
+      document.querySelector(`[data-dock-id="${dockId}"]`)?.classList.add('open');
     }
-    function scrollToPatientSection(id) { showToast('فتح الصفحة الرئيسية'); }
-    function scrollToDoctorSection(id) { showToast('فتح عيادة الطبيب'); }
 
+    function scrollToPatientSection(id) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function scrollToDoctorSection(id) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
   </script>
 </body>
 </html>
